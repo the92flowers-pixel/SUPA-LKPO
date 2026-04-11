@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useDataStore } from '@/lib/store';
-import { Music, Instagram, Send, Youtube, Globe, Info, X, Play, Cloud, Disc, Apple } from 'lucide-react';
+import { Music, Instagram, Send, Youtube, Globe, Cloud, Disc, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const PlatformIcon = ({ name }: { name: string }) => {
   const lowerName = name.toLowerCase();
@@ -17,15 +16,11 @@ const PlatformIcon = ({ name }: { name: string }) => {
 
 const SmartLinkPage = () => {
   const { slug } = useParams();
-  const { smartLinks, labelSocials, releases, fields } = useDataStore();
-  const [showInfo, setShowInfo] = useState(false);
+  const { smartLinks, labelSocials } = useDataStore();
   
   const link = smartLinks.find(l => l.slug === slug);
-  const release = releases.find(r => r.id === link?.releaseId);
 
   if (!link) return <div className="min-h-screen flex items-center justify-center text-white font-black uppercase tracking-widest">404 | Link not found</div>;
-
-  const releaseFields = fields.filter(f => f.section === 'release');
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center py-12 px-6 relative overflow-hidden">
@@ -67,14 +62,6 @@ const SmartLinkPage = () => {
         </div>
 
         <div className="flex flex-col items-center space-y-8">
-          <Button 
-            variant="ghost" 
-            onClick={() => setShowInfo(true)}
-            className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 hover:text-white hover:bg-white/5 h-12 px-8 rounded-none border border-white/5"
-          >
-            <Info size={14} className="mr-3" /> Інформація про реліз
-          </Button>
-
           <div className="flex gap-8 text-zinc-500">
             <a href={labelSocials.instagram} target="_blank" className="hover:text-white transition-colors"><Instagram size={18} /></a>
             <a href={labelSocials.telegram} target="_blank" className="hover:text-white transition-colors"><Send size={18} /></a>
@@ -87,24 +74,6 @@ const SmartLinkPage = () => {
           </div>
         </div>
       </div>
-
-      <Dialog open={showInfo} onOpenChange={setShowInfo}>
-        <DialogContent className="bg-[#0a0a0a] border-white/10 text-white max-w-md rounded-none">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Метадані релізу</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="grid grid-cols-1 gap-4">
-              {release && releaseFields.map(field => (
-                <div key={field.id} className="space-y-1 border-b border-white/5 pb-2">
-                  <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest">{field.label}</p>
-                  <p className="text-xs font-bold text-zinc-300 uppercase tracking-wider">{release[field.name] || '—'}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
