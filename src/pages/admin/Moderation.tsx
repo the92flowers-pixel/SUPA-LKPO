@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
-import { Check, X, Play, MoreVertical, ExternalLink, Music, Info, Calendar, Tag, User } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Check, X, Play, Music, Info, Calendar, Tag, User, Clock } from 'lucide-react';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { 
   Dialog, 
   DialogContent, 
@@ -68,83 +63,74 @@ const Moderation = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Черга модерації</h1>
-        <p className="text-gray-500">Перевірка нових релізів від артистів</p>
+        <h1 className="text-3xl font-bold text-white">Черга модерації</h1>
+        <p className="text-slate-400 mt-1">Перевірка нових релізів від артистів</p>
       </div>
 
-      <Card className="bg-[#1a1a1a] border-white/5 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-white/5 text-xs uppercase text-gray-500 font-bold">
-              <tr>
-                <th className="px-6 py-4">Реліз</th>
-                <th className="px-6 py-4">Артист</th>
-                <th className="px-6 py-4">Жанр</th>
-                <th className="px-6 py-4">Дата</th>
-                <th className="px-6 py-4">Дії</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {tracks.map((track) => (
-                <tr key={track.id} className="hover:bg-white/5 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-violet-500/20 flex items-center justify-center overflow-hidden border border-white/5">
-                        {track.coverUrl ? (
-                          <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <Music size={20} className="text-violet-500" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium">{track.title}</p>
-                        <p className="text-xs text-gray-500">ID: ZH-MOD-{track.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm">{track.artist}</td>
-                  <td className="px-6 py-4 text-sm text-gray-400">{track.genre}</td>
-                  <td className="px-6 py-4 text-sm text-gray-400">{track.date}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="h-8 px-3 border-white/10 hover:bg-white/5"
-                        onClick={() => setSelectedTrack(track)}
-                      >
-                        <Info size={16} className="mr-1" /> Деталі
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        className="bg-green-600 hover:bg-green-700 h-8 px-3"
-                        onClick={() => handleAction(track.id, 'approve')}
-                      >
-                        <Check size={16} />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        className="h-8 px-3"
-                        onClick={() => handleAction(track.id, 'reject')}
-                      >
-                        <X size={16} />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {tracks.map((track) => (
+          <Card key={track.id} className="bg-[#1a1a1a] border-white/5 overflow-hidden flex flex-col group hover:border-violet-500/30 transition-all duration-300">
+            <div className="aspect-square relative overflow-hidden">
+              <img 
+                src={track.coverUrl} 
+                alt={track.title} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
+              <Badge className="absolute top-3 right-3 bg-amber-500 text-black border-none font-bold">
+                <Clock size={12} className="mr-1" /> Очікує
+              </Badge>
+            </div>
+            
+            <CardContent className="p-5 flex-1 space-y-3">
+              <div>
+                <h3 className="text-lg font-bold text-white truncate">{track.title}</h3>
+                <p className="text-violet-400 font-medium text-sm">{track.artist}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <Tag size={14} /> {track.genre}
+                </div>
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <Calendar size={14} /> {track.date}
+                </div>
+              </div>
+            </CardContent>
+
+            <CardFooter className="p-5 pt-0 grid grid-cols-2 gap-2">
+              <Button 
+                variant="outline" 
+                className="border-white/10 hover:bg-white/5 text-white"
+                onClick={() => setSelectedTrack(track)}
+              >
+                <Info size={16} className="mr-2" /> Деталі
+              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handleAction(track.id, 'approve')}
+                >
+                  <Check size={18} />
+                </Button>
+                <Button 
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => handleAction(track.id, 'reject')}
+                >
+                  <X size={18} />
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
 
       {/* Moderation Detail Modal */}
       <Dialog open={!!selectedTrack} onOpenChange={() => setSelectedTrack(null)}>
         <DialogContent className="bg-[#1a1a1a] border-white/10 text-white max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Перевірка релізу</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className="text-2xl font-bold text-white">Перевірка релізу</DialogTitle>
+            <DialogDescription className="text-slate-400">
               Ретельно перевірте всі дані перед публікацією на стрімінгові платформи
             </DialogDescription>
           </DialogHeader>
@@ -152,19 +138,19 @@ const Moderation = () => {
           {selectedTrack && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               <div className="space-y-6">
-                <div className="aspect-square rounded-xl overflow-hidden border border-white/5">
+                <div className="aspect-square rounded-xl overflow-hidden border border-white/5 shadow-2xl">
                   <img src={selectedTrack.coverUrl} alt={selectedTrack.title} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-4 bg-[#0a0a0a] rounded-xl border border-white/5 space-y-4">
-                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Аудіофайл</p>
+                  <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Аудіофайл</p>
                   <div className="flex items-center gap-4">
-                    <Button size="icon" className="rounded-full bg-violet-600">
+                    <Button size="icon" className="rounded-full bg-violet-600 hover:bg-violet-700">
                       <Play size={20} />
                     </Button>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="w-1/4 h-full bg-violet-500" />
                     </div>
-                    <span className="text-xs font-mono text-gray-400">0:45 / 3:12</span>
+                    <span className="text-xs font-mono text-slate-400">0:45 / 3:12</span>
                   </div>
                 </div>
               </div>
@@ -172,38 +158,38 @@ const Moderation = () => {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-500 flex items-center gap-1"><User size={12} /> Артист</p>
-                    <p className="font-medium">{selectedTrack.artist}</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1"><User size={12} /> Артист</p>
+                    <p className="font-medium text-white">{selectedTrack.artist}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-500 flex items-center gap-1"><Tag size={12} /> Жанр</p>
-                    <p className="font-medium">{selectedTrack.genre}</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1"><Tag size={12} /> Жанр</p>
+                    <p className="font-medium text-white">{selectedTrack.genre}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-500 flex items-center gap-1"><Calendar size={12} /> Дата</p>
-                    <p className="font-medium">{selectedTrack.date}</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1"><Calendar size={12} /> Дата</p>
+                    <p className="font-medium text-white">{selectedTrack.date}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-500 flex items-center gap-1"><Music size={12} /> Тип</p>
-                    <p className="font-medium">Single</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1"><Music size={12} /> Тип</p>
+                    <p className="font-medium text-white">Single</p>
                   </div>
                 </div>
 
                 <div className="space-y-3 pt-4 border-t border-white/5">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">UPC</span>
-                    <span className="font-mono">{selectedTrack.upc}</span>
+                    <span className="text-slate-500">UPC</span>
+                    <span className="font-mono text-slate-200">{selectedTrack.upc}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">ISRC</span>
-                    <span className="font-mono">{selectedTrack.isrc}</span>
+                    <span className="text-slate-500">ISRC</span>
+                    <span className="font-mono text-slate-200">{selectedTrack.isrc}</span>
                   </div>
                 </div>
 
                 <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-lg">
-                  <p className="text-xs text-amber-500 font-medium mb-1">Нотатка модератора</p>
+                  <p className="text-xs text-amber-500 font-bold mb-2 uppercase tracking-wider">Нотатка модератора</p>
                   <textarea 
-                    className="w-full bg-transparent border-none text-sm text-gray-300 focus:ring-0 p-0 resize-none h-20"
+                    className="w-full bg-transparent border-none text-sm text-slate-300 focus:ring-0 p-0 resize-none h-20 placeholder:text-slate-600"
                     placeholder="Додайте коментар для артиста (у разі відхилення)..."
                   />
                 </div>
@@ -212,17 +198,18 @@ const Moderation = () => {
           )}
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setSelectedTrack(null)} className="border-white/10">
+            <Button variant="outline" onClick={() => setSelectedTrack(null)} className="border-white/10 text-white">
               Скасувати
             </Button>
             <Button 
               variant="destructive" 
+              className="bg-red-600 hover:bg-red-700 text-white"
               onClick={() => handleAction(selectedTrack.id, 'reject')}
             >
               <X size={18} className="mr-2" /> Відхилити
             </Button>
             <Button 
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-white"
               onClick={() => handleAction(selectedTrack.id, 'approve')}
             >
               <Check size={18} className="mr-2" /> Схвалити реліз
