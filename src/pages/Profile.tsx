@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { User, Save, Shield, Camera, ShieldCheck, ShieldAlert, Globe, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
@@ -26,13 +26,30 @@ const Profile = () => {
   const userWebsite = artistWebsites.find(w => w.userId === currentUser?.id);
 
   const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
-  const [websiteData, setWebsiteData] = useState<any>(userWebsite || {
+  const [websiteData, setWebsiteData] = useState<any>({
     slug: '',
-    stageName: currentUser?.artistName || '',
+    stageName: '',
     bio: '',
     photoUrl: FIXED_AVATAR,
     links: [{ id: '1', name: 'Instagram', url: '' }]
   });
+
+  // Update modal data when it opens or userWebsite changes
+  useEffect(() => {
+    if (isWebsiteModalOpen) {
+      if (userWebsite) {
+        setWebsiteData({ ...userWebsite });
+      } else {
+        setWebsiteData({
+          slug: '',
+          stageName: currentUser?.artistName || '',
+          bio: '',
+          photoUrl: FIXED_AVATAR,
+          links: [{ id: '1', name: 'Instagram', url: '' }]
+        });
+      }
+    }
+  }, [isWebsiteModalOpen, userWebsite, currentUser]);
 
   const { register, handleSubmit } = useForm<any>({
     defaultValues: {
