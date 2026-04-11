@@ -21,16 +21,16 @@ import Fields from "./pages/admin/Fields";
 import LoginCustomization from "./pages/admin/LoginCustomization";
 import Settings from "./pages/admin/Settings";
 import Export from "./pages/admin/Export";
+import LabelSocials from "./pages/admin/LabelSocials";
+import SmartLinkPage from "./pages/SmartLinkPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 'admin' | 'artist' }) => {
   const { user } = useAuthStore();
-  
   if (!user) return <Navigate to="/login" replace />;
   if (role && user.role !== role) return <Navigate to="/dashboard" replace />;
-  
   return <Layout>{children}</Layout>;
 };
 
@@ -41,18 +41,16 @@ const App = () => (
       <Sonner position="top-right" theme="dark" />
       <BrowserRouter>
         <Routes>
-          {/* Public Routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/s/:slug" element={<SmartLinkPage />} />
           
-          {/* Artist Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/releases" element={<ProtectedRoute><Releases /></ProtectedRoute>} />
           <Route path="/new-release" element={<ProtectedRoute><NewRelease /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           
-          {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
@@ -62,6 +60,7 @@ const App = () => (
           <Route path="/admin/login-customization" element={<ProtectedRoute role="admin"><LoginCustomization /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
           <Route path="/admin/export" element={<ProtectedRoute role="admin"><Export /></ProtectedRoute>} />
+          <Route path="/admin/label-socials" element={<ProtectedRoute role="admin"><LabelSocials /></ProtectedRoute>} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>

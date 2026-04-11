@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Play, Info, Music } from 'lucide-react';
+import { Search, Filter, MoreVertical, Play, Info, Music, Link as LinkIcon, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,16 +7,40 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 const Releases = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRelease, setSelectedRelease] = useState<any>(null);
+  const [platforms, setPlatforms] = useState([{ id: '1', name: 'Spotify', url: '' }]);
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { releases } = useDataStore();
+  const { releases, addSmartLink } = useDataStore();
 
   const userReleases = releases.filter(r => r.userId === user?.id);
   const filteredReleases = userReleases.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const handleCreateSmartLink = () => {
+    const slug = selectedRelease.title.toLowerCase().replace(/\s+/g, '-');
+    addSmartLink({
+      id: Math.random().toString(36).substr(2, 9),
+      releaseId: selectedRelease.id,
+      slug,
+      title: selectedRelease.title,
+      artist: selectedRelease.artist,
+      coverUrl: selectedRelease.coverUrl,
+      platforms: platforms
+        .filter(p => p.url !== '')
+        .map(p => ({ ...p, icon: 'music' })), // Added missing icon property
+      createdAt: new Date().toISOString()
+    });
+    showSuccess('Smart Link створено!');
+    setSelectedRelease(null);
+    window.open(`/s/${slug}`, '_blank');
+  };
 
   return (
     <div className="space-y-10">
@@ -26,86 +50,78 @@ const Releases = () => {
           <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Керування вашою спадщиною</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
-            <Input 
-              placeholder="Пошук у темряві..." 
-              className="pl-12 bg-black/40 border-white/5 text-white rounded-none h-12 focus:border-red-900/50 transition-all" 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-            />
-          </div>
-          <Button variant="outline" className="border-white/5 text-zinc-400 rounded-none h-12 px-6 hover:bg-white/5 uppercase text-[10px] font-black tracking-widest">
-            <Filter size={14} className="mr-2" />
-            Фільтр
-          </Button>
+          <Input 
+            placeholder="Пошук..." 
+            className="bg-black/40 border-white/5 w-64 h-12 rounded-none" 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+          />
         </div>
       </div>
 
-      {filteredReleases.length === 0 ? (
-        <div className="text-center py-32 bg-black/20 rounded-none border border-dashed border-white/5">
-          <Music className="mx-auto text-zinc-800 mb-6" size={64} />
-          <h3 className="text-xl font-black text-zinc-500 uppercase tracking-widest">Порожнеча</h3>
-          <p className="text-zinc-700 mt-2 text-xs uppercase font-bold tracking-tighter">Ви ще не створили жодного релізу</p>
-          <Button 
-            className="mt-8 bg-red-900/20 text-red-500 border border-red-900/30 hover:bg-red-900/40 rounded-none px-10"
-            onClick={() => navigate('/new-release')}
-          >
-            Створити перший реліз
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {filteredReleases.map((release) => (
-            <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden group hover:border-red-900/30 transition-all duration-500 shadow-2xl">
-              <div className="aspect-square relative overflow-hidden">
-                <img 
-                  src={release.coverUrl} 
-                  alt={release.title} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale-[0.5] group-hover:grayscale-0" 
-                />
-                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center gap-4">
-                  <Button size="icon" className="rounded-none bg-red-700 hover:bg-red-800 shadow-[0_0_20px_rgba(185,28,28,0.4)]">
-                    <Play size={20} fill="currentColor" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        {filteredReleases.map((release) => (
+          <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden group hover:border-red-900/30 transition-all duration-500">
+            <div className="aspect-square relative overflow-hidden">
+              <img src={release.coverUrl} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" alt="" />
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Button onClick={() => setSelectedRelease(release)} className="bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest">
+                  <LinkIcon size={14} className="mr-2" /> Smart Link
+                </Button>
+              </div>
+            </div>
+            <CardContent className="p-6">
+              <h3 className="font-black text-white text-sm uppercase tracking-wider truncate">{release.title}</h3>
+              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-1">{release.genre}</p>
+              <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
+                <Badge className="bg-white/5 text-zinc-500 border-none text-[9px] uppercase font-black">{release.status}</Badge>
+                <span className="text-xs font-black text-red-700">{release.streams.toLocaleString()}</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Dialog open={!!selectedRelease} onOpenChange={() => setSelectedRelease(null)}>
+        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Створити Smart Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="space-y-4">
+              {platforms.map((p, index) => (
+                <div key={p.id} className="flex gap-3 items-end">
+                  <div className="flex-1 space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Платформа</Label>
+                    <Input value={p.name} onChange={(e) => {
+                      const newP = [...platforms];
+                      newP[index].name = e.target.value;
+                      setPlatforms(newP);
+                    }} className="bg-black/40 border-white/5 h-10" />
+                  </div>
+                  <div className="flex-[2] space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL</Label>
+                    <Input value={p.url} onChange={(e) => {
+                      const newP = [...platforms];
+                      newP[index].url = e.target.value;
+                      setPlatforms(newP);
+                    }} className="bg-black/40 border-white/5 h-10" placeholder="https://..." />
+                  </div>
+                  <Button variant="ghost" size="icon" className="text-red-900" onClick={() => setPlatforms(platforms.filter((_, i) => i !== index))}>
+                    <Trash2 size={16} />
                   </Button>
                 </div>
-                <Badge className={cn(
-                  "absolute top-4 right-4 border-none rounded-none px-3 py-1 text-[9px] font-black uppercase tracking-widest",
-                  release.status === 'Опубліковано' ? "bg-green-900/20 text-green-500" : "bg-red-900/20 text-red-500"
-                )}>
-                  {release.status}
-                </Badge>
-              </div>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="overflow-hidden">
-                    <h3 className="font-black truncate text-white text-sm uppercase tracking-wider">{release.title}</h3>
-                    <p className="text-[10px] text-zinc-600 truncate mt-1 font-bold uppercase tracking-widest">
-                      {release.genre} • {release.releaseDate}
-                    </p>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-zinc-600 hover:text-white">
-                        <MoreVertical size={16} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-[#0a0a0a] border-white/5 text-white rounded-none shadow-2xl">
-                      <DropdownMenuItem className="cursor-pointer text-[10px] font-bold uppercase tracking-widest py-3">
-                        <Info size={14} className="mr-3 text-red-700" /> Деталі
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
-                  <span className="text-[9px] text-zinc-600 uppercase font-black tracking-[0.2em]">Стріми</span>
-                  <span className="text-xs font-black text-red-700 tracking-tighter">{release.streams.toLocaleString()}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              ))}
+              <Button variant="outline" className="w-full border-white/5 text-[10px] font-black uppercase tracking-widest" onClick={() => setPlatforms([...platforms, { id: Date.now().toString(), name: '', url: '' }])}>
+                <Plus size={14} className="mr-2" /> Додати платформу
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCreateSmartLink} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">Створити</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
