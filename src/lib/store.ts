@@ -7,12 +7,22 @@ interface StreamHistory {
   count: number;
 }
 
+interface Transaction {
+  id: string;
+  userId: string;
+  amount: number;
+  type: 'royalty' | 'payout';
+  description: string;
+  date: string;
+}
+
 interface User {
   id: string;
   login: string;
   password?: string;
   role: 'admin' | 'artist';
   artistName?: string;
+  balance: number;
   createdAt: string;
   [key: string]: any;
 }
@@ -36,6 +46,7 @@ interface Release {
 interface DataState {
   users: User[];
   releases: Release[];
+  transactions: Transaction[];
   statuses: any[];
   fields: any[];
   settings: any;
@@ -46,6 +57,7 @@ interface DataState {
   addRelease: (release: any) => void;
   updateReleaseStatus: (id: string, status: string) => void;
   updateReleaseStreams: (id: string, count: number, date: string) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   updateSettings: (settings: any) => void;
   updateFields: (fields: any[]) => void;
   updateStatuses: (statuses: any[]) => void;
@@ -56,8 +68,8 @@ export const useDataStore = create<DataState>()(
   persist(
     (set) => ({
       users: [
-        { id: '1', login: 'admin', role: 'admin', artistName: 'Адмін', createdAt: new Date().toISOString() },
-        { id: '2', login: 'artist@demo.com', role: 'artist', artistName: 'Demo Artist', createdAt: new Date().toISOString() }
+        { id: '1', login: 'admin', role: 'admin', artistName: 'Адмін', balance: 0, createdAt: new Date().toISOString() },
+        { id: '2', login: 'artist@demo.com', role: 'artist', artistName: 'Demo Artist', balance: 1250.50, createdAt: new Date().toISOString() }
       ],
       releases: [
         { 
@@ -79,6 +91,9 @@ export const useDataStore = create<DataState>()(
           createdAt: new Date().toISOString() 
         }
       ],
+      transactions: [
+        { id: 't1', userId: '2', amount: 1250.50, type: 'royalty', description: 'Роялті за травень 2024', date: '2024-06-01' }
+      ],
       statuses: initialStatuses,
       fields: initialFields,
       settings: {
@@ -89,7 +104,7 @@ export const useDataStore = create<DataState>()(
       },
       loginPageConfig: initialLoginPageContent,
 
-      addUser: (user) => set((state) => ({ users: [...state.users, user] })),
+      addUser: (user) => set((state) => ({ users: [...state.users, { ...user, balance: 0 }] })),
       
       updateUser: (id, data) => set((state) => ({
         users: state.users.map(u => u.id === id ? { ...u, ...data } : u)
@@ -117,23 +132,27 @@ export const useDataStore = create<DataState>()(
           if (r.id === id) {
             const existingDateIndex = r.history.findIndex(h => h.date === date);
             let newHistory = [...r.history];
-            
-            if (existingDateIndex >= 0) {
-              newHistory[existingDateIndex].count += count;
-            } else {
+            if (existingDateIndex >= 0) newHistory[existingDateIndex].count += count;
+            else {
               newHistory.push({ date, count });
               newHistory.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
             }
-
-            return { 
-              ...r, 
-              streams: r.streams + count,
-              history: newHistory
-            };
+            return { ...r, streams: r.streams + count, history: newHistory };
           }
           return r;
         })
       })),
+
+      addTransaction: (tx) => set((state) => {
+        const newTx = { ...tx, id: Math.random().toString(36).substr(2, 9) };
+        return {
+          transactions: [newTx, ...state.transactions],
+          users: state.users.map(u => u.id === tx.userId 
+            ? { ...u, balance: u.balance + (tx.type === 'royalty' ? tx.amount : -tx.amount) } 
+            : u
+          )
+        };
+      }),
 
       updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
       updateFields: (fields) => set({ fields }),
@@ -141,7 +160,7 @@ export const useDataStore = create<DataState>()(
       updateLoginConfig: (config) => set({ loginPageConfig: config }),
     }),
     {
-      name: 'zhurba-db-v3',
+      name: 'zhurba-db-v4',
     }
   )
 );
@@ -162,7 +181,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, token: null }),
     }),
     {
-      name: 'zhurba-auth-v3',
+      name: 'zhurba-auth-v4',
     }
   )
 );

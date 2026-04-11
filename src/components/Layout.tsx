@@ -16,7 +16,8 @@ import {
   Bell,
   Menu,
   X,
-  LayoutGrid
+  LayoutGrid,
+  Wallet
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
     { to: '/releases', icon: Music, label: 'Мої релізи' },
     { to: '/new-release', icon: PlusCircle, label: 'Новий реліз' },
+    { to: '/finance', icon: Wallet, label: 'Фінанси' },
     { to: '/profile', icon: User, label: 'Профіль' },
   ];
 
