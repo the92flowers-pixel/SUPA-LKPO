@@ -8,19 +8,26 @@ import { Label } from '@/components/ui/label';
 import { showSuccess } from '@/utils/toast';
 
 const Export = () => {
-  const { releases } = useDataStore();
+  const { releases, fields } = useDataStore();
 
   const exportReleases = () => {
-    const data = releases.map(r => ({
-      ID: r.id,
-      Назва: r.title,
-      Артист: r.artist,
-      Жанр: r.genre,
-      Дата: r.releaseDate,
-      Статус: r.status,
-      Стріми: r.streams,
-      Створено: new Date(r.createdAt).toLocaleDateString()
-    }));
+    const releaseFields = fields.filter(f => f.section === 'release');
+    
+    const data = releases.map(r => {
+      const row: any = {
+        ID: r.id,
+        Статус: r.status,
+        Стріми: r.streams,
+        Створено: new Date(r.createdAt).toLocaleDateString()
+      };
+      
+      // Add all dynamic fields to the row
+      releaseFields.forEach(field => {
+        row[field.label] = r[field.name] || '';
+      });
+      
+      return row;
+    });
     
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -30,7 +37,6 @@ const Export = () => {
   };
 
   const exportStats = () => {
-    // In a real app, this would be daily stats. For now, we export current totals.
     const data = releases.map(r => ({
       Дата: new Date().toISOString().split('T')[0],
       Трек: r.title,
