@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, Link } from 'react-router-dom';
-import { Music, UserPlus } from 'lucide-react';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { Music, UserPlus, AlertCircle } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,22 @@ const Register = () => {
   const { register, handleSubmit } = useForm();
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-  const { addUser, users } = useDataStore();
+  const { addUser, users, settings } = useDataStore();
+
+  if (!settings.registrationEnabled) {
+    return (
+      <div className="min-h-screen flex bg-[#0a0a0a] text-white items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <AlertCircle className="mx-auto text-amber-500" size={48} />
+          <h1 className="text-2xl font-bold">Реєстрація тимчасово закрита</h1>
+          <p className="text-gray-500">Зверніться до адміністратора для створення акаунту.</p>
+          <Link to="/">
+            <Button variant="outline" className="mt-4 border-white/10">На головну</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const onSubmit = (data: any) => {
     if (users.find(u => u.login === data.login)) {
@@ -21,17 +36,16 @@ const Register = () => {
     }
 
     const newUser = { 
+      ...data,
       id: Math.random().toString(36).substr(2, 9), 
-      login: data.login, 
       role: 'artist' as const, 
-      artistName: data.artistName,
       createdAt: new Date().toISOString()
     };
     
     addUser(newUser);
     setAuth(newUser, 'mock-jwt');
     showSuccess('Акаунт успішно створено!');
-    navigate('/');
+    navigate('/dashboard');
   };
 
   return (
@@ -44,7 +58,7 @@ const Register = () => {
             </div>
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Створити акаунт</h1>
-          <p className="text-gray-500 mt-2">Приєднуйтесь до ЖУРБА MUSIC сьогодні</p>
+          <p className="text-gray-500 mt-2">Приєднуйтесь до {settings.siteName} сьогодні</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

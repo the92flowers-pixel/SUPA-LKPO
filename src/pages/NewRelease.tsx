@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Calendar, Link as LinkIcon, Type, Hash } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,13 +22,8 @@ const NewRelease = () => {
 
   const onSubmit = (data: any) => {
     addRelease({
+      ...data,
       userId: user?.id || 'unknown',
-      title: data.title,
-      artist: data.artist,
-      genre: data.genre,
-      releaseDate: data.releaseDate,
-      coverUrl: data.coverUrl,
-      audioUrl: data.audioUrl,
       status: defaultStatus
     });
     showSuccess('Реліз успішно відправлено на модерацію!');

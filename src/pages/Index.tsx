@@ -1,46 +1,45 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Music, Globe, Zap, Shield, ArrowRight, Play, Star, CheckCircle2 } from 'lucide-react';
+import { Music, Globe, Zap, Shield, ArrowRight, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, useDataStore } from '@/lib/store';
 import { Navigate } from 'react-router-dom';
 
 const Index = () => {
   const { user } = useAuthStore();
+  const { settings } = useDataStore();
 
-  // If user is already logged in, redirect to dashboard
   if (user) {
-    return <Navigate to={user.role === 'admin' ? '/admin/moderation' : '/'} replace />;
+    return <Navigate to={user.role === 'admin' ? '/admin/moderation' : '/dashboard'} replace />;
   }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-violet-500/30">
-      {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-600/20">
               <Music className="text-white" size={24} />
             </div>
-            <span className="text-xl font-black tracking-tighter">ЖУРБА MUSIC</span>
+            <span className="text-xl font-black tracking-tighter uppercase">{settings.siteName}</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-400 uppercase tracking-widest">
             <a href="#features" className="hover:text-white transition-colors">Можливості</a>
             <a href="#stats" className="hover:text-white transition-colors">Статистика</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Умови</a>
           </div>
           <div className="flex items-center gap-4">
             <Link to="/login">
               <Button variant="ghost" className="font-bold text-gray-300 hover:text-white">Увійти</Button>
             </Link>
-            <Link to="/register">
-              <Button className="bg-violet-600 hover:bg-violet-700 font-bold px-6">Почати зараз</Button>
-            </Link>
+            {settings.registrationEnabled && (
+              <Link to="/register">
+                <Button className="bg-violet-600 hover:bg-violet-700 font-bold px-6">Почати зараз</Button>
+              </Link>
+            )}
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
       <section className="relative pt-40 pb-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="max-w-3xl">
@@ -55,25 +54,25 @@ const Index = () => {
               Доставляємо твої треки на 150+ платформ по всьому світу. Залишай собі 100% роялті та керуй своєю кар'єрою через сучасний кабінет артиста.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/register">
-                <Button className="h-16 px-10 bg-violet-600 hover:bg-violet-700 text-lg font-black rounded-2xl group">
-                  Випустити трек
-                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+              {settings.registrationEnabled && (
+                <Link to="/register">
+                  <Button className="h-16 px-10 bg-violet-600 hover:bg-violet-700 text-lg font-black rounded-2xl group">
+                    Випустити трек
+                    <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              )}
+              <Link to="/login">
+                <Button variant="outline" className="h-16 px-10 border-white/10 hover:bg-white/5 text-lg font-black rounded-2xl">
+                  <Play className="mr-2 fill-current" size={18} /> Демо кабінету
                 </Button>
               </Link>
-              <Button variant="outline" className="h-16 px-10 border-white/10 hover:bg-white/5 text-lg font-black rounded-2xl">
-                <Play className="mr-2 fill-current" size={18} /> Демо кабінету
-              </Button>
             </div>
           </div>
         </div>
-
-        {/* Background Elements */}
         <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-violet-600/20 blur-[120px] rounded-full -mr-40" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-fuchsia-600/10 blur-[100px] rounded-full -ml-20" />
       </section>
 
-      {/* Features */}
       <section id="features" className="py-24 bg-white/[0.02] border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -102,50 +101,16 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-sm font-bold text-gray-500 uppercase tracking-[0.3em] mb-12">Нам довіряють найкращі платформи</p>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-30 grayscale hover:grayscale-0 transition-all duration-500">
-            <span className="text-3xl font-black">Spotify</span>
-            <span className="text-3xl font-black">Apple Music</span>
-            <span className="text-3xl font-black">YouTube</span>
-            <span className="text-3xl font-black">TikTok</span>
-            <span className="text-3xl font-black">Deezer</span>
-            <span className="text-3xl font-black">Amazon</span>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-24">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="bg-gradient-to-br from-violet-600 to-fuchsia-700 rounded-[40px] p-12 md:p-20 text-center relative overflow-hidden">
-            <div className="relative z-10">
-              <h2 className="text-4xl md:text-6xl font-black mb-6">Готовий підкорити чарти?</h2>
-              <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">Приєднуйся до ЖУРБА MUSIC та почни свій шлях до успіху вже сьогодні.</p>
-              <Link to="/register">
-                <Button className="h-16 px-12 bg-white text-violet-600 hover:bg-gray-100 text-lg font-black rounded-2xl">
-                  Створити акаунт артиста
-                </Button>
-              </Link>
-            </div>
-            <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
       <footer className="py-12 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-2">
             <Music className="text-violet-500" size={20} />
-            <span className="font-bold tracking-tighter">ЖУРБА MUSIC © 2024</span>
+            <span className="font-bold tracking-tighter uppercase">{settings.siteName} © 2024</span>
           </div>
           <div className="flex gap-8 text-sm text-gray-500 font-medium">
             <a href="#" className="hover:text-white">Privacy Policy</a>
             <a href="#" className="hover:text-white">Terms of Service</a>
-            <a href="#" className="hover:text-white">Support</a>
+            <a href={`mailto:${settings.contactEmail}`} className="hover:text-white">Support</a>
           </div>
         </div>
       </footer>

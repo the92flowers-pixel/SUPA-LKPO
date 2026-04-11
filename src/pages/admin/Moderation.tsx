@@ -15,10 +15,9 @@ import {
 import { showSuccess } from '@/utils/toast';
 
 const Moderation = () => {
-  const { releases, updateReleaseStatus, statuses } = useDataStore();
+  const { releases, updateReleaseStatus, statuses, fields } = useDataStore();
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
 
-  // Filter only releases that are "On Moderation" (or the default status)
   const defaultStatus = statuses.find(s => s.isDefault)?.name || 'На модерації';
   const pendingReleases = releases.filter(r => r.status === defaultStatus);
 
@@ -31,6 +30,8 @@ const Moderation = () => {
     showSuccess(`Реліз ${action === 'approve' ? 'схвалено' : 'відхилено'}`);
     setSelectedTrack(null);
   };
+
+  const releaseFields = fields.filter(f => f.section === 'release');
 
   return (
     <div className="space-y-8">
@@ -55,7 +56,6 @@ const Moderation = () => {
                   alt={track.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
                 <Badge className="absolute top-3 right-3 bg-amber-500 text-black border-none font-bold">
                   <Clock size={12} className="mr-1" /> Очікує
                 </Badge>
@@ -105,7 +105,6 @@ const Moderation = () => {
         </div>
       )}
 
-      {/* Moderation Detail Modal */}
       <Dialog open={!!selectedTrack} onOpenChange={() => setSelectedTrack(null)}>
         <DialogContent className="bg-[#1a1a1a] border-white/10 text-white max-w-3xl">
           <DialogHeader>
@@ -124,35 +123,25 @@ const Moderation = () => {
                 <div className="p-4 bg-[#0a0a0a] rounded-xl border border-white/5 space-y-4">
                   <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Аудіофайл</p>
                   <div className="flex items-center gap-4">
-                    <Button size="icon" className="rounded-full bg-violet-600 hover:bg-violet-700">
+                    <Button size="icon" className="rounded-full bg-violet-600 hover:bg-violet-700" onClick={() => window.open(selectedTrack.audioUrl, '_blank')}>
                       <Play size={20} />
                     </Button>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="w-1/4 h-full bg-violet-500" />
                     </div>
-                    <span className="text-xs font-mono text-slate-400">0:00 / 3:12</span>
+                    <span className="text-xs font-mono text-slate-400">Прев'ю</span>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs text-slate-500 flex items-center gap-1"><User size={12} /> Артист</p>
-                    <p className="font-medium text-white">{selectedTrack.artist}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-slate-500 flex items-center gap-1"><Tag size={12} /> Жанр</p>
-                    <p className="font-medium text-white">{selectedTrack.genre}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-slate-500 flex items-center gap-1"><Calendar size={12} /> Дата</p>
-                    <p className="font-medium text-white">{selectedTrack.releaseDate}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-slate-500 flex items-center gap-1"><Music size={12} /> Тип</p>
-                    <p className="font-medium text-white">Single</p>
-                  </div>
+              <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2">
+                <div className="grid grid-cols-1 gap-4">
+                  {releaseFields.map(field => (
+                    <div key={field.id} className="space-y-1 border-b border-white/5 pb-2">
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-tighter">{field.label}</p>
+                      <p className="font-medium text-white">{selectedTrack[field.name] || '—'}</p>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-lg">

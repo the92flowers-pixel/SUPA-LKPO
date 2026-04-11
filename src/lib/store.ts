@@ -9,6 +9,7 @@ interface User {
   role: 'admin' | 'artist';
   artistName?: string;
   createdAt: string;
+  [key: string]: any; // Allow dynamic fields from admin
 }
 
 interface Release {
@@ -23,6 +24,7 @@ interface Release {
   status: string;
   streams: number;
   createdAt: string;
+  [key: string]: any; // Allow dynamic fields from admin
 }
 
 interface DataState {
@@ -33,10 +35,9 @@ interface DataState {
   settings: any;
   loginPageConfig: any;
   
-  // Actions
   addUser: (user: User) => void;
   updateUser: (id: string, data: Partial<User>) => void;
-  addRelease: (release: Omit<Release, 'id' | 'createdAt' | 'streams'>) => void;
+  addRelease: (release: any) => void;
   updateReleaseStatus: (id: string, status: string) => void;
   updateReleaseStreams: (id: string, count: number) => void;
   updateSettings: (settings: any) => void;
@@ -61,22 +62,9 @@ export const useDataStore = create<DataState>()(
           genre: 'Electronic', 
           releaseDate: '2024-05-20', 
           coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=800&q=80', 
-          audioUrl: '', 
+          audioUrl: 'https://example.com/audio.mp3', 
           status: 'Опубліковано', 
           streams: 12540, 
-          createdAt: new Date().toISOString() 
-        },
-        { 
-          id: 'r2', 
-          userId: '2', 
-          title: 'Neon Dreams', 
-          artist: 'Demo Artist', 
-          genre: 'Pop', 
-          releaseDate: '2024-06-01', 
-          coverUrl: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=800&q=80', 
-          audioUrl: '', 
-          status: 'На модерації', 
-          streams: 0, 
           createdAt: new Date().toISOString() 
         }
       ],
@@ -86,6 +74,7 @@ export const useDataStore = create<DataState>()(
         siteName: 'ЖУРБА MUSIC',
         contactEmail: 'support@zhurba.music',
         registrationEnabled: true,
+        maintenanceMode: false
       },
       loginPageConfig: initialLoginPageContent,
 
@@ -115,13 +104,13 @@ export const useDataStore = create<DataState>()(
         releases: state.releases.map(r => r.id === id ? { ...r, streams: r.streams + count } : r)
       })),
 
-      updateSettings: (settings) => set({ settings }),
+      updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
       updateFields: (fields) => set({ fields }),
       updateStatuses: (statuses) => set({ statuses }),
       updateLoginConfig: (config) => set({ loginPageConfig: config }),
     }),
     {
-      name: 'zhurba-db',
+      name: 'zhurba-db-v2',
     }
   )
 );
@@ -142,7 +131,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, token: null }),
     }),
     {
-      name: 'zhurba-auth',
+      name: 'zhurba-auth-v2',
     }
   )
 );
