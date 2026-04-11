@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, User, LogOut, ShieldCheck, BarChart3, Settings, 
-  Palette, ListTodo, Layers, Users as UsersIcon, Music, Bell, Menu, X, LayoutGrid, Share2, Disc, Link2, Globe
+  Palette, ListTodo, Layers, Users as UsersIcon, Music, Bell, Menu, X, LayoutGrid, Share2, Disc, Link2, Globe, Wallet, FileText
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
     { to: '/releases', icon: Music, label: 'Мої релізи' },
     { to: '/new-release', icon: PlusCircle, label: 'Новий реліз' },
+    { to: '/finances', icon: Wallet, label: 'Фінанси' },
+    { to: '/reports', icon: FileText, label: 'Звіти' },
     { to: '/profile', icon: User, label: 'Профіль' },
   ];
 
@@ -26,6 +28,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { to: '/admin/dashboard', icon: LayoutGrid, label: 'Огляд' },
     { to: '/admin/moderation', icon: ShieldCheck, label: 'Модерація' },
     { to: '/admin/releases', icon: Disc, label: 'Всі релізи' },
+    { to: '/admin/finance', icon: Wallet, label: 'Фінанси' },
+    { to: '/admin/reports', icon: FileText, label: 'Звіти' },
     { to: '/admin/smart-links', icon: Link2, label: 'Смартлінки' },
     { to: '/admin/artist-websites', icon: Globe, label: 'Сайти артистів' },
     { to: '/admin/users', icon: UsersIcon, label: 'Користувачі' },

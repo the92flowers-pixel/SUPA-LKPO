@@ -12,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import Releases from "./pages/Releases";
 import NewRelease from "./pages/NewRelease";
 import Profile from "./pages/Profile";
+import Finances from "./pages/Finances";
+import Reports from "./pages/Reports";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Moderation from "./pages/admin/Moderation";
 import Users from "./pages/admin/Users";
@@ -25,6 +27,8 @@ import LabelSocials from "./pages/admin/LabelSocials";
 import AllReleases from "./pages/admin/AllReleases";
 import SmartLinksManagement from "./pages/admin/SmartLinksManagement";
 import ArtistWebsitesManagement from "./pages/admin/ArtistWebsitesManagement";
+import AdminFinance from "./pages/admin/AdminFinance";
+import AdminReports from "./pages/admin/AdminReports";
 import SmartLinkPage from "./pages/SmartLinkPage";
 import ArtistWebsitePage from "./pages/ArtistWebsitePage";
 import NotFound from "./pages/NotFound";
@@ -55,6 +59,8 @@ const App = () => (
           <Route path="/releases" element={<ProtectedRoute><Releases /></ProtectedRoute>} />
           <Route path="/new-release" element={<ProtectedRoute><NewRelease /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/finances" element={<ProtectedRoute><Finances /></ProtectedRoute>} />
+          <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
           
           <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
@@ -69,6 +75,8 @@ const App = () => (
           <Route path="/admin/login-customization" element={<ProtectedRoute role="admin"><LoginCustomization /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
           <Route path="/admin/export" element={<ProtectedRoute role="admin"><Export /></ProtectedRoute>} />
+          <Route path="/admin/finance" element={<ProtectedRoute role="admin"><AdminFinance /></ProtectedRoute>} />
+          <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminReports /></ProtectedRoute>} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
