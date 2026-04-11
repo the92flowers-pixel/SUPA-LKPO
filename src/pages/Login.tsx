@@ -100,9 +100,6 @@ const Login = () => {
               Немає акаунту?{' '}
               <Link to="/register" className="text-red-700 hover:underline">Зареєструватися</Link>
             </p>
-            <div className="p-4 bg-red-900/5 border border-red-900/10 rounded-none">
-              <p className="text-[10px] text-red-700 font-black uppercase tracking-widest">Демо: admin / admin2</p>
-            </div>
           </div>
         </div>
       </div>
