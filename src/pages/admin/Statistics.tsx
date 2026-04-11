@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { BarChart3, Plus, History, Search, Calendar as CalendarIcon, User, Music, Check, ChevronsUpDown } from 'lucide-react';
+import { BarChart3, Plus, History, Search, Calendar as CalendarIcon, User, Music, Check, ChevronsUpDown, AlertCircle } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,13 +36,11 @@ const Statistics = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Get unique artists who have releases
   const artists = useMemo(() => {
     const artistIds = new Set(releases.map(r => r.userId));
     return users.filter(u => artistIds.has(u.id));
   }, [users, releases]);
 
-  // Filter tracks based on selected artist
   const artistTracks = useMemo(() => {
     if (!selectedArtistId) return [];
     return releases.filter(r => r.userId === selectedArtistId && r.status === 'Опубліковано');
@@ -57,7 +55,6 @@ const Statistics = () => {
     const count = parseInt(data.count);
     const dateStr = `${data.year}-${(parseInt(data.month) + 1).toString().padStart(2, '0')}-01`;
     
-    // Update streams
     updateReleaseStreams(selectedTrackId, count, dateStr);
     
     showSuccess('Статистику успішно оновлено!');
@@ -78,13 +75,16 @@ const Statistics = () => {
 
   return (
     <div className="space-y-10">
-      <div>
-        <h1 className="text-4xl font-black text-white tracking-tight uppercase">Керування статистикою</h1>
-        <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Оновлення даних про прослуховування</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-black text-white tracking-tight uppercase">Керування статистикою</h1>
+          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Оновлення даних про прослуховування</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <Card className="lg:col-span-1 bg-black/40 border-white/5 rounded-none shadow-2xl h-fit">
+        <Card className="lg:col-span-1 bg-black/40 border-white/5 rounded-none shadow-2xl h-fit relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-red-700" />
           <CardHeader className="border-b border-white/5 pb-6">
             <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
               <Plus size={18} className="text-red-700" />
@@ -280,6 +280,17 @@ const Statistics = () => {
             </table>
           </div>
         </Card>
+      </div>
+
+      <div className="p-8 bg-red-900/5 border border-red-900/10 rounded-none flex items-start gap-4">
+        <AlertCircle className="text-red-700 shrink-0" size={20} />
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Важлива примітка</p>
+          <p className="text-xs text-zinc-500 leading-relaxed font-medium">
+            Дана статистика не є остаточною та відображає лише проміжну інформацію про прослуховування. 
+            Повна та детальна фінансова звітність буде доступна у вашому квартальному звіті.
+          </p>
+        </div>
       </div>
     </div>
   );

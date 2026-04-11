@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Play, Info, Music, Link as LinkIcon, Plus, Trash2, Globe } from 'lucide-react';
+import { Search, Filter, MoreVertical, Play, Info, Music, Link as LinkIcon, Plus, Trash2, Globe, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,9 +22,12 @@ const PLATFORMS_LIST = [
   "YouTube Music"
 ];
 
+const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
+
 const Releases = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
+  const [viewingRelease, setViewingRelease] = useState<any>(null);
   const [customSlug, setCustomSlug] = useState('');
   const [platforms, setPlatforms] = useState([{ id: '1', name: 'Spotify', url: '' }]);
   const [isEditing, setIsEditing] = useState(false);
@@ -32,15 +35,13 @@ const Releases = () => {
 
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink, updateSmartLink } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink, fields } = useDataStore();
 
   const userReleases = releases.filter(r => r.userId === user?.id);
   const filteredReleases = userReleases.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleOpenModal = (release: any) => {
     setSelectedRelease(release);
-    
-    // Check if smart link already exists for this release
     const existingLink = smartLinks.find(l => l.releaseId === release.id);
     
     if (existingLink) {
@@ -62,7 +63,6 @@ const Releases = () => {
       return;
     }
 
-    // Check if slug is taken by ANOTHER link
     const isSlugTaken = smartLinks.some(l => l.slug === customSlug && l.id !== existingLinkId);
     if (isSlugTaken) {
       showError('Цей URL вже зайнятий. Оберіть інший.');
@@ -97,6 +97,8 @@ const Releases = () => {
     window.open(`/s/${customSlug}`, '_blank');
   };
 
+  const releaseFields = fields.filter(f => f.section === 'release');
+
   return (
     <div className="space-y-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -118,11 +120,19 @@ const Releases = () => {
         {filteredReleases.map((release) => (
           <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden group hover:border-red-900/30 transition-all duration-500">
             <div className="aspect-square relative overflow-hidden">
-              <img src={release.coverUrl} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" alt="" />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Button onClick={() => handleOpenModal(release)} className="bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest">
+              <img 
+                src={release.coverUrl} 
+                onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" 
+                alt="" 
+              />
+              <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-6">
+                <Button onClick={() => handleOpenModal(release)} className="w-full bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
                   <LinkIcon size={14} className="mr-2" /> 
                   {smartLinks.some(l => l.releaseId === release.id) ? 'Редагувати Link' : 'Smart Link'}
+                </Button>
+                <Button onClick={() => setViewingRelease(release)} variant="outline" className="w-full border-white/10 hover:bg-white/5 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
+                  <Eye size={14} className="mr-2" /> Деталі
                 </Button>
               </div>
             </div>
@@ -138,8 +148,9 @@ const Releases = () => {
         ))}
       </div>
 
+      {/* Smart Link Modal */}
       <Dialog open={!!selectedRelease} onOpenChange={() => setSelectedRelease(null)}>
-        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tighter">
               {isEditing ? 'Редагувати Smart Link' : 'Створити Smart Link'}
@@ -201,6 +212,52 @@ const Releases = () => {
           <DialogFooter>
             <Button onClick={handleSaveSmartLink} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">
               {isEditing ? 'Зберегти зміни' : 'Створити'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Release Details Modal */}
+      <Dialog open={!!viewingRelease} onOpenChange={() => setViewingRelease(null)}>
+        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-2xl max-h-[90vh] overflow-y-auto rounded-none">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Інформація про реліз</DialogTitle>
+          </DialogHeader>
+          {viewingRelease && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
+              <div className="space-y-6">
+                <div className="aspect-square border border-white/5 shadow-2xl">
+                  <img 
+                    src={viewingRelease.coverUrl} 
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                    className="w-full h-full object-cover" 
+                    alt="" 
+                  />
+                </div>
+                <div className="p-4 bg-white/5 border border-white/5 space-y-2">
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Статус дистрибуції</p>
+                  <Badge className="bg-red-900/20 text-red-500 border-none text-[10px] font-black uppercase tracking-widest">
+                    {viewingRelease.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-6">
+                  {releaseFields.map(field => (
+                    <div key={field.id} className="space-y-1 border-b border-white/5 pb-3">
+                      <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">{field.label}</p>
+                      <p className="text-sm font-bold text-white uppercase tracking-tight">
+                        {viewingRelease[field.name] || '—'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setViewingRelease(null)} className="bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none border border-white/5">
+              Закрити
             </Button>
           </DialogFooter>
         </DialogContent>
