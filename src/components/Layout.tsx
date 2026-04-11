@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, User, LogOut, ShieldCheck, BarChart3, Settings, 
-  Palette, ListTodo, Layers, Users as UsersIcon, Music, Bell, Menu, X, LayoutGrid, Share2
+  Palette, ListTodo, Layers, Users as UsersIcon, Music, Bell, Menu, X, LayoutGrid, Share2, Disc
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const adminLinks = [
     { to: '/admin/dashboard', icon: LayoutGrid, label: 'Огляд' },
     { to: '/admin/moderation', icon: ShieldCheck, label: 'Модерація' },
+    { to: '/admin/releases', icon: Disc, label: 'Всі релізи' },
     { to: '/admin/users', icon: UsersIcon, label: 'Користувачі' },
     { to: '/admin/statistics', icon: BarChart3, label: 'Статистика' },
     { to: '/admin/statuses', icon: ListTodo, label: 'Статуси' },

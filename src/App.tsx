@@ -22,6 +22,7 @@ import LoginCustomization from "./pages/admin/LoginCustomization";
 import Settings from "./pages/admin/Settings";
 import Export from "./pages/admin/Export";
 import LabelSocials from "./pages/admin/LabelSocials";
+import AllReleases from "./pages/admin/AllReleases";
 import SmartLinkPage from "./pages/SmartLinkPage";
 import NotFound from "./pages/NotFound";
 
@@ -53,14 +54,15 @@ const App = () => (
           
           <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
+          <Route path="/admin/releases" element={<ProtectedRoute role="admin"><AllReleases /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
           <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><Statistics /></ProtectedRoute>} />
           <Route path="/admin/statuses" element={<ProtectedRoute role="admin"><Statuses /></ProtectedRoute>} />
           <Route path="/admin/fields" element={<ProtectedRoute role="admin"><Fields /></ProtectedRoute>} />
+          <Route path="/admin/label-socials" element={<ProtectedRoute role="admin"><LabelSocials /></ProtectedRoute>} />
           <Route path="/admin/login-customization" element={<ProtectedRoute role="admin"><LoginCustomization /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
           <Route path="/admin/export" element={<ProtectedRoute role="admin"><Export /></ProtectedRoute>} />
-          <Route path="/admin/label-socials" element={<ProtectedRoute role="admin"><LabelSocials /></ProtectedRoute>} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
