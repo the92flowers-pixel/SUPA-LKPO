@@ -27,43 +27,72 @@ const Releases = () => {
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
   const [customSlug, setCustomSlug] = useState('');
   const [platforms, setPlatforms] = useState([{ id: '1', name: 'Spotify', url: '' }]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink } = useDataStore();
 
   const userReleases = releases.filter(r => r.userId === user?.id);
   const filteredReleases = userReleases.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleOpenModal = (release: any) => {
     setSelectedRelease(release);
-    setCustomSlug(release.title.toLowerCase().replace(/\s+/g, '-'));
-    setPlatforms([{ id: '1', name: 'Spotify', url: '' }]);
+    
+    // Check if smart link already exists for this release
+    const existingLink = smartLinks.find(l => l.releaseId === release.id);
+    
+    if (existingLink) {
+      setIsEditing(true);
+      setExistingLinkId(existingLink.id);
+      setCustomSlug(existingLink.slug);
+      setPlatforms(existingLink.platforms.length > 0 ? existingLink.platforms : [{ id: '1', name: 'Spotify', url: '' }]);
+    } else {
+      setIsEditing(false);
+      setExistingLinkId(null);
+      setCustomSlug(release.title.toLowerCase().replace(/\s+/g, '-'));
+      setPlatforms([{ id: '1', name: 'Spotify', url: '' }]);
+    }
   };
 
-  const handleCreateSmartLink = () => {
+  const handleSaveSmartLink = () => {
     if (!customSlug) {
       showError('Вкажіть URL');
       return;
     }
 
-    const isSlugTaken = smartLinks.some(l => l.slug === customSlug);
+    // Check if slug is taken by ANOTHER link
+    const isSlugTaken = smartLinks.some(l => l.slug === customSlug && l.id !== existingLinkId);
     if (isSlugTaken) {
       showError('Цей URL вже зайнятий. Оберіть інший.');
       return;
     }
 
-    addSmartLink({
-      id: Math.random().toString(36).substr(2, 9),
+    const linkData = {
       releaseId: selectedRelease.id,
       slug: customSlug,
       title: selectedRelease.title,
       artist: selectedRelease.artist,
       coverUrl: selectedRelease.coverUrl,
-      platforms: platforms.filter(p => p.url !== '').map(p => ({ ...p, icon: p.name.toLowerCase().replace(/\s+/g, '-') })),
-      createdAt: new Date().toISOString()
-    });
+      platforms: platforms.filter(p => p.url !== '').map(p => ({ 
+        ...p, 
+        icon: p.name.toLowerCase().replace(/\s+/g, '-') 
+      })),
+    };
+
+    if (isEditing && existingLinkId) {
+      updateSmartLink(existingLinkId, linkData);
+      showSuccess('Smart Link оновлено!');
+    } else {
+      addSmartLink({
+        ...linkData,
+        id: Math.random().toString(36).substr(2, 9),
+        createdAt: new Date().toISOString()
+      });
+      showSuccess('Smart Link створено!');
+    }
     
-    showSuccess('Smart Link створено!');
     setSelectedRelease(null);
     window.open(`/s/${customSlug}`, '_blank');
   };
@@ -92,7 +121,8 @@ const Releases = () => {
               <img src={release.coverUrl} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" alt="" />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Button onClick={() => handleOpenModal(release)} className="bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest">
-                  <LinkIcon size={14} className="mr-2" /> Smart Link
+                  <LinkIcon size={14} className="mr-2" /> 
+                  {smartLinks.some(l => l.releaseId === release.id) ? 'Редагувати Link' : 'Smart Link'}
                 </Button>
               </div>
             </div>
@@ -109,9 +139,11 @@ const Releases = () => {
       </div>
 
       <Dialog open={!!selectedRelease} onOpenChange={() => setSelectedRelease(null)}>
-        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-xl">
+        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Створити Smart Link</DialogTitle>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">
+              {isEditing ? 'Редагувати Smart Link' : 'Створити Smart Link'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-2">
@@ -130,8 +162,9 @@ const Releases = () => {
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Платформи</Label>
               {platforms.map((p, index) => (
-                <div key={p.id} className="flex gap-3 items-end">
+                <div key={p.id} className="flex gap-3 items-end p-4 bg-white/5 border border-white/5 relative">
                   <div className="flex-1 space-y-2">
+                    <Label className="text-[9px] text-zinc-600 uppercase font-black">Платформа</Label>
                     <Select value={p.name} onValueChange={(val) => {
                       const newP = [...platforms];
                       newP[index].name = val;
@@ -148,6 +181,7 @@ const Releases = () => {
                     </Select>
                   </div>
                   <div className="flex-[2] space-y-2">
+                    <Label className="text-[9px] text-zinc-600 uppercase font-black">URL посилання</Label>
                     <Input value={p.url} onChange={(e) => {
                       const newP = [...platforms];
                       newP[index].url = e.target.value;
@@ -165,7 +199,9 @@ const Releases = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleCreateSmartLink} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">Створити</Button>
+            <Button onClick={handleSaveSmartLink} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">
+              {isEditing ? 'Зберегти зміни' : 'Створити'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
