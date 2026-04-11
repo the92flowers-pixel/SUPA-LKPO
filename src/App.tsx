@@ -6,9 +6,14 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./lib/store";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import NewRelease from "./pages/NewRelease";
+import Profile from "./pages/Profile";
 import Moderation from "./pages/admin/Moderation";
+import Statistics from "./pages/admin/Statistics";
+import Statuses from "./pages/admin/Statuses";
+import Fields from "./pages/admin/Fields";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,17 +35,18 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
           {/* Artist Routes */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/new-release" element={<ProtectedRoute><NewRelease /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><div>Профіль (Динамічна форма)</div></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           
           {/* Admin Routes */}
           <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
-          <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><div>Керування статистикою</div></ProtectedRoute>} />
-          <Route path="/admin/statuses" element={<ProtectedRoute role="admin"><div>Управління статусами</div></ProtectedRoute>} />
-          <Route path="/admin/fields" element={<ProtectedRoute role="admin"><div>Управління полями</div></ProtectedRoute>} />
+          <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><Statistics /></ProtectedRoute>} />
+          <Route path="/admin/statuses" element={<ProtectedRoute role="admin"><Statuses /></ProtectedRoute>} />
+          <Route path="/admin/fields" element={<ProtectedRoute role="admin"><Fields /></ProtectedRoute>} />
           <Route path="/admin/login-customization" element={<ProtectedRoute role="admin"><div>Кастомізація входу</div></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute role="admin"><div>Налаштування сайту</div></ProtectedRoute>} />
           
