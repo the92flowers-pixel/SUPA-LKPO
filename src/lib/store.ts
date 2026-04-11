@@ -51,6 +51,8 @@ interface DataState {
   fields: any[];
   settings: any;
   loginPageConfig: any;
+  homePageConfig: any;
+  adminPanelConfig: any;
   
   addUser: (user: User) => void;
   updateUser: (id: string, data: Partial<User>) => void;
@@ -60,8 +62,12 @@ interface DataState {
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   updateSettings: (settings: any) => void;
   updateFields: (fields: any[]) => void;
+  addField: (field: any) => void;
+  deleteField: (id: number) => void;
   updateStatuses: (statuses: any[]) => void;
   updateLoginConfig: (config: any) => void;
+  updateHomeConfig: (config: any) => void;
+  updateAdminConfig: (config: any) => void;
 }
 
 export const useDataStore = create<DataState>()(
@@ -103,6 +109,18 @@ export const useDataStore = create<DataState>()(
         maintenanceMode: false
       },
       loginPageConfig: initialLoginPageContent,
+      homePageConfig: {
+        heroTitle: "МУЗИКА ТВОЄЇ ДУШІ.",
+        heroSubtitle: "Ми — прихисток для справжнього мистецтва. 150+ платформ, 100% роялті та повна свобода самовираження.",
+        buttonText: "Почати шлях",
+        primaryColor: "#b91c1c",
+        accentText: "Melancholy & Power"
+      },
+      adminPanelConfig: {
+        sidebarColor: "#000000",
+        accentColor: "#b91c1c",
+        logoText: "ЖУРБА"
+      },
 
       addUser: (user) => set((state) => ({ users: [...state.users, { ...user, balance: 0 }] })),
       
@@ -156,11 +174,15 @@ export const useDataStore = create<DataState>()(
 
       updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
       updateFields: (fields) => set({ fields }),
+      addField: (field) => set((state) => ({ fields: [...state.fields, { ...field, id: Date.now() }] })),
+      deleteField: (id) => set((state) => ({ fields: state.fields.filter(f => f.id !== id) })),
       updateStatuses: (statuses) => set({ statuses }),
       updateLoginConfig: (config) => set({ loginPageConfig: config }),
+      updateHomeConfig: (config) => set({ homePageConfig: config }),
+      updateAdminConfig: (config) => set({ adminPanelConfig: config }),
     }),
     {
-      name: 'zhurba-db-v4',
+      name: 'zhurba-db-v5',
     }
   )
 );
@@ -181,7 +203,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, token: null }),
     }),
     {
-      name: 'zhurba-auth-v4',
+      name: 'zhurba-auth-v5',
     }
   )
 );

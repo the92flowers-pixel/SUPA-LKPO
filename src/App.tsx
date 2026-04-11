@@ -22,7 +22,6 @@ import Fields from "./pages/admin/Fields";
 import LoginCustomization from "./pages/admin/LoginCustomization";
 import Settings from "./pages/admin/Settings";
 import Export from "./pages/admin/Export";
-import SmartLink from "./pages/SmartLink";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,7 +46,6 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/s/:id" element={<SmartLink />} />
           
           {/* Artist Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

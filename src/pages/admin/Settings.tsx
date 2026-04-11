@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { Settings as SettingsIcon, Globe, Shield, Bell, Save, Music } from 'lucide-react';
+import { Settings as SettingsIcon, Globe, Shield, Bell, Save, Music, Palette, Layout as LayoutIcon } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,132 +8,138 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { showSuccess } from '@/utils/toast';
 
 const Settings = () => {
-  const { settings, updateSettings } = useDataStore();
-  const { register, handleSubmit, setValue } = useForm({
-    defaultValues: {
-      siteName: settings.siteName || 'ЖУРБА MUSIC',
-      contactEmail: settings.contactEmail || 'support@zhurba.music',
-      genres: settings.genres || 'Hip-Hop, Pop, Electronic, Rock, Sad Rap',
-      maintenanceMode: settings.maintenanceMode || false,
-      registrationEnabled: settings.registrationEnabled ?? true
-    }
-  });
+  const { settings, updateSettings, homePageConfig, updateHomeConfig, adminPanelConfig, updateAdminConfig } = useDataStore();
+  
+  const generalForm = useForm({ defaultValues: settings });
+  const homeForm = useForm({ defaultValues: homePageConfig });
+  const adminForm = useForm({ defaultValues: adminPanelConfig });
 
-  const onSubmit = (data: any) => {
+  const onSaveGeneral = (data: any) => {
     updateSettings(data);
-    showSuccess('Налаштування сайту збережено!');
+    showSuccess('Загальні налаштування збережено');
+  };
+
+  const onSaveHome = (data: any) => {
+    updateHomeConfig(data);
+    showSuccess('Дизайн головної сторінки оновлено');
+  };
+
+  const onSaveAdmin = (data: any) => {
+    updateAdminConfig(data);
+    showSuccess('Налаштування адмінки збережено');
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Налаштування</h1>
-          <p className="text-gray-500">Глобальні параметри платформи</p>
-        </div>
-        <Button onClick={handleSubmit(onSubmit)} className="bg-violet-600 hover:bg-violet-700">
-          <Save size={18} className="mr-2" />
-          Зберегти все
-        </Button>
+    <div className="space-y-10">
+      <div>
+        <h1 className="text-4xl font-black tracking-tight text-white uppercase">Налаштування</h1>
+        <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Глобальні параметри платформи</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-2 space-y-8">
-          <Card className="bg-[#1a1a1a] border-white/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe size={20} className="text-violet-500" />
-                Загальні
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Назва платформи</Label>
-                  <Input {...register('siteName')} className="bg-[#0a0a0a] border-white/10" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email для підтримки</Label>
-                  <Input {...register('contactEmail')} className="bg-[#0a0a0a] border-white/10" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Music size={16} className="text-violet-400" />
-                  Доступні жанри (через кому)
-                </Label>
-                <Textarea {...register('genres')} className="bg-[#0a0a0a] border-white/10 min-h-[80px]" />
-              </div>
-            </CardContent>
-          </Card>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="bg-black/40 border border-white/5 p-1 h-14 rounded-none">
+          <TabsTrigger value="general" className="px-10 data-[state=active]:bg-red-700 data-[state=active]:text-white rounded-none text-[10px] font-black uppercase tracking-widest">Загальні</TabsTrigger>
+          <TabsTrigger value="home" className="px-10 data-[state=active]:bg-red-700 data-[state=active]:text-white rounded-none text-[10px] font-black uppercase tracking-widest">Головна сторінка</TabsTrigger>
+          <TabsTrigger value="admin" className="px-10 data-[state=active]:bg-red-700 data-[state=active]:text-white rounded-none text-[10px] font-black uppercase tracking-widest">Адмін-панель</TabsTrigger>
+        </TabsList>
 
-          <Card className="bg-[#1a1a1a] border-white/5">
+        <TabsContent value="general" className="mt-8">
+          <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield size={20} className="text-violet-500" />
-                Безпека та Доступ
+              <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
+                <Globe size={18} className="text-red-700" /> Загальні параметри
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/5">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Реєстрація нових артистів</Label>
-                  <p className="text-sm text-gray-500">Дозволити користувачам створювати акаунти самостійно</p>
+            <CardContent className="space-y-8 pt-4">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва сайту</Label>
+                  <Input {...generalForm.register('siteName')} className="bg-black/40 border-white/5 rounded-none h-12" />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Email підтримки</Label>
+                  <Input {...generalForm.register('contactEmail')} className="bg-black/40 border-white/5 rounded-none h-12" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-6 bg-white/5 border border-white/5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-black uppercase tracking-widest">Реєстрація артистів</Label>
+                  <p className="text-[10px] text-zinc-600 uppercase font-bold">Дозволити новим користувачам створювати акаунти</p>
                 </div>
                 <Switch 
                   defaultChecked={settings.registrationEnabled} 
-                  onCheckedChange={(val) => setValue('registrationEnabled', val)}
+                  onCheckedChange={(val) => generalForm.setValue('registrationEnabled', val)}
                 />
               </div>
-              <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/5">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Режим технічного обслуговування</Label>
-                  <p className="text-sm text-gray-500">Закрити доступ до сайту для всіх, крім адміністраторів</p>
-                </div>
-                <Switch 
-                  defaultChecked={settings.maintenanceMode}
-                  onCheckedChange={(val) => setValue('maintenanceMode', val)}
-                />
-              </div>
+              <Button onClick={generalForm.handleSubmit(onSaveGeneral)} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none">Зберегти</Button>
             </CardContent>
           </Card>
-        </div>
+        </TabsContent>
 
-        <div className="space-y-8">
-          <Card className="bg-[#1a1a1a] border-white/5">
+        <TabsContent value="home" className="mt-8">
+          <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell size={20} className="text-violet-500" />
-                Сповіщення
+              <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
+                <Palette size={18} className="text-red-700" /> Кастомізація Home
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Switch id="notify-new-release" defaultChecked />
-                <Label htmlFor="notify-new-release">Нові релізи на email</Label>
+            <CardContent className="space-y-8 pt-4">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Головний заголовок</Label>
+                <Input {...homeForm.register('heroTitle')} className="bg-black/40 border-white/5 rounded-none h-12" />
               </div>
-              <div className="flex items-center gap-3">
-                <Switch id="notify-moderation" defaultChecked />
-                <Label htmlFor="notify-moderation">Результати модерації</Label>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Підзаголовок</Label>
+                <Textarea {...homeForm.register('heroSubtitle')} className="bg-black/40 border-white/5 rounded-none min-h-[100px]" />
               </div>
-              <div className="flex items-center gap-3">
-                <Switch id="notify-stats" />
-                <Label htmlFor="notify-stats">Щотижнева статистика</Label>
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Текст кнопки</Label>
+                  <Input {...homeForm.register('buttonText')} className="bg-black/40 border-white/5 rounded-none h-12" />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Акцентний колір</Label>
+                  <div className="flex gap-3">
+                    <Input type="color" {...homeForm.register('primaryColor')} className="w-12 h-12 p-1 bg-black/40 border-white/5 rounded-none" />
+                    <Input {...homeForm.register('primaryColor')} className="flex-1 bg-black/40 border-white/5 rounded-none h-12" />
+                  </div>
+                </div>
               </div>
+              <Button onClick={homeForm.handleSubmit(onSaveHome)} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none">Оновити дизайн</Button>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          <div className="p-6 bg-amber-500/5 border border-amber-500/10 rounded-xl">
-            <h3 className="font-semibold text-amber-500 mb-2">Увага</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Зміна деяких налаштувань може вплинути на роботу існуючих користувачів. Будьте обережні з режимом обслуговування.
-            </p>
-          </div>
-        </div>
-      </div>
+        <TabsContent value="admin" className="mt-8">
+          <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
+                <LayoutIcon size={18} className="text-red-700" /> Кастомізація Адмінки
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8 pt-4">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Текст логотипу</Label>
+                  <Input {...adminForm.register('logoText')} className="bg-black/40 border-white/5 rounded-none h-12" />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Колір акценту</Label>
+                  <div className="flex gap-3">
+                    <Input type="color" {...adminForm.register('accentColor')} className="w-12 h-12 p-1 bg-black/40 border-white/5 rounded-none" />
+                    <Input {...adminForm.register('accentColor')} className="flex-1 bg-black/40 border-white/5 rounded-none h-12" />
+                  </div>
+                </div>
+              </div>
+              <Button onClick={adminForm.handleSubmit(onSaveAdmin)} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none">Зберегти</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
