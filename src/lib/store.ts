@@ -34,6 +34,7 @@ interface User {
   role: 'admin' | 'artist';
   artistName?: string;
   balance: number;
+  isVerified: boolean;
   createdAt: string;
   [key: string]: any;
 }
@@ -76,8 +77,8 @@ export const useDataStore = create<DataState>()(
   persist(
     (set) => ({
       users: [
-        { id: '1', login: 'admin', password: 'admin2', role: 'admin', artistName: 'Адмін', balance: 0, createdAt: new Date().toISOString() },
-        { id: '2', login: 'artist@demo.com', password: 'password', role: 'artist', artistName: 'Demo Artist', balance: 0, createdAt: new Date().toISOString() }
+        { id: '1', login: 'admin', password: 'admin2', role: 'admin', artistName: 'Адмін', balance: 0, isVerified: true, createdAt: new Date().toISOString() },
+        { id: '2', login: 'artist@demo.com', password: 'password', role: 'artist', artistName: 'Demo Artist', balance: 0, isVerified: false, createdAt: new Date().toISOString() }
       ],
       releases: [
         { 
@@ -123,7 +124,7 @@ export const useDataStore = create<DataState>()(
         website: 'https://zhurba.music'
       },
 
-      addUser: (user) => set((state) => ({ users: [...state.users, user] })),
+      addUser: (user) => set((state) => ({ users: [...state.users, { ...user, isVerified: false }] })),
       updateUser: (id, data) => set((state) => ({
         users: state.users.map(u => u.id === id ? { ...u, ...data } : u)
       })),

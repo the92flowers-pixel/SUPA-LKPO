@@ -28,6 +28,7 @@ const Login = () => {
           role: 'admin', 
           artistName: 'Адмін',
           balance: 0,
+          isVerified: true,
           createdAt: new Date().toISOString() 
         }, 
         'mock-jwt'

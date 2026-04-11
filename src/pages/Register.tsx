@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Music, UserPlus, AlertCircle } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,8 @@ const Register = () => {
       ...data,
       id: Math.random().toString(36).substr(2, 9), 
       role: 'artist' as const, 
+      isVerified: false,
+      balance: 0,
       createdAt: new Date().toISOString()
     };
     

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { User, Save, Shield, Camera } from 'lucide-react';
+import { User, Save, Shield, Camera, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,26 +8,30 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showSuccess } from '@/utils/toast';
+import { cn } from '@/lib/utils';
 
 const Profile = () => {
   const { user, setAuth } = useAuthStore();
-  const { updateUser, fields } = useDataStore();
+  const { updateUser, fields, users } = useDataStore();
   
+  // Get fresh user data from store to reflect admin changes
+  const currentUser = users.find(u => u.id === user?.id) || user;
+
   const { register, handleSubmit } = useForm<any>({
     defaultValues: {
-      artistName: user?.artistName || '',
-      login: user?.login || '',
-      bio: 'Український виконавець.'
+      artistName: currentUser?.artistName || '',
+      login: currentUser?.login || '',
+      bio: currentUser?.bio || 'Український виконавець.'
     }
   });
 
   const profileFields = fields.filter(f => f.section === 'profile' && f.visible);
 
   const onSubmit = (data: any) => {
-    if (user) {
-      const updatedData = { artistName: data.artistName, ...data };
-      updateUser(user.id, updatedData);
-      setAuth({ ...user, ...updatedData }, 'mock-jwt');
+    if (currentUser) {
+      const updatedData = { ...data };
+      updateUser(currentUser.id, updatedData);
+      setAuth({ ...currentUser, ...updatedData }, 'mock-jwt');
       showSuccess('Профіль успішно оновлено!');
     }
   };
@@ -39,10 +43,18 @@ const Profile = () => {
           <h1 className="text-4xl font-black tracking-tight text-white uppercase">Профіль</h1>
           <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Ваша ідентичність у системі</p>
         </div>
-        <div className="flex items-center gap-3 px-6 py-2 bg-red-900/10 border border-red-900/20 rounded-none text-red-500 text-[10px] font-black uppercase tracking-widest">
-          <Shield size={14} />
-          {user?.role === 'admin' ? 'Адміністратор' : 'Верифікований артист'}
-        </div>
+        
+        {currentUser?.isVerified ? (
+          <div className="flex items-center gap-3 px-6 py-3 bg-red-900/10 border border-red-900/20 rounded-none text-red-500 text-[10px] font-black uppercase tracking-[0.2em]">
+            <ShieldCheck size={16} />
+            ВЕРИФІКОВАНИЙ АРТИСТ
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 px-6 py-3 bg-zinc-900/50 border border-white/5 rounded-none text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">
+            <ShieldAlert size={16} />
+            ОЧІКУЄ ВЕРИФІКАЦІЇ
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -55,19 +67,21 @@ const Profile = () => {
                 <span className="text-[9px] font-black uppercase tracking-widest">Змінити</span>
               </div>
             </div>
-            <h3 className="text-xl font-black text-white uppercase tracking-wider">{user?.artistName || user?.login}</h3>
-            <p className="text-[10px] text-zinc-600 mt-2 uppercase font-bold tracking-[0.3em]">{user?.role}</p>
+            <h3 className="text-xl font-black text-white uppercase tracking-wider">{currentUser?.artistName || currentUser?.login}</h3>
+            <p className="text-[10px] text-zinc-600 mt-2 uppercase font-bold tracking-[0.3em]">{currentUser?.role}</p>
             
             <div className="w-full h-px bg-white/5 my-8" />
             
             <div className="space-y-6 w-full text-left">
               <div>
                 <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">ID Артиста</p>
-                <p className="text-xs font-mono text-red-800">#ZH-{user?.id || '000'}</p>
+                <p className="text-xs font-mono text-red-800">#ZH-{currentUser?.id || '000'}</p>
               </div>
               <div>
                 <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">Дата реєстрації</p>
-                <p className="text-xs font-bold text-zinc-400">15.05.2024</p>
+                <p className="text-xs font-bold text-zinc-400">
+                  {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : '15.05.2024'}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -99,16 +113,18 @@ const Profile = () => {
 
               {profileFields.map((field) => (
                 <div key={field.id} className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{field.label}</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    {field.label} {field.required && <span className="text-red-800">*</span>}
+                  </Label>
                   {field.type === 'textarea' ? (
                     <Textarea 
-                      {...register(field.name)} 
+                      {...register(field.name, { required: field.required })} 
                       className="bg-black/40 border-white/5 rounded-none min-h-[150px] focus:border-red-900/50 text-white resize-none"
                     />
                   ) : (
                     <Input 
                       type={field.type}
-                      {...register(field.name)} 
+                      {...register(field.name, { required: field.required })} 
                       className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white"
                     />
                   )}

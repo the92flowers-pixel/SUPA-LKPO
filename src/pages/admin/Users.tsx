@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users as UsersIcon, UserCog, Trash2, Mail, Shield, Music, Save, Key } from 'lucide-react';
+import { Users as UsersIcon, UserCog, Trash2, Mail, Shield, Music, Save, Key, CheckCircle, XCircle } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { showSuccess } from '@/utils/toast';
 
 const Users = () => {
@@ -55,6 +56,7 @@ const Users = () => {
             <tr>
               <th className="px-6 py-4">Користувач</th>
               <th className="px-6 py-4">Роль</th>
+              <th className="px-6 py-4">Верифікація</th>
               <th className="px-6 py-4">Релізи</th>
               <th className="px-6 py-4 text-right">Дії</th>
             </tr>
@@ -78,6 +80,17 @@ const Users = () => {
                     {user.role === 'admin' ? 'Адмін' : 'Артист'}
                   </Badge>
                 </td>
+                <td className="px-6 py-4">
+                  {user.isVerified ? (
+                    <Badge className="bg-green-500/10 text-green-500 border-none flex items-center gap-1 w-fit">
+                      <CheckCircle size={12} /> Верифікований
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-red-500/10 text-red-500 border-none flex items-center gap-1 w-fit">
+                      <XCircle size={12} /> Неверифікований
+                    </Badge>
+                  )}
+                </td>
                 <td className="px-6 py-4 text-gray-400">
                   {releases.filter(r => r.userId === user.id).length}
                 </td>
@@ -99,6 +112,17 @@ const Users = () => {
           </DialogHeader>
           {editingUser && (
             <div className="space-y-6 py-4">
+              <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-lg">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Верифікація артиста</Label>
+                  <p className="text-xs text-zinc-500">Надає статус верифікованого профілю</p>
+                </div>
+                <Switch 
+                  checked={editingUser.isVerified} 
+                  onCheckedChange={(checked) => setEditingUser({...editingUser, isVerified: checked})}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Логін (Email)</Label>
