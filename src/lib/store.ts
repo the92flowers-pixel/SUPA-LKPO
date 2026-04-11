@@ -36,7 +36,6 @@ interface QuarterlyReport {
 interface User {
   id: string;
   login: string;
-  password?: string;
   role: 'admin' | 'artist';
   artistName?: string;
   balance: number;
@@ -105,7 +104,10 @@ interface DataState {
 export const useDataStore = create<DataState>()(
   persist(
     (set) => ({
-      users: [], // Removed hardcoded credentials
+      users: [
+        { id: '1', login: 'admin', role: 'admin', artistName: 'Адмін', balance: 0, isVerified: true, createdAt: new Date().toISOString() },
+        { id: '2', login: 'artist@demo.com', role: 'artist', artistName: 'Demo Artist', balance: 1250, isVerified: false, createdAt: new Date().toISOString() }
+      ],
       releases: [],
       statuses: initialStatuses,
       fields: initialFields,
@@ -274,7 +276,19 @@ export const useDataStore = create<DataState>()(
         quarterlyReports: state.quarterlyReports.filter(r => r.id !== id)
       })),
     }),
-    { name: 'zhurba-db-v13' }
+    { 
+      name: 'zhurba-db-v12',
+      // Only persist non-sensitive configuration data
+      partialize: (state) => ({
+        statuses: state.statuses,
+        fields: state.fields,
+        settings: state.settings,
+        loginPageConfig: state.loginPageConfig,
+        homePageConfig: state.homePageConfig,
+        adminPanelConfig: state.adminPanelConfig,
+        labelSocials: state.labelSocials,
+      }),
+    }
   )
 );
 
@@ -293,7 +307,20 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => set({ user, token }),
       logout: () => set({ user: null, token: null }),
     }),
-    { name: 'zhurba-auth-v13' }
+    { 
+      name: 'zhurba-auth-v12',
+      // Only persist the current user's basic info, never passwords
+      partialize: (state) => ({
+        user: state.user ? {
+          id: state.user.id,
+          login: state.user.login,
+          role: state.user.role,
+          artistName: state.user.artistName,
+          isVerified: state.user.isVerified,
+        } : null,
+        token: state.token,
+      }),
+    }
   )
 );
 
