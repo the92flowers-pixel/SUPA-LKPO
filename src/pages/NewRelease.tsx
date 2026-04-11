@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { Upload } from 'lucide-react';
+import { Upload, Music, Info } from 'lucide-react';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,20 +34,20 @@ const NewRelease = () => {
     const commonProps = {
       id: field.name,
       ...register(field.name, { required: field.required }),
-      className: "bg-[#1a1a1a] border-white/10 focus:border-violet-500 text-white",
-      placeholder: field.label
+      className: "bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800",
+      placeholder: `Введіть ${field.label.toLowerCase()}...`
     };
 
-    if (field.type === 'textarea') return <Textarea {...commonProps} />;
+    if (field.type === 'textarea') return <Textarea {...commonProps} className={cn(commonProps.className, "min-h-[120px] py-4 resize-none")} />;
     if (field.type === 'select') {
       const options = JSON.parse(field.options || '[]');
       return (
         <Select onValueChange={(val) => setValue(field.name, val)}>
-          <SelectTrigger className="bg-[#1a1a1a] border-white/10 text-white">
+          <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 text-white focus:ring-0 focus:ring-offset-0">
             <SelectValue placeholder="Оберіть варіант" />
           </SelectTrigger>
-          <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-            {options.map((opt: string) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+          <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+            {options.map((opt: string) => <SelectItem key={opt} value={opt} className="focus:bg-red-900/20 focus:text-red-500">{opt}</SelectItem>)}
           </SelectContent>
         </Select>
       );
@@ -56,29 +56,41 @@ const NewRelease = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Новий реліз</h1>
-        <p className="text-gray-500">Заповніть дані для дистрибуції вашого треку</p>
+    <div className="max-w-4xl mx-auto space-y-12">
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-900/10 border border-red-900/20 mb-4">
+          <Music className="text-red-700" size={32} />
+        </div>
+        <h1 className="text-4xl font-black tracking-tight text-white uppercase">Новий реліз</h1>
+        <p className="text-zinc-500 text-xs font-bold uppercase tracking-[0.3em]">Створення нового артефакту у вашому каталозі</p>
       </div>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
           {releaseFields.sort((a, b) => a.order - b.order).map((field) => (
-            <div key={field.id} className={cn("space-y-2", field.type === 'textarea' && "md:col-span-2")}>
-              <Label htmlFor={field.name} className="flex items-center gap-2 text-gray-400">
-                {field.label} {field.required && <span className="text-red-500">*</span>}
+            <div key={field.id} className={cn("space-y-3", field.type === 'textarea' && "md:col-span-2")}>
+              <Label htmlFor={field.name} className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                {field.label} {field.required && <span className="text-red-800">*</span>}
               </Label>
               {renderField(field)}
             </div>
           ))}
         </div>
-        <div className="p-6 bg-violet-500/5 border border-violet-500/10 rounded-xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-500"><Upload size={24} /></div>
-          <div>
-            <h3 className="font-semibold text-white">Готові до відправки?</h3>
-            <p className="text-sm text-gray-500">Перевірте правильність усіх даних перед сабмітом.</p>
+
+        <div className="p-10 bg-black/40 border border-white/5 rounded-none flex flex-col md:flex-row items-center gap-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-red-700" />
+          <div className="w-16 h-16 rounded-none bg-red-900/10 flex items-center justify-center text-red-700 border border-red-900/20">
+            <Upload size={28} />
           </div>
-          <Button type="submit" className="ml-auto bg-violet-600 hover:bg-violet-700">Відправити реліз</Button>
+          <div className="flex-1 text-center md:text-left">
+            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Готові до публікації?</h3>
+            <p className="text-xs text-zinc-600 font-medium leading-relaxed">
+              Перевірте правильність усіх метаданих. Після відправки реліз потрапить у чергу модерації ЖУРБА MUSIC.
+            </p>
+          </div>
+          <Button type="submit" className="w-full md:w-auto bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest px-12 h-14 rounded-none shadow-[0_0_30px_rgba(185,28,28,0.3)]">
+            Відправити на модерацію
+          </Button>
         </div>
       </form>
     </div>
