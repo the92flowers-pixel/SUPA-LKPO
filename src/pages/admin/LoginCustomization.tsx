@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Palette, Image as ImageIcon, Type, Save, RefreshCw } from 'lucide-react';
-import { initialLoginPageContent } from '@/lib/mockData';
+import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { showSuccess } from '@/utils/toast';
 
 const LoginCustomization = () => {
-  const { register, handleSubmit, reset } = useForm({
-    defaultValues: initialLoginPageContent
+  const { loginPageConfig, updateLoginConfig } = useDataStore();
+  const { register, handleSubmit, reset, watch } = useForm({
+    defaultValues: loginPageConfig
   });
 
   const onSubmit = (data: any) => {
-    console.log('Login Customization Update:', data);
+    updateLoginConfig(data);
     showSuccess('Дизайн сторінки входу оновлено!');
   };
 
@@ -125,7 +126,7 @@ const LoginCustomization = () => {
               <div className="pt-4">
                 <Label className="mb-2 block">Попередній перегляд іконок соцмереж</Label>
                 <div className="flex flex-wrap gap-2 p-4 bg-[#0a0a0a] rounded-lg border border-white/5">
-                  {initialLoginPageContent.socialIcons.map(icon => (
+                  {loginPageConfig.socialIcons.map((icon: string) => (
                     <span key={icon} className="px-3 py-1 bg-white/5 rounded text-xs text-gray-400">{icon}</span>
                   ))}
                 </div>

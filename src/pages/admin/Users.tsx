@@ -1,5 +1,6 @@
 import React from 'react';
 import { Users as UsersIcon, UserCog, Trash2, Mail, Shield, Music } from 'lucide-react';
+import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,22 +8,33 @@ import { Input } from '@/components/ui/input';
 import { showSuccess } from '@/utils/toast';
 
 const Users = () => {
-  const users = [
-    { id: 1, login: 'admin@zhurba.music', role: 'admin', artistName: 'Адміністратор', createdAt: '01.01.2024', tracksCount: 0 },
-    { id: 2, login: 'artist1@example.com', role: 'artist', artistName: 'Sad Boy', createdAt: '12.05.2024', tracksCount: 5 },
-    { id: 3, login: 'artist2@example.com', role: 'artist', artistName: 'Lofi Girl', createdAt: '14.05.2024', tracksCount: 12 },
-  ];
+  const { users, releases } = useDataStore();
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const filteredUsers = users.filter(u => 
+    u.login.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.artistName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getTracksCount = (userId: string) => {
+    return releases.filter(r => r.userId === userId).length;
+  };
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Користувачі</h1>
-          <p className="text-gray-500">Керування всіма акаунтами платформи</p>
+          <p className="text-gray-500">Керування всіма акаунтами платформи ({users.length})</p>
         </div>
         <div className="flex gap-3">
           <div className="relative w-64">
-            <Input placeholder="Пошук користувача..." className="bg-[#1a1a1a] border-white/10" />
+            <Input 
+              placeholder="Пошук користувача..." 
+              className="bg-[#1a1a1a] border-white/10" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           <Button className="bg-violet-600 hover:bg-violet-700">
             Додати користувача
@@ -43,7 +55,7 @@ const Users = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-white/5 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -67,10 +79,12 @@ const Users = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1 text-sm text-gray-400">
                       <Music size={14} />
-                      {user.tracksCount}
+                      {getTracksCount(user.id)}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{user.createdAt}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
@@ -81,6 +95,7 @@ const Users = () => {
                         size="sm" 
                         className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
                         onClick={() => showSuccess('Користувача видалено')}
+                        disabled={user.role === 'admin'}
                       >
                         <Trash2 size={16} />
                       </Button>

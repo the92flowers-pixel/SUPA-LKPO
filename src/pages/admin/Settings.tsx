@@ -1,6 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Settings as SettingsIcon, Globe, Shield, Bell, Save, Music } from 'lucide-react';
+import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,18 +11,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { showSuccess } from '@/utils/toast';
 
 const Settings = () => {
-  const { register, handleSubmit } = useForm({
+  const { settings, updateSettings } = useDataStore();
+  const { register, handleSubmit, setValue } = useForm({
     defaultValues: {
-      siteName: 'ЖУРБА MUSIC',
-      contactEmail: 'support@zhurba.music',
-      genres: 'Hip-Hop, Pop, Electronic, Rock, Sad Rap',
-      maintenanceMode: false,
-      registrationEnabled: true
+      siteName: settings.siteName || 'ЖУРБА MUSIC',
+      contactEmail: settings.contactEmail || 'support@zhurba.music',
+      genres: settings.genres || 'Hip-Hop, Pop, Electronic, Rock, Sad Rap',
+      maintenanceMode: settings.maintenanceMode || false,
+      registrationEnabled: settings.registrationEnabled ?? true
     }
   });
 
   const onSubmit = (data: any) => {
-    console.log('Settings Update:', data);
+    updateSettings(data);
     showSuccess('Налаштування сайту збережено!');
   };
 
@@ -81,14 +83,20 @@ const Settings = () => {
                   <Label className="text-base">Реєстрація нових артистів</Label>
                   <p className="text-sm text-gray-500">Дозволити користувачам створювати акаунти самостійно</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  defaultChecked={settings.registrationEnabled} 
+                  onCheckedChange={(val) => setValue('registrationEnabled', val)}
+                />
               </div>
               <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-white/5">
                 <div className="space-y-0.5">
                   <Label className="text-base">Режим технічного обслуговування</Label>
                   <p className="text-sm text-gray-500">Закрити доступ до сайту для всіх, крім адміністраторів</p>
                 </div>
-                <Switch />
+                <Switch 
+                  defaultChecked={settings.maintenanceMode}
+                  onCheckedChange={(val) => setValue('maintenanceMode', val)}
+                />
               </div>
             </CardContent>
           </Card>
