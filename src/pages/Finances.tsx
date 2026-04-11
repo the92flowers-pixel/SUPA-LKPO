@@ -60,6 +60,8 @@ const Finances = () => {
     setAgreed(false);
   };
 
+  const isBalanceZero = (currentUser?.balance || 0) <= 0;
+
   return (
     <div className="space-y-10">
       <div>
@@ -80,7 +82,8 @@ const Finances = () => {
             </div>
             <Button 
               onClick={() => setIsModalOpen(true)}
-              className="mt-8 w-full bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest h-14 rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]"
+              disabled={isBalanceZero}
+              className="mt-8 w-full bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest h-14 rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)] disabled:opacity-30 disabled:cursor-not-allowed"
             >
               Запросити вивід
             </Button>
@@ -139,7 +142,7 @@ const Finances = () => {
                     </td>
                     <td className="px-8 py-6 text-right">
                       <Badge className={cn(
-                        "text-[9px] font-black uppercase tracking-widest border-none",
+                        "text-[9px] font-black uppercase tracking-widest border-none rounded-none",
                         t.status === 'completed' ? "bg-green-500/10 text-green-500" : 
                         t.status === 'pending' ? "bg-amber-500/10 text-amber-500" : 
                         "bg-red-500/10 text-red-500"
@@ -161,8 +164,7 @@ const Finances = () => {
         </div>
       </Card>
 
-      {/* Withdrawal Modal */}
-      <Dialog open={!isModalOpen ? false : true} onOpenChange={(open) => setIsModalOpen(open)}>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="bg-[#050505] border-white/5 text-white max-w-md rounded-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Запросити вивід</DialogTitle>
@@ -180,7 +182,7 @@ const Finances = () => {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="bg-black/40 border-white/5 rounded-none h-12 pr-10"
+                  className="bg-black/40 border-white/5 rounded-none h-12 pr-10 focus:ring-0 focus:border-red-700"
                   placeholder="0.00"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 font-bold">₴</span>
@@ -192,10 +194,10 @@ const Finances = () => {
               <Input 
                 value={contact}
                 onChange={(e) => setContact(e.target.value)}
-                className="bg-black/40 border-white/5 rounded-none h-12 text-xs italic placeholder:text-zinc-800"
+                className="bg-black/40 border-white/5 rounded-none h-12 text-xs italic placeholder:text-zinc-800 focus:ring-0 focus:border-red-700"
                 placeholder="Telegram: @username, Email: example@com, або будь-який інший зручний спосіб"
               />
-              <p className="text-[9px] text-zinc-600 font-medium">⚡ Telegram, Email або інший зручний спосіб зв'язку</p>
+              <p className="text-[9px] text-zinc-600 font-medium uppercase tracking-widest">⚡ Telegram, Email або інший зручний спосіб зв'язку</p>
             </div>
 
             <div className="flex items-start space-x-3 p-4 bg-white/5 border border-white/5">
@@ -203,15 +205,15 @@ const Finances = () => {
                 id="confirm" 
                 checked={agreed} 
                 onCheckedChange={(checked) => setAgreed(checked as boolean)}
-                className="mt-1 border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700"
+                className="mt-1 border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none"
               />
-              <Label htmlFor="confirm" className="text-[10px] text-zinc-400 leading-relaxed font-medium cursor-pointer">
+              <Label htmlFor="confirm" className="text-[10px] text-zinc-400 leading-relaxed font-bold uppercase tracking-wider cursor-pointer">
                 Я підтверджую, що самостійно відправляю заявку на вивід коштів та всі дані, вказані в заявці, є правильними.
               </Label>
             </div>
           </div>
           <DialogFooter className="gap-3">
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="text-[10px] font-black uppercase tracking-widest">Відміна</Button>
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="text-[10px] font-black uppercase tracking-widest rounded-none">Відміна</Button>
             <Button 
               onClick={handleWithdraw}
               disabled={!amount || !contact || !agreed}

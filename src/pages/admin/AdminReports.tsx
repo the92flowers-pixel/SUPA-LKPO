@@ -15,7 +15,7 @@ const AdminReports = () => {
   const [formData, setFormData] = useState({
     userId: '',
     quarter: '1',
-    year: new Date().getFullYear().toString(),
+    year: '2026',
     fileUrl: '',
     fileName: ''
   });
@@ -31,8 +31,10 @@ const AdminReports = () => {
     });
     showSuccess('Звіт успішно додано');
     setIsModalOpen(false);
-    setFormData({ userId: '', quarter: '1', year: new Date().getFullYear().toString(), fileUrl: '', fileName: '' });
+    setFormData({ userId: '', quarter: '1', year: '2026', fileUrl: '', fileName: '' });
   };
+
+  const years = ['2026', '2027', '2028', '2029', '2030'];
 
   return (
     <div className="space-y-10">
@@ -92,7 +94,7 @@ const AdminReports = () => {
                           variant="ghost" 
                           size="sm" 
                           onClick={() => deleteReport(report.id)}
-                          className="text-red-900 hover:text-red-500 hover:bg-red-900/10"
+                          className="text-red-900 hover:text-red-500 hover:bg-red-900/10 rounded-none"
                         >
                           <Trash2 size={16} />
                         </Button>
@@ -112,7 +114,6 @@ const AdminReports = () => {
         </div>
       </Card>
 
-      {/* Add Report Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="bg-[#050505] border-white/5 text-white max-w-md rounded-none">
           <DialogHeader>
@@ -122,12 +123,12 @@ const AdminReports = () => {
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Виберіть користувача *</Label>
               <Select onValueChange={(v) => setFormData({...formData, userId: v})}>
-                <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
+                <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 focus:ring-0">
                   <SelectValue placeholder="Пошук за email або імені" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
                   {users.filter(u => u.role === 'artist').map(u => (
-                    <SelectItem key={u.id} value={u.id}>{u.artistName || u.login}</SelectItem>
+                    <SelectItem key={u.id} value={u.id} className="uppercase font-bold text-[10px]">{u.artistName || u.login}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -137,26 +138,26 @@ const AdminReports = () => {
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Квартал *</Label>
                 <Select onValueChange={(v) => setFormData({...formData, quarter: v})} defaultValue="1">
-                  <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
+                  <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 focus:ring-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                    <SelectItem value="1">1 квартал</SelectItem>
-                    <SelectItem value="2">2 квартал</SelectItem>
-                    <SelectItem value="3">3 квартал</SelectItem>
-                    <SelectItem value="4">4 квартал</SelectItem>
+                    <SelectItem value="1" className="uppercase font-bold text-[10px]">1 квартал</SelectItem>
+                    <SelectItem value="2" className="uppercase font-bold text-[10px]">2 квартал</SelectItem>
+                    <SelectItem value="3" className="uppercase font-bold text-[10px]">3 квартал</SelectItem>
+                    <SelectItem value="4" className="uppercase font-bold text-[10px]">4 квартал</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Рік *</Label>
-                <Select onValueChange={(v) => setFormData({...formData, year: v})} defaultValue={new Date().getFullYear().toString()}>
-                  <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
+                <Select onValueChange={(v) => setFormData({...formData, year: v})} defaultValue="2026">
+                  <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 focus:ring-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                    {['2023', '2024', '2025'].map(y => (
-                      <SelectItem key={y} value={y}>{y}</SelectItem>
+                    {years.map(y => (
+                      <SelectItem key={y} value={y} className="uppercase font-bold text-[10px]">{y}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -168,7 +169,7 @@ const AdminReports = () => {
               <Input 
                 value={formData.fileUrl}
                 onChange={(e) => setFormData({...formData, fileUrl: e.target.value})}
-                className="bg-black/40 border-white/5 rounded-none h-12"
+                className="bg-black/40 border-white/5 rounded-none h-12 focus:ring-0 focus:border-red-700"
                 placeholder="Google Drive, Dropbox, або пряме посилання"
               />
             </div>
@@ -178,13 +179,13 @@ const AdminReports = () => {
               <Input 
                 value={formData.fileName}
                 onChange={(e) => setFormData({...formData, fileName: e.target.value})}
-                className="bg-black/40 border-white/5 rounded-none h-12"
+                className="bg-black/40 border-white/5 rounded-none h-12 focus:ring-0 focus:border-red-700"
                 placeholder="Наприклад: zvit_q1_2024.pdf"
               />
             </div>
           </div>
           <DialogFooter className="gap-3">
-            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="text-[10px] font-black uppercase tracking-widest">Відміна</Button>
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="text-[10px] font-black uppercase tracking-widest rounded-none">Відміна</Button>
             <Button 
               onClick={handleAddReport}
               disabled={!formData.userId || !formData.fileUrl}

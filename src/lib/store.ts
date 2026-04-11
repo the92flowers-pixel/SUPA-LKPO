@@ -45,6 +45,12 @@ interface User {
   [key: string]: any;
 }
 
+interface SocialLink {
+  id: string;
+  name: string;
+  url: string;
+}
+
 interface DataState {
   users: User[];
   releases: any[];
@@ -56,7 +62,7 @@ interface DataState {
   adminPanelConfig: any;
   smartLinks: any[];
   artistWebsites: any[];
-  labelSocials: any;
+  labelSocials: SocialLink[];
   transactions: Transaction[];
   withdrawalRequests: WithdrawalRequest[];
   quarterlyReports: QuarterlyReport[];
@@ -84,7 +90,7 @@ interface DataState {
   addArtistWebsite: (website: any) => void;
   updateArtistWebsite: (id: string, data: Partial<any>) => void;
   deleteArtistWebsite: (id: string) => void;
-  updateLabelSocials: (socials: any) => void;
+  updateLabelSocials: (socials: SocialLink[]) => void;
 
   // Finance Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
@@ -103,22 +109,7 @@ export const useDataStore = create<DataState>()(
         { id: '1', login: 'admin', password: 'admin2', role: 'admin', artistName: 'Адмін', balance: 0, isVerified: true, createdAt: new Date().toISOString() },
         { id: '2', login: 'artist@demo.com', password: 'password', role: 'artist', artistName: 'Demo Artist', balance: 1250, isVerified: false, createdAt: new Date().toISOString() }
       ],
-      releases: [
-        { 
-          id: 'r1', 
-          userId: '2', 
-          title: 'Midnight City', 
-          artist: 'Demo Artist', 
-          genre: 'Electronic', 
-          releaseDate: '2024-05-20', 
-          coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=800&q=80', 
-          audioUrl: 'https://example.com/audio.mp3', 
-          status: 'Опубліковано', 
-          streams: 12540, 
-          history: [{ date: '2024-05-20', count: 12540 }],
-          createdAt: new Date().toISOString() 
-        }
-      ],
+      releases: [],
       statuses: initialStatuses,
       fields: initialFields,
       settings: {
@@ -132,7 +123,6 @@ export const useDataStore = create<DataState>()(
         heroSubtitle: "Ми — прихисток для справжнього мистецтва. 150+ платформ, 100% роялті та повна свобода самовираження.",
         buttonText: "Почати шлях",
         primaryColor: "#b91c1c",
-        accentText: "Melancholy & Power"
       },
       adminPanelConfig: {
         sidebarColor: "#000000",
@@ -141,15 +131,11 @@ export const useDataStore = create<DataState>()(
       },
       smartLinks: [],
       artistWebsites: [],
-      labelSocials: {
-        instagram: 'https://instagram.com/zhurba',
-        telegram: 'https://t.me/zhurba',
-        youtube: 'https://youtube.com/zhurba',
-        website: 'https://zhurba.music'
-      },
-      transactions: [
-        { id: 't1', userId: '2', amount: 1250, type: 'deposit', status: 'completed', description: 'Нарахування роялті за Q1 2024', createdAt: new Date().toISOString() }
+      labelSocials: [
+        { id: '1', name: 'Instagram', url: 'https://instagram.com/zhurba' },
+        { id: '2', name: 'Telegram', url: 'https://t.me/zhurba' }
       ],
+      transactions: [],
       withdrawalRequests: [],
       quarterlyReports: [],
 
@@ -228,7 +214,6 @@ export const useDataStore = create<DataState>()(
           createdAt: new Date().toISOString() 
         };
         
-        // Subtract from balance immediately
         const updatedUsers = state.users.map(u => 
           u.id === req.userId ? { ...u, balance: u.balance - req.amount } : u
         );
@@ -258,12 +243,10 @@ export const useDataStore = create<DataState>()(
         let updatedTransactions = [...state.transactions];
 
         if (status === 'rejected') {
-          // Return funds to balance
           updatedUsers = state.users.map(u => 
             u.id === req.userId ? { ...u, balance: u.balance + req.amount } : u
           );
           
-          // Update transaction status
           updatedTransactions = state.transactions.map(t => 
             (t.userId === req.userId && t.amount === req.amount && t.status === 'pending') 
             ? { ...t, status: 'cancelled' as const } 
@@ -294,7 +277,7 @@ export const useDataStore = create<DataState>()(
         quarterlyReports: state.quarterlyReports.filter(r => r.id !== id)
       })),
     }),
-    { name: 'zhurba-db-v10' }
+    { name: 'zhurba-db-v12' }
   )
 );
 
@@ -313,7 +296,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => set({ user, token }),
       logout: () => set({ user: null, token: null }),
     }),
-    { name: 'zhurba-auth-v10' }
+    { name: 'zhurba-auth-v12' }
   )
 );
 
