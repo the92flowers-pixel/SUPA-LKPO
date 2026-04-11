@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   TrendingUp, 
   Music, 
@@ -28,65 +28,66 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useDataStore, useAuthStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
-const data = [
-  { name: '01.05', streams: 400 },
-  { name: '05.05', streams: 1200 },
-  { name: '10.05', streams: 900 },
-  { name: '15.05', streams: 1800 },
-  { name: '20.05', streams: 2400 },
-  { name: '25.05', streams: 2100 },
-  { name: '30.05', streams: 3200 },
-];
-
-const pieData = [
-  { name: 'Нічна варта', value: 45 },
-  { name: 'Журба', value: 25 },
-  { name: 'Світанок', value: 20 },
-  { name: 'Інше', value: 10 },
-];
-
-const COLORS = ['#8b5cf6', '#6366f1', '#a855f7', '#d8b4fe'];
+const COLORS = ['#8b5cf6', '#6366f1', '#a855f7', '#d8b4fe', '#c084fc'];
 
 const Dashboard = () => {
+  const { user } = useAuthStore();
+  const { releases } = useDataStore();
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
 
-  const tracks = [
-    { 
-      id: 1, 
-      title: 'Нічна варта', 
-      artist: 'Артист', 
-      genre: 'Hip-Hop', 
-      date: '12.05.2024', 
-      status: 'Опубліковано', 
-      streams: 5201, 
-      audioUrl: '#',
-      coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=300&h=300&fit=crop'
-    },
-    { 
-      id: 2, 
-      title: 'Світанок', 
-      artist: 'Артист', 
-      genre: 'Pop', 
-      date: '14.05.2024', 
-      status: 'На модерації', 
-      streams: 850, 
-      audioUrl: '#',
-      coverUrl: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=300&h=300&fit=crop'
-    },
-    { 
-      id: 3, 
-      title: 'Журба', 
-      artist: 'Артист', 
-      genre: 'Sad Rap', 
-      date: '15.05.2024', 
-      status: 'На модерації', 
-      streams: 2100, 
-      audioUrl: '#',
-      coverUrl: 'https://images.unsplash.com/photo-1459749411177-042180ce673c?w=300&h=300&fit=crop'
-    },
-  ];
+  // Filter releases for the current user
+  const userReleases = useMemo(() => 
+    releases.filter(r => r.userId === user?.id), 
+    [releases, user]
+  );
+
+  // Calculate KPI stats
+  const totalStreams = useMemo(() => 
+    userReleases.reduce((acc, r) => acc + r.streams, 0), 
+    [userReleases]
+  );
+
+  const topRelease = useMemo(() => {
+    if (userReleases.length === 0) return null;
+    return [...userReleases].sort((a, b) => b.streams - a.streams)[0];
+  }, [userReleases]);
+
+  // Prepare chart data (mocking time series based on current streams for visual effect)
+  const lineData = useMemo(() => [
+    { name: '01.05', streams: Math.floor(totalStreams * 0.1) },
+    { name: '05.05', streams: Math.floor(totalStreams * 0.3) },
+    { name: '10.05', streams: Math.floor(totalStreams * 0.2) },
+    { name: '15.05', streams: Math.floor(totalStreams * 0.5) },
+    { name: '20.05', streams: Math.floor(totalStreams * 0.7) },
+    { name: '25.05', streams: Math.floor(totalStreams * 0.6) },
+    { name: '30.05', streams: totalStreams },
+  ], [totalStreams]);
+
+  const pieData = useMemo(() => {
+    if (userReleases.length === 0) return [];
+    const top4 = [...userReleases]
+      .sort((a, b) => b.streams - a.streams)
+      .slice(0, 4)
+      .map(r => ({ name: r.title, value: r.streams }));
+    
+    const othersValue = userReleases.length > 4 
+      ? userReleases.slice(4).reduce((acc, r) => acc + r.streams, 0)
+      : 0;
+
+    if (othersValue > 0) {
+      top4.push({ name: 'Інше', value: othersValue });
+    }
+
+    // Convert to percentages for the legend
+    const total = top4.reduce((acc, item) => acc + item.value, 0) || 1;
+    return top4.map(item => ({
+      ...item,
+      percentage: Math.round((item.value / total) * 100)
+    }));
+  }, [userReleases]);
 
   return (
     <div className="space-y-8">
@@ -104,11 +105,11 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-[#1a1a1a] border-white/5 shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-wider">Цього місяця</CardTitle>
+            <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-wider">Всього стрімів</CardTitle>
             <TrendingUp className="h-4 w-4 text-violet-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-white">12,482</div>
+            <div className="text-3xl font-black text-white">{totalStreams.toLocaleString()}</div>
             <p className="text-xs text-green-400 flex items-center mt-2 font-bold">
               <ArrowUpRight size={14} className="mr-1" />
               +12.5% від минулого місяця
@@ -121,7 +122,7 @@ const Dashboard = () => {
             <Music className="h-4 w-4 text-violet-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-white">{tracks.length}</div>
+            <div className="text-3xl font-black text-white">{userReleases.length}</div>
             <p className="text-xs text-slate-500 mt-2 font-medium">Всі платформи доступні</p>
           </CardContent>
         </Card>
@@ -131,8 +132,12 @@ const Dashboard = () => {
             <Star className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-white truncate">Нічна варта</div>
-            <p className="text-xs text-violet-400 mt-2 font-bold">5,201 прослуховувань</p>
+            <div className="text-3xl font-black text-white truncate">
+              {topRelease ? topRelease.title : 'Немає даних'}
+            </div>
+            <p className="text-xs text-violet-400 mt-2 font-bold">
+              {topRelease ? `${topRelease.streams.toLocaleString()} прослуховувань` : 'Завантажте свій перший трек'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -145,7 +150,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
+              <LineChart data={lineData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
@@ -164,34 +169,42 @@ const Dashboard = () => {
             <CardTitle className="text-lg font-bold text-white">Розподіл за релізами</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px] flex items-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={70}
-                  outerRadius={90}
-                  paddingAngle={8}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
+            {pieData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={90}
+                      paddingAngle={8}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '12px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-3 pr-8 min-w-[140px]">
+                  {pieData.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-xs font-bold text-slate-300 truncate max-w-[100px]">
+                        {item.name} <span className="text-slate-500 ml-1">{item.percentage}%</span>
+                      </span>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '12px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-3 pr-8">
-              {pieData.map((item, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i] }} />
-                  <span className="text-xs font-bold text-slate-300">{item.name} <span className="text-slate-500 ml-1">{item.value}%</span></span>
                 </div>
-              ))}
-            </div>
+              </>
+            ) : (
+              <div className="w-full text-center text-slate-500 text-sm">Немає даних для відображення</div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -200,46 +213,54 @@ const Dashboard = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">Останні релізи</h2>
-          <Button variant="link" className="text-violet-400 font-bold hover:text-violet-300">Всі релізи</Button>
+          <Button variant="link" className="text-violet-400 font-bold hover:text-violet-300" onClick={() => window.location.href = '/releases'}>Всі релізи</Button>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tracks.map((track) => (
-            <Card 
-              key={track.id} 
-              className="bg-[#1a1a1a] border-white/5 overflow-hidden group hover:border-violet-500/30 transition-all duration-300 cursor-pointer"
-              onClick={() => setSelectedTrack(track)}
-            >
-              <div className="aspect-video relative overflow-hidden">
-                <img 
-                  src={track.coverUrl} 
-                  alt={track.title} 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <Badge className={cn(
-                  "absolute top-3 right-3 border-none font-bold",
-                  track.status === 'Опубліковано' ? "bg-green-500 text-white" : "bg-amber-500 text-black"
-                )}>
-                  {track.status === 'Опубліковано' ? track.status : <><Clock size={12} className="mr-1" /> {track.status}</>}
-                </Badge>
-                <div className="absolute bottom-3 left-3">
-                  <h3 className="text-white font-bold text-lg leading-tight">{track.title}</h3>
-                  <p className="text-slate-300 text-sm font-medium">{track.artist}</p>
+        {userReleases.length === 0 ? (
+          <div className="text-center py-12 bg-[#1a1a1a] rounded-xl border border-dashed border-white/10">
+            <Music className="mx-auto text-gray-600 mb-4" size={48} />
+            <h3 className="text-lg font-bold text-white">У вас ще немає релізів</h3>
+            <Button className="mt-4 bg-violet-600" onClick={() => window.location.href = '/new-release'}>Створити перший реліз</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {userReleases.slice(0, 3).map((track) => (
+              <Card 
+                key={track.id} 
+                className="bg-[#1a1a1a] border-white/5 overflow-hidden group hover:border-violet-500/30 transition-all duration-300 cursor-pointer"
+                onClick={() => setSelectedTrack(track)}
+              >
+                <div className="aspect-video relative overflow-hidden">
+                  <img 
+                    src={track.coverUrl} 
+                    alt={track.title} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <Badge className={cn(
+                    "absolute top-3 right-3 border-none font-bold",
+                    track.status === 'Опубліковано' ? "bg-green-500 text-white" : "bg-amber-500 text-black"
+                  )}>
+                    {track.status === 'Опубліковано' ? track.status : <><Clock size={12} className="mr-1" /> {track.status}</>}
+                  </Badge>
+                  <div className="absolute bottom-3 left-3">
+                    <h3 className="text-white font-bold text-lg leading-tight">{track.title}</h3>
+                    <p className="text-slate-300 text-sm font-medium">{track.artist}</p>
+                  </div>
                 </div>
-              </div>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                  <span className="flex items-center gap-1"><Tag size={14} className="text-violet-500" /> {track.genre}</span>
-                  <span className="flex items-center gap-1"><Calendar size={14} className="text-violet-500" /> {track.date}</span>
-                </div>
-                <div className="text-violet-400 font-black text-sm">
-                  {track.streams.toLocaleString()} <span className="text-[10px] text-slate-600 uppercase">Streams</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    <span className="flex items-center gap-1"><Tag size={14} className="text-violet-500" /> {track.genre}</span>
+                    <span className="flex items-center gap-1"><Calendar size={14} className="text-violet-500" /> {track.releaseDate}</span>
+                  </div>
+                  <div className="text-violet-400 font-black text-sm">
+                    {track.streams.toLocaleString()} <span className="text-[10px] text-slate-600 uppercase">Streams</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Track Details Modal */}
@@ -301,7 +322,7 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 font-bold uppercase tracking-tighter">Дата релізу</p>
-                      <p className="font-bold text-white">{selectedTrack.date}</p>
+                      <p className="font-bold text-white">{selectedTrack.date || selectedTrack.releaseDate}</p>
                     </div>
                   </div>
                 </div>

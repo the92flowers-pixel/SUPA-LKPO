@@ -54,16 +54,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const links = user?.role === 'admin' ? adminLinks : artistLinks;
   
-  // Mock notifications based on releases
-  const notifications = releases
-    .filter(r => r.userId === user?.id)
-    .slice(0, 3)
-    .map(r => ({
-      id: r.id,
-      title: `Статус релізу: ${r.title}`,
-      description: `Ваш реліз зараз має статус "${r.status}"`,
-      time: 'Щойно'
-    }));
+  // Real notifications based on user's releases
+  const notifications = React.useMemo(() => {
+    if (!user) return [];
+    return releases
+      .filter(r => r.userId === user.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
+      .map(r => ({
+        id: r.id,
+        title: `Реліз: ${r.title}`,
+        description: `Поточний статус: ${r.status}`,
+        time: 'Оновлено'
+      }));
+  }, [releases, user]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#e5e5e5] flex">
