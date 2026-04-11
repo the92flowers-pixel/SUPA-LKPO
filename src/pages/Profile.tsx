@@ -54,7 +54,7 @@ const Profile = () => {
 
   const handleSaveWebsite = () => {
     if (!websiteData.slug) {
-      showError('Вкажіть URL сайту');
+      showError('Вкажіть адресу сайту');
       return;
     }
 
@@ -88,6 +88,17 @@ const Profile = () => {
         </div>
         
         <div className="flex gap-4">
+          {userWebsite && (
+            <Button 
+              variant="outline"
+              onClick={() => window.open(`/a/${userWebsite.slug}`, '_blank')}
+              className="bg-red-900/10 border-red-900/20 text-red-500 hover:bg-red-900/20 text-[10px] font-black uppercase tracking-widest px-6 h-12 rounded-none"
+            >
+              <ExternalLink size={16} className="mr-2" />
+              Перейти на сайт
+            </Button>
+          )}
+          
           <Button 
             onClick={() => setIsWebsiteModalOpen(true)}
             className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest px-6 h-12 rounded-none"
@@ -202,13 +213,16 @@ const Profile = () => {
           <div className="space-y-8 py-6">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL Slug</Label>
-                <Input 
-                  value={websiteData.slug} 
-                  onChange={(e) => setWebsiteData({...websiteData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
-                  className="bg-black/40 border-white/5 rounded-none h-12 font-mono"
-                  placeholder="artist-name"
-                />
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Персональне посилання (URL)</Label>
+                <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
+                  <span className="text-zinc-600 text-xs font-mono">/a/</span>
+                  <input 
+                    value={websiteData.slug} 
+                    onChange={(e) => setWebsiteData({...websiteData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                    className="bg-transparent border-none focus:ring-0 text-white text-xs font-mono flex-1"
+                    placeholder="artist-name"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне Ім’я</Label>

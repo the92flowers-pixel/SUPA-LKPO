@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 
 const ArtistWebsitesManagement = () => {
   const { artistWebsites, users, updateArtistWebsite, deleteArtistWebsite } = useDataStore();
@@ -27,6 +27,17 @@ const ArtistWebsitesManagement = () => {
   };
 
   const handleSave = () => {
+    if (!editingWebsite.slug) {
+      showError('Вкажіть адресу сайту');
+      return;
+    }
+
+    const isSlugTaken = artistWebsites.some(w => w.slug === editingWebsite.slug && w.id !== editingWebsite.id);
+    if (isSlugTaken) {
+      showError('Цей URL вже зайнятий');
+      return;
+    }
+
     updateArtistWebsite(editingWebsite.id, editingWebsite);
     showSuccess('Сайт артиста оновлено');
     setIsDialogOpen(false);
@@ -134,10 +145,10 @@ const ArtistWebsitesManagement = () => {
             <div className="space-y-6 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>URL Slug</Label>
+                  <Label>Персональне посилання (URL)</Label>
                   <Input 
                     value={editingWebsite.slug} 
-                    onChange={(e) => setEditingWebsite({...editingWebsite, slug: e.target.value})}
+                    onChange={(e) => setEditingWebsite({...editingWebsite, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
                     className="bg-black/40 border-white/5"
                   />
                 </div>
