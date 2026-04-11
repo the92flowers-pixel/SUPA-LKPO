@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, Search, Trash2, Edit2, ExternalLink, User, Calendar, Plus } from 'lucide-react';
+import { Globe, Search, Trash2, Edit2, ExternalLink, User, Calendar, Plus, Image as ImageIcon, Link2 } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess, showError } from '@/utils/toast';
+
+const PLATFORMS_LIST = [
+  "Instagram", "Telegram", "YouTube", "TikTok", "Spotify", "Apple Music", "SoundCloud", "Website"
+];
 
 const ArtistWebsitesManagement = () => {
   const { artistWebsites, users, updateArtistWebsite, deleteArtistWebsite } = useDataStore();
@@ -41,6 +46,26 @@ const ArtistWebsitesManagement = () => {
     updateArtistWebsite(editingWebsite.id, editingWebsite);
     showSuccess('Сайт артиста оновлено');
     setIsDialogOpen(false);
+  };
+
+  const addLink = () => {
+    setEditingWebsite({
+      ...editingWebsite,
+      links: [...editingWebsite.links, { id: Date.now().toString(), name: 'Instagram', url: '' }]
+    });
+  };
+
+  const removeLink = (id: string) => {
+    setEditingWebsite({
+      ...editingWebsite,
+      links: editingWebsite.links.filter((l: any) => l.id !== id)
+    });
+  };
+
+  const updateLink = (index: number, field: string, value: string) => {
+    const newLinks = [...editingWebsite.links];
+    newLinks[index] = { ...newLinks[index], [field]: value };
+    setEditingWebsite({ ...editingWebsite, links: newLinks });
   };
 
   const getCreator = (userId: string) => {
@@ -137,42 +162,108 @@ const ArtistWebsitesManagement = () => {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-2xl rounded-none">
+        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-2xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
-            <DialogTitle>Редагувати сайт артиста</DialogTitle>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Редагувати сайт артиста</DialogTitle>
           </DialogHeader>
           {editingWebsite && (
-            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-8 py-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Персональне посилання (URL)</Label>
-                  <Input 
-                    value={editingWebsite.slug} 
-                    onChange={(e) => setEditingWebsite({...editingWebsite, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
-                    className="bg-black/40 border-white/5"
-                  />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Персональне посилання (URL)</Label>
+                  <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
+                    <span className="text-zinc-600 text-xs font-mono">/a/</span>
+                    <input 
+                      value={editingWebsite.slug} 
+                      onChange={(e) => setEditingWebsite({...editingWebsite, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                      className="bg-transparent border-none focus:ring-0 text-white text-xs font-mono flex-1"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Сценічне Ім’я</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне Ім’я</Label>
                   <Input 
                     value={editingWebsite.stageName} 
                     onChange={(e) => setEditingWebsite({...editingWebsite, stageName: e.target.value})}
-                    className="bg-black/40 border-white/5"
+                    className="bg-black/40 border-white/5 rounded-none h-12"
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
-                <Label>БІО</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">БІО</Label>
                 <Textarea 
                   value={editingWebsite.bio} 
                   onChange={(e) => setEditingWebsite({...editingWebsite, bio: e.target.value})}
-                  className="bg-black/40 border-white/5"
+                  className="bg-black/40 border-white/5 rounded-none min-h-[100px] resize-none"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                  <ImageIcon size={14} /> Посилання на фото (URL)
+                </Label>
+                <Input 
+                  value={editingWebsite.photoUrl} 
+                  onChange={(e) => setEditingWebsite({...editingWebsite, photoUrl: e.target.value})}
+                  className="bg-black/40 border-white/5 rounded-none h-12"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                    <Link2 size={14} /> Посилання та соцмережі
+                  </Label>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={addLink}
+                    className="border-white/10 text-[9px] font-black uppercase tracking-widest h-8"
+                  >
+                    <Plus size={14} className="mr-2" /> Додати
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
+                  {editingWebsite.links.map((link: any, index: number) => (
+                    <div key={link.id} className="flex gap-3 items-end p-4 bg-white/5 border border-white/5 relative group">
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-[9px] text-zinc-600 uppercase font-black">Платформа</Label>
+                        <Select value={link.name} onValueChange={(val) => updateLink(index, 'name', val)}>
+                          <SelectTrigger className="bg-black/40 border-white/5 h-10 text-xs rounded-none">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                            {PLATFORMS_LIST.map(p => <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex-[2] space-y-2">
+                        <Label className="text-[9px] text-zinc-600 uppercase font-black">URL</Label>
+                        <Input 
+                          value={link.url} 
+                          onChange={(e) => updateLink(index, 'url', e.target.value)}
+                          className="bg-black/40 border-white/5 h-10 text-xs rounded-none"
+                        />
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-red-900 hover:text-red-500 hover:bg-red-900/10 h-10 w-10"
+                        onClick={() => removeLink(link.id)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Скасувати</Button>
+            <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none">
               Зберегти зміни
             </Button>
           </DialogFooter>
