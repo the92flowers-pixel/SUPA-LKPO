@@ -1,8 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { User, Save, Shield } from 'lucide-react';
-import { initialFields } from '@/lib/mockData';
-import { useAuthStore } from '@/lib/store';
+import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,20 +10,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { showSuccess } from '@/utils/toast';
 
 const Profile = () => {
-  const { user } = useAuthStore();
+  const { user, setAuth } = useAuthStore();
+  const { updateUser, fields } = useDataStore();
+  
   const { register, handleSubmit } = useForm<any>({
     defaultValues: {
       artistName: user?.artistName || '',
       login: user?.login || '',
-      bio: 'Український виконавець у жанрі Sad Rap.'
+      bio: 'Український виконавець.'
     }
   });
 
-  const fields = initialFields.filter(f => f.section === 'profile' && f.visible);
+  const profileFields = fields.filter(f => f.section === 'profile' && f.visible);
 
   const onSubmit = (data: any) => {
-    console.log('Profile Update:', data);
-    showSuccess('Профіль успішно оновлено!');
+    if (user) {
+      const updatedData = { artistName: data.artistName, ...data };
+      updateUser(user.id, updatedData);
+      setAuth({ ...user, ...updatedData }, 'mock-jwt');
+      showSuccess('Профіль успішно оновлено!');
+    }
   };
 
   return (
@@ -91,7 +96,7 @@ const Profile = () => {
                 </div>
               </div>
 
-              {fields.map((field) => (
+              {profileFields.map((field) => (
                 <div key={field.id} className="space-y-2">
                   <Label htmlFor={field.name}>{field.label}</Label>
                   {field.type === 'textarea' ? (

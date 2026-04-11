@@ -35,8 +35,10 @@ interface DataState {
   
   // Actions
   addUser: (user: User) => void;
+  updateUser: (id: string, data: Partial<User>) => void;
   addRelease: (release: Omit<Release, 'id' | 'createdAt' | 'streams'>) => void;
   updateReleaseStatus: (id: string, status: string) => void;
+  updateReleaseStreams: (id: string, count: number) => void;
   updateSettings: (settings: any) => void;
   updateFields: (fields: any[]) => void;
   updateStatuses: (statuses: any[]) => void;
@@ -61,6 +63,10 @@ export const useDataStore = create<DataState>()(
 
       addUser: (user) => set((state) => ({ users: [...state.users, user] })),
       
+      updateUser: (id, data) => set((state) => ({
+        users: state.users.map(u => u.id === id ? { ...u, ...data } : u)
+      })),
+
       addRelease: (release) => set((state) => ({ 
         releases: [
           ...state.releases, 
@@ -75,6 +81,10 @@ export const useDataStore = create<DataState>()(
 
       updateReleaseStatus: (id, status) => set((state) => ({
         releases: state.releases.map(r => r.id === id ? { ...r, status } : r)
+      })),
+
+      updateReleaseStreams: (id, count) => set((state) => ({
+        releases: state.releases.map(r => r.id === id ? { ...r, streams: r.streams + count } : r)
       })),
 
       updateSettings: (settings) => set({ settings }),
