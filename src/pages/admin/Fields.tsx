@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layers, Plus, Trash2, Edit2, GripVertical, Eye, EyeOff } from 'lucide-react';
-import { initialFields } from '@/lib/mockData';
+import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,18 @@ import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 const Fields = () => {
-  const fields = initialFields;
+  const { fields, updateFields } = useDataStore();
+
+  const handleDelete = (id: number) => {
+    const newFields = fields.filter(f => f.id !== id);
+    updateFields(newFields);
+    showSuccess('Поле видалено');
+  };
+
+  const toggleVisibility = (id: number) => {
+    const newFields = fields.map(f => f.id === id ? { ...f, visible: !f.visible } : f);
+    updateFields(newFields);
+  };
 
   const renderFieldList = (section: string) => (
     <div className="divide-y divide-white/5">
@@ -40,7 +51,12 @@ const Fields = () => {
               <p className="text-xs text-gray-500 mt-1 font-mono">ID: {field.name}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-white/10">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-9 w-9 p-0 hover:bg-white/10"
+                onClick={() => toggleVisibility(field.id)}
+              >
                 {field.visible ? <Eye size={16} /> : <EyeOff size={16} className="text-gray-600" />}
               </Button>
               <div className="w-px h-4 bg-white/10 mx-1" />
@@ -51,7 +67,7 @@ const Fields = () => {
                 variant="ghost" 
                 size="sm" 
                 className="h-9 w-9 p-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                onClick={() => showSuccess('Поле видалено')}
+                onClick={() => handleDelete(field.id)}
               >
                 <Trash2 size={16} />
               </Button>

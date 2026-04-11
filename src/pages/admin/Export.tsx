@@ -1,17 +1,26 @@
 import React from 'react';
 import { Download, FileSpreadsheet, Database, Calendar, Filter } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { showSuccess } from '@/utils/toast';
 
 const Export = () => {
+  const { releases } = useDataStore();
+
   const exportReleases = () => {
-    const data = [
-      { ID: 'ZH-001', Назва: 'Нічна варта', Артист: 'Артист А', Жанр: 'Hip-Hop', Дата: '12.05.2024', Статус: 'Опубліковано', Стріми: 12482 },
-      { ID: 'ZH-002', Назва: 'Світанок', Артист: 'Артист Б', Жанр: 'Pop', Дата: '14.05.2024', Статус: 'На модерації', Стріми: 850 },
-    ];
+    const data = releases.map(r => ({
+      ID: r.id,
+      Назва: r.title,
+      Артист: r.artist,
+      Жанр: r.genre,
+      Дата: r.releaseDate,
+      Статус: r.status,
+      Стріми: r.streams,
+      Створено: new Date(r.createdAt).toLocaleDateString()
+    }));
     
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -21,10 +30,13 @@ const Export = () => {
   };
 
   const exportStats = () => {
-    const data = [
-      { Дата: '2024-05-01', Трек: 'Нічна варта', Кількість: 400 },
-      { Дата: '2024-05-05', Трек: 'Нічна варта', Кількість: 800 },
-    ];
+    // In a real app, this would be daily stats. For now, we export current totals.
+    const data = releases.map(r => ({
+      Дата: new Date().toISOString().split('T')[0],
+      Трек: r.title,
+      Артист: r.artist,
+      Кількість_Стрімів: r.streams
+    }));
     
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();

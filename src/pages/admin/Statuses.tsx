@@ -1,6 +1,6 @@
 import React from 'react';
 import { ListTodo, Plus, Trash2, Edit2, GripVertical } from 'lucide-react';
-import { initialStatuses } from '@/lib/mockData';
+import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,13 @@ import { cn } from '@/lib/utils';
 import { showSuccess } from '@/utils/toast';
 
 const Statuses = () => {
-  const statuses = initialStatuses;
+  const { statuses, updateStatuses } = useDataStore();
+
+  const handleDelete = (id: number) => {
+    const newStatuses = statuses.filter(s => s.id !== id);
+    updateStatuses(newStatuses);
+    showSuccess('Статус видалено');
+  };
 
   const getColorClass = (color: string) => {
     switch (color) {
@@ -69,7 +75,8 @@ const Statuses = () => {
                     variant="ghost" 
                     size="sm" 
                     className="h-9 w-9 p-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                    onClick={() => showSuccess('Статус видалено')}
+                    onClick={() => handleDelete(status.id)}
+                    disabled={status.isDefault}
                   >
                     <Trash2 size={16} />
                   </Button>
