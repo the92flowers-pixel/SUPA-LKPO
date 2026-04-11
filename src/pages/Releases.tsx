@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Play, Music } from 'lucide-react';
+import { Search, Filter, MoreVertical, Play, Info, ExternalLink, Music, Link as LinkIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -68,6 +68,14 @@ const Releases = () => {
                   <Button size="icon" className="rounded-none bg-red-700 hover:bg-red-800 shadow-[0_0_20px_rgba(185,28,28,0.4)]">
                     <Play size={20} fill="currentColor" />
                   </Button>
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="rounded-none border-white/20 hover:bg-white/10" 
+                    onClick={() => navigate(`/s/${release.id}`)}
+                  >
+                    <LinkIcon size={20} />
+                  </Button>
                 </div>
                 <Badge className={cn(
                   "absolute top-4 right-4 border-none rounded-none px-3 py-1 text-[9px] font-black uppercase tracking-widest",
@@ -91,8 +99,8 @@ const Releases = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-[#0a0a0a] border-white/5 text-white rounded-none shadow-2xl">
-                      <DropdownMenuItem className="cursor-pointer text-[10px] font-bold uppercase tracking-widest py-3">
-                        <Music size={14} className="mr-3 text-red-700" /> Деталі
+                      <DropdownMenuItem className="cursor-pointer text-[10px] font-bold uppercase tracking-widest py-3" onClick={() => navigate(`/s/${release.id}`)}>
+                        <ExternalLink size={14} className="mr-3 text-red-700" /> Смарт-лінк
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

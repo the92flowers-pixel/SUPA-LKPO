@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Music, Globe, Zap, Shield, ArrowRight } from 'lucide-react';
+import { Music, Globe, Zap, Shield, ArrowRight, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Navigate } from 'react-router-dom';
 
 const Index = () => {
   const { user } = useAuthStore();
-  const { settings, loginPageConfig: content } = useDataStore();
+  const { settings } = useDataStore();
 
   if (user) {
     return <Navigate to={user.role === 'admin' ? '/admin/moderation' : '/dashboard'} replace />;
@@ -49,12 +49,12 @@ const Index = () => {
               Melancholy & Power
             </div>
             <h1 className="text-7xl md:text-9xl font-black leading-[0.85] tracking-tighter mb-12">
-              {content.heroTitle1} <br />
-              <span className="text-zinc-800">{content.heroTitle2}</span> <br />
-              <span className="text-red-700">{content.heroTitle3}</span>
+              МУЗИКА <br />
+              <span className="text-zinc-800">ТВОЄЇ</span> <br />
+              <span className="text-red-700">ДУШІ.</span>
             </h1>
             <p className="text-lg text-zinc-500 mb-14 leading-relaxed max-w-xl font-medium tracking-wide">
-              {content.heroSubtitle}
+              Ми не просто дистриб'ютор. Ми — прихисток для справжнього мистецтва. 150+ платформ, 100% роялті та повна свобода самовираження.
             </p>
             <div className="flex flex-col sm:flex-row gap-6">
               {settings.registrationEnabled && (
@@ -74,6 +74,7 @@ const Index = () => {
           </div>
         </div>
         
+        {/* Gothic Background Elements */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-red-900/10 to-transparent pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-red-900/10 blur-[120px] rounded-full" />
       </section>
@@ -85,22 +86,22 @@ const Index = () => {
               <div className="w-12 h-12 border border-red-900/50 flex items-center justify-center text-red-600 group-hover:bg-red-900/20 transition-all">
                 <Globe size={24} />
               </div>
-              <h3 className="text-xl font-bold tracking-widest uppercase">{content.feature1Title}</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed font-medium">{content.feature1Desc}</p>
+              <h3 className="text-xl font-bold tracking-widest uppercase">Темна Глобалізація</h3>
+              <p className="text-zinc-500 text-sm leading-relaxed font-medium">Ваш голос почують у кожному куточку світу. Від Spotify до найтемніших куточків Bandcamp.</p>
             </div>
             <div className="space-y-6 group">
               <div className="w-12 h-12 border border-red-900/50 flex items-center justify-center text-red-600 group-hover:bg-red-900/20 transition-all">
                 <Zap size={24} />
               </div>
-              <h3 className="text-xl font-bold tracking-widest uppercase">{content.feature2Title}</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed font-medium">{content.feature2Desc}</p>
+              <h3 className="text-xl font-bold tracking-widest uppercase">Кривава Аналітика</h3>
+              <p className="text-zinc-500 text-sm leading-relaxed font-medium">Точні дані в реальному часі. Кожен стрім, кожен цент — під вашим повним контролем.</p>
             </div>
             <div className="space-y-6 group">
               <div className="w-12 h-12 border border-red-900/50 flex items-center justify-center text-red-600 group-hover:bg-red-900/20 transition-all">
                 <Shield size={24} />
               </div>
-              <h3 className="text-xl font-bold tracking-widest uppercase">{content.feature3Title}</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed font-medium">{content.feature3Desc}</p>
+              <h3 className="text-xl font-bold tracking-widest uppercase">Вічна Свобода</h3>
+              <p className="text-zinc-500 text-sm leading-relaxed font-medium">Ми не володіємо вашою музикою. Ми лише допомагаємо їй знайти свого слухача.</p>
             </div>
           </div>
         </div>
