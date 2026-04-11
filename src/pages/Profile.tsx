@@ -12,7 +12,7 @@ import { showSuccess } from '@/utils/toast';
 
 const Profile = () => {
   const { user } = useAuthStore();
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit } = useForm<any>({
     defaultValues: {
       artistName: user?.artistName || '',
       login: user?.login || '',

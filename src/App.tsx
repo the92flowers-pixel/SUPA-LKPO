@@ -14,6 +14,9 @@ import Moderation from "./pages/admin/Moderation";
 import Statistics from "./pages/admin/Statistics";
 import Statuses from "./pages/admin/Statuses";
 import Fields from "./pages/admin/Fields";
+import LoginCustomization from "./pages/admin/LoginCustomization";
+import Settings from "./pages/admin/Settings";
+import Export from "./pages/admin/Export";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,8 +50,9 @@ const App = () => (
           <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><Statistics /></ProtectedRoute>} />
           <Route path="/admin/statuses" element={<ProtectedRoute role="admin"><Statuses /></ProtectedRoute>} />
           <Route path="/admin/fields" element={<ProtectedRoute role="admin"><Fields /></ProtectedRoute>} />
-          <Route path="/admin/login-customization" element={<ProtectedRoute role="admin"><div>Кастомізація входу</div></ProtectedRoute>} />
-          <Route path="/admin/settings" element={<ProtectedRoute role="admin"><div>Налаштування сайту</div></ProtectedRoute>} />
+          <Route path="/admin/login-customization" element={<ProtectedRoute role="admin"><LoginCustomization /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
+          <Route path="/admin/export" element={<ProtectedRoute role="admin"><Export /></ProtectedRoute>} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
