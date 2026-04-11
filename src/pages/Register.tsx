@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showSuccess, showError } from '@/utils/toast';
+import bcrypt from 'bcryptjs';
 
 const Register = () => {
   const { register, handleSubmit } = useForm();
@@ -35,19 +36,26 @@ const Register = () => {
       return;
     }
 
+    // Hash password before saving
+    const hashedPassword = bcrypt.hashSync(data.password, 10);
+    
+    // First user becomes admin automatically for setup purposes
+    const isFirstUser = users.length === 0;
+
     const newUser = { 
       ...data,
+      password: hashedPassword,
       id: Math.random().toString(36).substr(2, 9), 
-      role: 'artist' as const, 
-      isVerified: false,
+      role: isFirstUser ? 'admin' : 'artist', 
+      isVerified: isFirstUser,
       balance: 0,
       createdAt: new Date().toISOString()
     };
     
     addUser(newUser);
     setAuth(newUser, 'mock-jwt');
-    showSuccess('Акаунт успішно створено!');
-    navigate('/dashboard');
+    showSuccess(isFirstUser ? 'Акаунт адміністратора створено!' : 'Акаунт успішно створено!');
+    navigate(isFirstUser ? '/admin/moderation' : '/dashboard');
   };
 
   return (

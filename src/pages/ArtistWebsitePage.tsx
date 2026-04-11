@@ -1,8 +1,11 @@
+"use client";
+
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useDataStore } from '@/lib/store';
 import { Instagram, Send, Youtube, Globe, Music, Cloud, Disc, Apple, Twitter, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { sanitizeUrl } from '@/utils/security';
 
 const PlatformIcon = ({ name }: { name: string }) => {
   const lowerName = name.toLowerCase();
@@ -43,7 +46,7 @@ const ArtistWebsitePage = () => {
           {website.links.map((link) => (
             <a 
               key={link.id} 
-              href={link.url} 
+              href={sanitizeUrl(link.url)} 
               target="_blank" 
               rel="noopener noreferrer"
               className="block w-full bg-white hover:bg-zinc-50 border border-zinc-100 shadow-sm py-5 px-8 rounded-xl text-center font-bold text-zinc-800 transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -56,7 +59,7 @@ const ArtistWebsitePage = () => {
         {/* Footer Socials */}
         <div className="flex gap-6 text-zinc-400 pt-8">
           {website.links.slice(0, 5).map((link) => (
-            <a key={link.id} href={link.url} target="_blank" className="hover:text-zinc-900 transition-colors">
+            <a key={link.id} href={sanitizeUrl(link.url)} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-900 transition-colors">
               <PlatformIcon name={link.name} />
             </a>
           ))}

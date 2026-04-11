@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showSuccess, showError } from '@/utils/toast';
+import bcrypt from 'bcryptjs';
 
 const Login = () => {
   const { register, handleSubmit } = useForm();
@@ -17,26 +18,7 @@ const Login = () => {
   const onSubmit = (data: any) => {
     const user = users.find(u => u.login === data.login);
     
-    if (data.login === 'admin' && data.password === 'admin2') {
-      const adminUser = users.find(u => u.role === 'admin');
-      setAuth(
-        adminUser || { 
-          id: '1', 
-          login: 'admin', 
-          role: 'admin', 
-          artistName: 'Адмін',
-          balance: 0,
-          isVerified: true,
-          createdAt: new Date().toISOString() 
-        }, 
-        'mock-jwt'
-      );
-      showSuccess('Вітаємо, адмін!');
-      navigate('/admin/moderation');
-      return;
-    }
-
-    if (user && data.password) {
+    if (user && user.password && bcrypt.compareSync(data.password, user.password)) {
       setAuth(user, 'mock-jwt');
       showSuccess('Успішний вхід!');
       navigate(user.role === 'admin' ? '/admin/moderation' : '/dashboard');

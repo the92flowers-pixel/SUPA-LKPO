@@ -1,9 +1,12 @@
+"use client";
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Music, Globe, Zap, Shield, ArrowRight, Instagram, Send, Youtube, Twitter, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Navigate } from 'react-router-dom';
+import { sanitizeUrl } from '@/utils/security';
 
 const SocialIcon = ({ name }: { name: string }) => {
   const lowerName = name.toLowerCase();
@@ -126,10 +129,10 @@ const Index = () => {
             {labelSocials.map((social) => (
               <a 
                 key={social.id} 
-                href={social.url} 
+                href={sanitizeUrl(social.url)} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:text-red-600 transition-colors"
+                className="hover:text-white transition-colors"
                 title={social.name}
               >
                 <SocialIcon name={social.name} />
