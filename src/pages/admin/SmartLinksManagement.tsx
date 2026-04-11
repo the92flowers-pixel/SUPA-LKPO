@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link as LinkIcon, Search, Trash2, Edit2, ExternalLink, User, Calendar, Music } from 'lucide-react';
+import { Link as LinkIcon, Search, Trash2, Edit2, ExternalLink, User, Calendar, Music, Plus } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess } from '@/utils/toast';
+
+const PLATFORMS_LIST = [
+  "Apple Music",
+  "Deezer",
+  "iTunes",
+  "SoundCloud",
+  "Spotify",
+  "YouTube",
+  "YouTube Music"
+];
 
 const SmartLinksManagement = () => {
   const { smartLinks, releases, users, updateSmartLink, deleteSmartLink } = useDataStore();
@@ -30,6 +41,30 @@ const SmartLinksManagement = () => {
     updateSmartLink(editingLink.id, editingLink);
     showSuccess('Смартлінк оновлено');
     setIsDialogOpen(false);
+  };
+
+  const addPlatform = () => {
+    const newPlatform = { id: Date.now().toString(), name: 'Spotify', url: '', icon: 'spotify' };
+    setEditingLink({
+      ...editingLink,
+      platforms: [...editingLink.platforms, newPlatform]
+    });
+  };
+
+  const removePlatform = (id: string) => {
+    setEditingLink({
+      ...editingLink,
+      platforms: editingLink.platforms.filter((p: any) => p.id !== id)
+    });
+  };
+
+  const updatePlatform = (index: number, field: string, value: string) => {
+    const newPlatforms = [...editingLink.platforms];
+    newPlatforms[index] = { ...newPlatforms[index], [field]: value };
+    if (field === 'name') {
+      newPlatforms[index].icon = value.toLowerCase().replace(/\s+/g, '-');
+    }
+    setEditingLink({ ...editingLink, platforms: newPlatforms });
   };
 
   const getCreator = (releaseId: string) => {
@@ -141,37 +176,69 @@ const SmartLinksManagement = () => {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-2xl">
+        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Редагувати смартлінк</DialogTitle>
           </DialogHeader>
           {editingLink && (
             <div className="space-y-6 py-4">
               <div className="space-y-2">
-                <Label>URL Slug</Label>
+                <Label className="text-zinc-400 uppercase text-[10px] font-bold tracking-widest">URL Slug</Label>
                 <Input 
                   value={editingLink.slug} 
                   onChange={(e) => setEditingLink({...editingLink, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})} 
-                  className="bg-black/40 border-white/5 font-mono" 
+                  className="bg-black/40 border-white/5 font-mono h-12" 
                 />
               </div>
               
               <div className="space-y-4">
-                <Label className="text-zinc-400 uppercase text-[10px] font-bold tracking-widest">Платформи та посилання</Label>
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-zinc-400 uppercase text-[10px] font-bold tracking-widest">Платформи та посилання</Label>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={addPlatform}
+                    className="border-white/10 text-[10px] font-black uppercase tracking-widest h-8"
+                  >
+                    <Plus size={14} className="mr-2" /> Додати
+                  </Button>
+                </div>
+                
+                <div className="space-y-3">
                   {editingLink.platforms.map((p: any, index: number) => (
-                    <div key={p.id} className="grid grid-cols-3 gap-3 items-center p-3 bg-white/5 border border-white/5">
-                      <span className="text-xs font-bold uppercase">{p.name}</span>
-                      <Input 
-                        value={p.url} 
-                        onChange={(e) => {
-                          const newPlatforms = [...editingLink.platforms];
-                          newPlatforms[index].url = e.target.value;
-                          setEditingLink({...editingLink, platforms: newPlatforms});
-                        }}
-                        className="col-span-2 bg-black/40 border-white/5 h-9 text-xs"
-                        placeholder="https://..."
-                      />
+                    <div key={p.id} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end p-4 bg-white/5 border border-white/5 relative group">
+                      <div className="space-y-2">
+                        <Label className="text-[9px] text-zinc-600 uppercase font-black">Платформа</Label>
+                        <Select value={p.name} onValueChange={(val) => updatePlatform(index, 'name', val)}>
+                          <SelectTrigger className="bg-black/40 border-white/5 h-10 text-xs rounded-none">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                            {PLATFORMS_LIST.map(plat => (
+                              <SelectItem key={plat} value={plat} className="text-xs">{plat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="md:col-span-2 space-y-2 flex gap-2 items-end">
+                        <div className="flex-1 space-y-2">
+                          <Label className="text-[9px] text-zinc-600 uppercase font-black">URL посилання</Label>
+                          <Input 
+                            value={p.url} 
+                            onChange={(e) => updatePlatform(index, 'url', e.target.value)}
+                            className="bg-black/40 border-white/5 h-10 text-xs rounded-none"
+                            placeholder="https://..."
+                          />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-900 hover:text-red-500 hover:bg-red-900/10 h-10 w-10"
+                          onClick={() => removePlatform(p.id)}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -180,7 +247,7 @@ const SmartLinksManagement = () => {
           )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Скасувати</Button>
-            <Button onClick={handleSave} className="bg-violet-600 hover:bg-violet-700">Зберегти зміни</Button>
+            <Button onClick={handleSave} className="bg-violet-600 hover:bg-violet-700 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">Зберегти зміни</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
