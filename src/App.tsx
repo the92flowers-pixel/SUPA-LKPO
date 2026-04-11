@@ -24,7 +24,9 @@ import Export from "./pages/admin/Export";
 import LabelSocials from "./pages/admin/LabelSocials";
 import AllReleases from "./pages/admin/AllReleases";
 import SmartLinksManagement from "./pages/admin/SmartLinksManagement";
+import ArtistWebsitesManagement from "./pages/admin/ArtistWebsitesManagement";
 import SmartLinkPage from "./pages/SmartLinkPage";
+import ArtistWebsitePage from "./pages/ArtistWebsitePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +49,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/s/:slug" element={<SmartLinkPage />} />
+          <Route path="/a/:slug" element={<ArtistWebsitePage />} />
           
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/releases" element={<ProtectedRoute><Releases /></ProtectedRoute>} />
@@ -57,6 +60,7 @@ const App = () => (
           <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
           <Route path="/admin/releases" element={<ProtectedRoute role="admin"><AllReleases /></ProtectedRoute>} />
           <Route path="/admin/smart-links" element={<ProtectedRoute role="admin"><SmartLinksManagement /></ProtectedRoute>} />
+          <Route path="/admin/artist-websites" element={<ProtectedRoute role="admin"><ArtistWebsitesManagement /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
           <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><Statistics /></ProtectedRoute>} />
           <Route path="/admin/statuses" element={<ProtectedRoute role="admin"><Statuses /></ProtectedRoute>} />

@@ -10,7 +10,8 @@ import {
   Tag,
   User as UserIcon,
   ExternalLink,
-  Clock
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -19,24 +20,16 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
+  ResponsiveContainer
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
-
-const COLORS = ['#991b1b', '#7f1d1d', '#450a0a', '#18181b', '#27272a'];
 
 const Dashboard = () => {
   const { user } = useAuthStore();
   const { releases } = useDataStore();
-  const [selectedTrack, setSelectedTrack] = useState<any>(null);
 
   const userReleases = useMemo(() => 
     releases.filter(r => r.userId === user?.id), 
@@ -61,24 +54,17 @@ const Dashboard = () => {
       });
     });
     const sortedDates = Object.keys(historyMap).sort();
-    if (sortedDates.length === 0) return [{ name: 'Empty', streams: 0 }];
+    if (sortedDates.length === 0) return [];
     return sortedDates.map(date => ({
       name: date.split('-').slice(1).reverse().join('.'),
       streams: historyMap[date]
     }));
   }, [userReleases]);
 
-  const pieData = useMemo(() => {
-    if (userReleases.length === 0) return [];
-    const top4 = [...userReleases]
+  const releaseList = useMemo(() => {
+    return [...userReleases]
       .sort((a, b) => b.streams - a.streams)
-      .slice(0, 4)
-      .map(r => ({ name: r.title, value: r.streams }));
-    const total = top4.reduce((acc, item) => acc + item.value, 0) || 1;
-    return top4.map(item => ({
-      ...item,
-      percentage: Math.round((item.value / total) * 100)
-    }));
+      .slice(0, 5);
   }, [userReleases]);
 
   return (
@@ -138,19 +124,28 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Динаміка прослуховувань</CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] pt-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={lineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
-                <XAxis dataKey="name" stroke="#3f3f46" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#3f3f46" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#050505', border: '1px solid #1f1f1f', borderRadius: '0px' }}
-                  itemStyle={{ color: '#dc2626', fontWeight: 'bold', fontSize: '12px' }}
-                />
-                <Line type="monotone" dataKey="streams" stroke="#991b1b" strokeWidth={3} dot={{ r: 4, fill: '#991b1b', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#dc2626' }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent className="h-[350px] pt-6 flex items-center justify-center">
+            {lineData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={lineData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
+                  <XAxis dataKey="name" stroke="#3f3f46" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#3f3f46" fontSize={10} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#050505', border: '1px solid #1f1f1f', borderRadius: '0px' }}
+                    itemStyle={{ color: '#dc2626', fontWeight: 'bold', fontSize: '12px' }}
+                  />
+                  <Line type="monotone" dataKey="streams" stroke="#991b1b" strokeWidth={3} dot={{ r: 4, fill: '#991b1b', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#dc2626' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center space-y-4">
+                <AlertCircle className="mx-auto text-zinc-800" size={40} />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 max-w-[200px] leading-relaxed">
+                  Очікуйте надходження приблизної аналітики протягом 30 днів.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -158,32 +153,31 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Розподіл за релізами</CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] flex items-center">
-            {pieData.length > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={80} outerRadius={100} paddingAngle={10} dataKey="value">
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#050505', border: '1px solid #1f1f1f', borderRadius: '0px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="space-y-4 pr-10 min-w-[160px]">
-                  {pieData.map((item, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="w-2 h-2" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest truncate max-w-[120px]">
-                        {item.name} <span className="text-red-800 ml-2">{item.percentage}%</span>
-                      </span>
+          <CardContent className="pt-6">
+            {releaseList.length > 0 ? (
+              <div className="space-y-6">
+                {releaseList.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-white/5 border border-white/5 flex items-center justify-center text-[10px] font-black text-zinc-700">
+                        0{i + 1}
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-white uppercase tracking-wider">{item.title}</p>
+                        <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">{item.genre}</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-red-700 tracking-tighter">{item.streams.toLocaleString()}</p>
+                      <p className="text-[8px] text-zinc-800 uppercase font-black tracking-widest">Streams</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="w-full text-center text-zinc-700 text-[10px] font-black uppercase tracking-widest">No Data Available</div>
+              <div className="h-[300px] flex items-center justify-center">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-800">No Data Available</p>
+              </div>
             )}
           </CardContent>
         </Card>

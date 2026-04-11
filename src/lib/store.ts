@@ -20,6 +20,17 @@ interface SmartLink {
   createdAt: string;
 }
 
+interface ArtistWebsite {
+  id: string;
+  userId: string;
+  slug: string;
+  stageName: string;
+  bio: string;
+  photoUrl: string;
+  links: SmartLinkPlatform[];
+  createdAt: string;
+}
+
 interface LabelSocials {
   instagram: string;
   telegram: string;
@@ -49,6 +60,7 @@ interface DataState {
   homePageConfig: any;
   adminPanelConfig: any;
   smartLinks: SmartLink[];
+  artistWebsites: ArtistWebsite[];
   labelSocials: LabelSocials;
   
   addUser: (user: User) => void;
@@ -62,7 +74,12 @@ interface DataState {
   updateFields: (fields: any[]) => void;
   addField: (field: any) => void;
   deleteField: (id: number) => void;
+  
+  // Statuses
   updateStatuses: (statuses: any[]) => void;
+  addStatus: (status: any) => void;
+  deleteStatus: (id: number) => void;
+  
   updateLoginConfig: (config: any) => void;
   updateHomeConfig: (config: any) => void;
   updateAdminConfig: (config: any) => void;
@@ -70,6 +87,12 @@ interface DataState {
   addSmartLink: (link: SmartLink) => void;
   updateSmartLink: (id: string, data: Partial<SmartLink>) => void;
   deleteSmartLink: (id: string) => void;
+  
+  // Artist Websites
+  addArtistWebsite: (website: ArtistWebsite) => void;
+  updateArtistWebsite: (id: string, data: Partial<ArtistWebsite>) => void;
+  deleteArtistWebsite: (id: string) => void;
+  
   updateLabelSocials: (socials: LabelSocials) => void;
 }
 
@@ -117,6 +140,7 @@ export const useDataStore = create<DataState>()(
         logoText: "ЖУРБА"
       },
       smartLinks: [],
+      artistWebsites: [],
       labelSocials: {
         instagram: 'https://instagram.com/zhurba',
         telegram: 'https://t.me/zhurba',
@@ -153,7 +177,11 @@ export const useDataStore = create<DataState>()(
       updateFields: (fields) => set({ fields }),
       addField: (field) => set((state) => ({ fields: [...state.fields, { ...field, id: Date.now() }] })),
       deleteField: (id) => set((state) => ({ fields: state.fields.filter(f => f.id !== id) })),
+      
       updateStatuses: (statuses) => set({ statuses }),
+      addStatus: (status) => set((state) => ({ statuses: [...state.statuses, { ...status, id: Date.now() }] })),
+      deleteStatus: (id) => set((state) => ({ statuses: state.statuses.filter(s => s.id !== id) })),
+      
       updateLoginConfig: (config) => set({ loginPageConfig: config }),
       updateHomeConfig: (config) => set({ homePageConfig: config }),
       updateAdminConfig: (config) => set({ adminPanelConfig: config }),
@@ -165,9 +193,18 @@ export const useDataStore = create<DataState>()(
       deleteSmartLink: (id) => set((state) => ({
         smartLinks: state.smartLinks.filter(l => l.id !== id)
       })),
+      
+      addArtistWebsite: (website) => set((state) => ({ artistWebsites: [...state.artistWebsites, website] })),
+      updateArtistWebsite: (id, data) => set((state) => ({
+        artistWebsites: state.artistWebsites.map(w => w.id === id ? { ...w, ...data } : w)
+      })),
+      deleteArtistWebsite: (id) => set((state) => ({
+        artistWebsites: state.artistWebsites.filter(w => w.id !== id)
+      })),
+      
       updateLabelSocials: (socials) => set({ labelSocials: socials }),
     }),
-    { name: 'zhurba-db-v7' }
+    { name: 'zhurba-db-v8' }
   )
 );
 
@@ -186,7 +223,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => set({ user, token }),
       logout: () => set({ user: null, token: null }),
     }),
-    { name: 'zhurba-auth-v7' }
+    { name: 'zhurba-auth-v8' }
   )
 );
 

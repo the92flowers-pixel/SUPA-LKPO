@@ -1,21 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { User, Save, Shield, Camera, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { User, Save, Shield, Camera, ShieldCheck, ShieldAlert, Globe, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { showSuccess } from '@/utils/toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+
+const FIXED_AVATAR = "https://jurbamusic.iceiy.com/profileavatar.png";
+
+const PLATFORMS_LIST = [
+  "Instagram", "Telegram", "YouTube", "TikTok", "Spotify", "Apple Music", "SoundCloud", "Website"
+];
 
 const Profile = () => {
   const { user, setAuth } = useAuthStore();
-  const { updateUser, fields, users } = useDataStore();
+  const { updateUser, fields, users, artistWebsites, addArtistWebsite, updateArtistWebsite } = useDataStore();
   
-  // Get fresh user data from store to reflect admin changes
   const currentUser = users.find(u => u.id === user?.id) || user;
+  const userWebsite = artistWebsites.find(w => w.userId === currentUser?.id);
+
+  const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
+  const [websiteData, setWebsiteData] = useState<any>(userWebsite || {
+    slug: '',
+    stageName: currentUser?.artistName || '',
+    bio: '',
+    photoUrl: FIXED_AVATAR,
+    links: [{ id: '1', name: 'Instagram', url: '' }]
+  });
 
   const { register, handleSubmit } = useForm<any>({
     defaultValues: {
@@ -29,11 +46,37 @@ const Profile = () => {
 
   const onSubmit = (data: any) => {
     if (currentUser) {
-      const updatedData = { ...data };
-      updateUser(currentUser.id, updatedData);
-      setAuth({ ...currentUser, ...updatedData }, 'mock-jwt');
+      updateUser(currentUser.id, data);
+      setAuth({ ...currentUser, ...data }, 'mock-jwt');
       showSuccess('Профіль успішно оновлено!');
     }
+  };
+
+  const handleSaveWebsite = () => {
+    if (!websiteData.slug) {
+      showError('Вкажіть URL сайту');
+      return;
+    }
+
+    const isSlugTaken = artistWebsites.some(w => w.slug === websiteData.slug && w.id !== userWebsite?.id);
+    if (isSlugTaken) {
+      showError('Цей URL вже зайнятий');
+      return;
+    }
+
+    if (userWebsite) {
+      updateArtistWebsite(userWebsite.id, websiteData);
+      showSuccess('Сайт оновлено!');
+    } else {
+      addArtistWebsite({
+        ...websiteData,
+        id: Math.random().toString(36).substr(2, 9),
+        userId: currentUser?.id || '',
+        createdAt: new Date().toISOString()
+      });
+      showSuccess('Сайт створено!');
+    }
+    setIsWebsiteModalOpen(false);
   };
 
   return (
@@ -44,28 +87,34 @@ const Profile = () => {
           <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Ваша ідентичність у системі</p>
         </div>
         
-        {currentUser?.isVerified ? (
-          <div className="flex items-center gap-3 px-6 py-3 bg-red-900/10 border border-red-900/20 rounded-none text-red-500 text-[10px] font-black uppercase tracking-[0.2em]">
-            <ShieldCheck size={16} />
-            ВЕРИФІКОВАНИЙ АРТИСТ
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 px-6 py-3 bg-zinc-900/50 border border-white/5 rounded-none text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">
-            <ShieldAlert size={16} />
-            ОЧІКУЄ ВЕРИФІКАЦІЇ
-          </div>
-        )}
+        <div className="flex gap-4">
+          <Button 
+            onClick={() => setIsWebsiteModalOpen(true)}
+            className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest px-6 h-12 rounded-none"
+          >
+            <Globe size={16} className="mr-2 text-red-700" />
+            {userWebsite ? 'Редагувати сайт артиста' : 'Створити сайт артиста'}
+          </Button>
+          
+          {currentUser?.isVerified ? (
+            <div className="flex items-center gap-3 px-6 py-3 bg-red-900/10 border border-red-900/20 rounded-none text-red-500 text-[10px] font-black uppercase tracking-[0.2em]">
+              <ShieldCheck size={16} />
+              ВЕРИФІКОВАНИЙ
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 px-6 py-3 bg-zinc-900/50 border border-white/5 rounded-none text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">
+              <ShieldAlert size={16} />
+              ОЧІКУЄ ВЕРИФІКАЦІЇ
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <Card className="lg:col-span-1 bg-black/40 border-white/5 rounded-none shadow-2xl h-fit">
           <CardContent className="pt-12 flex flex-col items-center text-center">
-            <div className="w-40 h-40 rounded-none bg-red-900/5 border border-white/5 flex items-center justify-center mb-8 relative group cursor-pointer overflow-hidden">
-              <User size={80} className="text-zinc-800 group-hover:text-red-900 transition-colors duration-500" />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity duration-500">
-                <Camera size={24} className="text-red-700 mb-2" />
-                <span className="text-[9px] font-black uppercase tracking-widest">Змінити</span>
-              </div>
+            <div className="w-40 h-40 rounded-full bg-red-900/5 border border-white/5 flex items-center justify-center mb-8 relative overflow-hidden">
+              <img src={FIXED_AVATAR} className="w-full h-full object-cover" alt="Avatar" />
             </div>
             <h3 className="text-xl font-black text-white uppercase tracking-wider">{currentUser?.artistName || currentUser?.login}</h3>
             <p className="text-[10px] text-zinc-600 mt-2 uppercase font-bold tracking-[0.3em]">{currentUser?.role}</p>
@@ -141,6 +190,117 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Artist Website Modal */}
+      <Dialog open={isWebsiteModalOpen} onOpenChange={setIsWebsiteModalOpen}>
+        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-2xl max-h-[90vh] overflow-y-auto rounded-none">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">
+              {userWebsite ? 'Редагувати сайт артиста' : 'Створити сайт артиста'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-8 py-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL Slug</Label>
+                <Input 
+                  value={websiteData.slug} 
+                  onChange={(e) => setWebsiteData({...websiteData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                  className="bg-black/40 border-white/5 rounded-none h-12 font-mono"
+                  placeholder="artist-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне Ім’я</Label>
+                <Input 
+                  value={websiteData.stageName} 
+                  onChange={(e) => setWebsiteData({...websiteData, stageName: e.target.value})}
+                  className="bg-black/40 border-white/5 rounded-none h-12"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">БІО</Label>
+              <Textarea 
+                value={websiteData.bio} 
+                onChange={(e) => setWebsiteData({...websiteData, bio: e.target.value})}
+                className="bg-black/40 border-white/5 rounded-none min-h-[100px] resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Посилання на фото</Label>
+              <Input 
+                value={websiteData.photoUrl} 
+                onChange={(e) => setWebsiteData({...websiteData, photoUrl: e.target.value})}
+                className="bg-black/40 border-white/5 rounded-none h-12"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Посилання та соцмережі</Label>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setWebsiteData({...websiteData, links: [...websiteData.links, { id: Date.now().toString(), name: 'Instagram', url: '' }]})}
+                  className="border-white/10 text-[9px] font-black uppercase tracking-widest h-8"
+                >
+                  <Plus size={14} className="mr-2" /> Додати
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {websiteData.links.map((link: any, index: number) => (
+                  <div key={link.id} className="flex gap-3 items-end p-4 bg-white/5 border border-white/5">
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-[9px] text-zinc-600 uppercase font-black">Платформа</Label>
+                      <Select value={link.name} onValueChange={(val) => {
+                        const newLinks = [...websiteData.links];
+                        newLinks[index].name = val;
+                        setWebsiteData({...websiteData, links: newLinks});
+                      }}>
+                        <SelectTrigger className="bg-black/40 border-white/5 h-10 text-xs rounded-none">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                          {PLATFORMS_LIST.map(p => <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-[2] space-y-2">
+                      <Label className="text-[9px] text-zinc-600 uppercase font-black">URL</Label>
+                      <Input 
+                        value={link.url} 
+                        onChange={(e) => {
+                          const newLinks = [...websiteData.links];
+                          newLinks[index].url = e.target.value;
+                          setWebsiteData({...websiteData, links: newLinks});
+                        }}
+                        className="bg-black/40 border-white/5 h-10 text-xs rounded-none"
+                      />
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-red-900 h-10 w-10"
+                      onClick={() => setWebsiteData({...websiteData, links: websiteData.links.filter((_: any, i: number) => i !== index)})}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveWebsite} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none">
+              Зберегти сайт
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
