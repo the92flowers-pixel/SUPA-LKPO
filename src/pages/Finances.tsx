@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { showSuccess, showError } from '@/utils/toast';
+import { cn } from '@/lib/utils';
 
 const Finances = () => {
   const { user } = useAuthStore();
@@ -161,7 +162,7 @@ const Finances = () => {
       </Card>
 
       {/* Withdrawal Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog open={!isModalOpen ? false : true} onOpenChange={(open) => setIsModalOpen(open)}>
         <DialogContent className="bg-[#050505] border-white/5 text-white max-w-md rounded-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Запросити вивід</DialogTitle>
