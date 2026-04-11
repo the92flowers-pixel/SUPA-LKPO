@@ -55,16 +55,29 @@ const Dashboard = () => {
     return [...userReleases].sort((a, b) => b.streams - a.streams)[0];
   }, [userReleases]);
 
-  // Prepare chart data (mocking time series based on current streams for visual effect)
-  const lineData = useMemo(() => [
-    { name: '01.05', streams: Math.floor(totalStreams * 0.1) },
-    { name: '05.05', streams: Math.floor(totalStreams * 0.3) },
-    { name: '10.05', streams: Math.floor(totalStreams * 0.2) },
-    { name: '15.05', streams: Math.floor(totalStreams * 0.5) },
-    { name: '20.05', streams: Math.floor(totalStreams * 0.7) },
-    { name: '25.05', streams: Math.floor(totalStreams * 0.6) },
-    { name: '30.05', streams: totalStreams },
-  ], [totalStreams]);
+  // Aggregate history from all user releases for the chart
+  const lineData = useMemo(() => {
+    const historyMap: Record<string, number> = {};
+    
+    userReleases.forEach(release => {
+      release.history.forEach(h => {
+        historyMap[h.date] = (historyMap[h.date] || 0) + h.count;
+      });
+    });
+
+    const sortedDates = Object.keys(historyMap).sort();
+    
+    if (sortedDates.length === 0) {
+      return [
+        { name: 'Немає даних', streams: 0 }
+      ];
+    }
+
+    return sortedDates.map(date => ({
+      name: date.split('-').slice(1).reverse().join('.'), // Format YYYY-MM-DD to DD.MM
+      streams: historyMap[date]
+    }));
+  }, [userReleases]);
 
   const pieData = useMemo(() => {
     if (userReleases.length === 0) return [];
@@ -81,7 +94,6 @@ const Dashboard = () => {
       top4.push({ name: 'Інше', value: othersValue });
     }
 
-    // Convert to percentages for the legend
     const total = top4.reduce((acc, item) => acc + item.value, 0) || 1;
     return top4.map(item => ({
       ...item,
@@ -97,7 +109,7 @@ const Dashboard = () => {
           <p className="text-slate-400 mt-1">Огляд вашої музичної діяльності</p>
         </div>
         <Badge variant="outline" className="px-4 py-1 border-violet-500/30 text-violet-400 font-bold">
-          Травень 2024
+          {new Date().toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
         </Badge>
       </div>
 
@@ -112,7 +124,7 @@ const Dashboard = () => {
             <div className="text-3xl font-black text-white">{totalStreams.toLocaleString()}</div>
             <p className="text-xs text-green-400 flex items-center mt-2 font-bold">
               <ArrowUpRight size={14} className="mr-1" />
-              +12.5% від минулого місяця
+              Актуальні дані
             </p>
           </CardContent>
         </Card>

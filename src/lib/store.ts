@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { initialStatuses, initialFields, initialLoginPageContent } from './mockData';
 
+interface StreamHistory {
+  date: string;
+  count: number;
+}
+
 interface User {
   id: string;
   login: string;
@@ -9,7 +14,7 @@ interface User {
   role: 'admin' | 'artist';
   artistName?: string;
   createdAt: string;
-  [key: string]: any; // Allow dynamic fields from admin
+  [key: string]: any;
 }
 
 interface Release {
@@ -23,8 +28,9 @@ interface Release {
   audioUrl: string;
   status: string;
   streams: number;
+  history: StreamHistory[];
   createdAt: string;
-  [key: string]: any; // Allow dynamic fields from admin
+  [key: string]: any;
 }
 
 interface DataState {
@@ -39,7 +45,7 @@ interface DataState {
   updateUser: (id: string, data: Partial<User>) => void;
   addRelease: (release: any) => void;
   updateReleaseStatus: (id: string, status: string) => void;
-  updateReleaseStreams: (id: string, count: number) => void;
+  updateReleaseStreams: (id: string, count: number, date: string) => void;
   updateSettings: (settings: any) => void;
   updateFields: (fields: any[]) => void;
   updateStatuses: (statuses: any[]) => void;
@@ -65,6 +71,11 @@ export const useDataStore = create<DataState>()(
           audioUrl: 'https://example.com/audio.mp3', 
           status: 'Опубліковано', 
           streams: 12540, 
+          history: [
+            { date: '2024-05-01', count: 1200 },
+            { date: '2024-05-10', count: 4500 },
+            { date: '2024-05-20', count: 6840 }
+          ],
           createdAt: new Date().toISOString() 
         }
       ],
@@ -91,7 +102,8 @@ export const useDataStore = create<DataState>()(
             ...release, 
             id: Math.random().toString(36).substr(2, 9),
             createdAt: new Date().toISOString(),
-            streams: 0
+            streams: 0,
+            history: []
           }
         ] 
       })),
@@ -100,8 +112,27 @@ export const useDataStore = create<DataState>()(
         releases: state.releases.map(r => r.id === id ? { ...r, status } : r)
       })),
 
-      updateReleaseStreams: (id, count) => set((state) => ({
-        releases: state.releases.map(r => r.id === id ? { ...r, streams: r.streams + count } : r)
+      updateReleaseStreams: (id, count, date) => set((state) => ({
+        releases: state.releases.map(r => {
+          if (r.id === id) {
+            const existingDateIndex = r.history.findIndex(h => h.date === date);
+            let newHistory = [...r.history];
+            
+            if (existingDateIndex >= 0) {
+              newHistory[existingDateIndex].count += count;
+            } else {
+              newHistory.push({ date, count });
+              newHistory.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            }
+
+            return { 
+              ...r, 
+              streams: r.streams + count,
+              history: newHistory
+            };
+          }
+          return r;
+        })
       })),
 
       updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
@@ -110,7 +141,7 @@ export const useDataStore = create<DataState>()(
       updateLoginConfig: (config) => set({ loginPageConfig: config }),
     }),
     {
-      name: 'zhurba-db-v2',
+      name: 'zhurba-db-v3',
     }
   )
 );
@@ -131,7 +162,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, token: null }),
     }),
     {
-      name: 'zhurba-auth-v2',
+      name: 'zhurba-auth-v3',
     }
   )
 );
