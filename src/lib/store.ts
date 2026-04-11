@@ -49,9 +49,37 @@ export const useDataStore = create<DataState>()(
   persist(
     (set) => ({
       users: [
-        { id: '1', login: 'admin', role: 'admin', artistName: 'Адмін', createdAt: new Date().toISOString() }
+        { id: '1', login: 'admin', role: 'admin', artistName: 'Адмін', createdAt: new Date().toISOString() },
+        { id: '2', login: 'artist@demo.com', role: 'artist', artistName: 'Demo Artist', createdAt: new Date().toISOString() }
       ],
-      releases: [],
+      releases: [
+        { 
+          id: 'r1', 
+          userId: '2', 
+          title: 'Midnight City', 
+          artist: 'Demo Artist', 
+          genre: 'Electronic', 
+          releaseDate: '2024-05-20', 
+          coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=800&q=80', 
+          audioUrl: '', 
+          status: 'Опубліковано', 
+          streams: 12540, 
+          createdAt: new Date().toISOString() 
+        },
+        { 
+          id: 'r2', 
+          userId: '2', 
+          title: 'Neon Dreams', 
+          artist: 'Demo Artist', 
+          genre: 'Pop', 
+          releaseDate: '2024-06-01', 
+          coverUrl: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=800&q=80', 
+          audioUrl: '', 
+          status: 'На модерації', 
+          streams: 0, 
+          createdAt: new Date().toISOString() 
+        }
+      ],
       statuses: initialStatuses,
       fields: initialFields,
       settings: {

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./lib/store";
 import Layout from "./components/Layout";
+import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -28,7 +29,7 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 
   const { user } = useAuthStore();
   
   if (!user) return <Navigate to="/login" replace />;
-  if (role && user.role !== role) return <Navigate to="/" replace />;
+  if (role && user.role !== role) return <Navigate to="/dashboard" replace />;
   
   return <Layout>{children}</Layout>;
 };
@@ -40,14 +41,14 @@ const App = () => (
       <Sonner position="top-right" theme="dark" />
       <BrowserRouter>
         <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
-          {/* Public Routes */}
           <Route path="/s/:id" element={<SmartLink />} />
           
           {/* Artist Routes */}
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/releases" element={<ProtectedRoute><Releases /></ProtectedRoute>} />
           <Route path="/new-release" element={<ProtectedRoute><NewRelease /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
