@@ -54,7 +54,9 @@ interface DataState {
   
   addUser: (user: User) => void;
   updateUser: (id: string, data: Partial<User>) => void;
+  deleteUser: (id: string) => void;
   addRelease: (release: any) => void;
+  updateRelease: (id: string, data: Partial<Release>) => void;
   updateReleaseStatus: (id: string, status: string) => void;
   updateReleaseStreams: (id: string, count: number, date: string) => void;
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
@@ -102,12 +104,28 @@ export const useDataStore = create<DataState>()(
         registrationEnabled: true,
         maintenanceMode: false
       },
-      loginPageConfig: initialLoginPageContent,
+      loginPageConfig: {
+        ...initialLoginPageContent,
+        heroTitle1: "МУЗИКА",
+        heroTitle2: "ТВОЄЇ",
+        heroTitle3: "ДУШІ.",
+        heroSubtitle: "Ми не просто дистриб'ютор. Ми — прихисток для справжнього мистецтва. 150+ платформ, 100% роялті та повна свобода самовираження.",
+        feature1Title: "Темна Глобалізація",
+        feature1Desc: "Ваш голос почують у кожному куточку світу. Від Spotify до найтемніших куточків Bandcamp.",
+        feature2Title: "Кривава Аналітика",
+        feature2Desc: "Точні дані в реальному часі. Кожен стрім, кожен цент — під вашим повним контролем.",
+        feature3Title: "Вічна Свобода",
+        feature3Desc: "Ми не володіємо вашою музикою. Ми лише допомагаємо їй знайти свого слухача.",
+      },
 
       addUser: (user) => set((state) => ({ users: [...state.users, { ...user, balance: 0 }] })),
       
       updateUser: (id, data) => set((state) => ({
         users: state.users.map(u => u.id === id ? { ...u, ...data } : u)
+      })),
+
+      deleteUser: (id) => set((state) => ({
+        users: state.users.filter(u => u.id !== id)
       })),
 
       addRelease: (release) => set((state) => ({ 
@@ -121,6 +139,10 @@ export const useDataStore = create<DataState>()(
             history: []
           }
         ] 
+      })),
+
+      updateRelease: (id, data) => set((state) => ({
+        releases: state.releases.map(r => r.id === id ? { ...r, ...data } : r)
       })),
 
       updateReleaseStatus: (id, status) => set((state) => ({
@@ -160,7 +182,7 @@ export const useDataStore = create<DataState>()(
       updateLoginConfig: (config) => set({ loginPageConfig: config }),
     }),
     {
-      name: 'zhurba-db-v4',
+      name: 'zhurba-db-v5',
     }
   )
 );
@@ -181,7 +203,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, token: null }),
     }),
     {
-      name: 'zhurba-auth-v4',
+      name: 'zhurba-auth-v5',
     }
   )
 );

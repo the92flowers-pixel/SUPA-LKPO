@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   LayoutGrid,
-  Wallet
+  Wallet,
+  Library
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -49,10 +50,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { to: '/admin/dashboard', icon: LayoutGrid, label: 'Огляд' },
     { to: '/admin/moderation', icon: ShieldCheck, label: 'Модерація' },
     { to: '/admin/users', icon: UsersIcon, label: 'Користувачі' },
+    { to: '/admin/all-releases', icon: Library, label: 'Всі релізи' },
     { to: '/admin/statistics', icon: BarChart3, label: 'Статистика' },
     { to: '/admin/statuses', icon: ListTodo, label: 'Статуси' },
     { to: '/admin/fields', icon: Layers, label: 'Поля' },
-    { to: '/admin/login-customization', icon: Palette, label: 'Дизайн входу' },
+    { to: '/admin/login-customization', icon: Palette, label: 'Дизайн лендингу' },
     { to: '/admin/settings', icon: Settings, label: 'Налаштування' },
   ];
 
