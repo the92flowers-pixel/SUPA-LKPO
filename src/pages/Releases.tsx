@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Play, Info, ExternalLink, Music } from 'lucide-react';
+import { Search, Filter, MoreVertical, Play, Info, ExternalLink, Music, Link as LinkIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 const Releases = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { releases } = useDataStore();
 
@@ -46,7 +48,7 @@ const Releases = () => {
                 <img src={release.coverUrl} alt={release.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                   <Button size="icon" className="rounded-full bg-violet-600"><Play size={20} /></Button>
-                  <Button size="icon" variant="outline" className="rounded-full border-white/20"><Info size={20} /></Button>
+                  <Button size="icon" variant="outline" className="rounded-full border-white/20" onClick={() => navigate(`/s/${release.id}`)}><LinkIcon size={20} /></Button>
                 </div>
                 <Badge className={cn("absolute top-3 right-3 border-none", release.status === 'Опубліковано' ? "bg-green-500 text-white" : "bg-yellow-500 text-black")}>{release.status}</Badge>
               </div>
@@ -59,7 +61,7 @@ const Releases = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-white"><MoreVertical size={16} /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-white/10 text-white">
-                      <DropdownMenuItem className="cursor-pointer"><ExternalLink size={14} className="mr-2" /> Смарт-лінк</DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/s/${release.id}`)}><ExternalLink size={14} className="mr-2" /> Смарт-лінк</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
