@@ -1,7 +1,6 @@
 import React from 'react';
-import { Check, X, Play, MoreVertical, ExternalLink } from 'lucide-react';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Check, X, Play, MoreVertical, ExternalLink, Music } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 
@@ -13,9 +12,33 @@ import { showSuccess } from '@/utils/toast';
 
 const Moderation = () => {
   const tracks = [
-    { id: 1, title: 'Нічна варта', artist: 'Артист А', genre: 'Hip-Hop', date: '12.05.2024', status: 'На модерації' },
-    { id: 2, title: 'Світанок', artist: 'Артист Б', genre: 'Pop', date: '14.05.2024', status: 'На модерації' },
-    { id: 3, title: 'Журба', artist: 'Артист В', genre: 'Sad Rap', date: '15.05.2024', status: 'На модерації' },
+    { 
+      id: 1, 
+      title: 'Нічна варта', 
+      artist: 'Артист А', 
+      genre: 'Hip-Hop', 
+      date: '12.05.2024', 
+      status: 'На модерації',
+      coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&h=100&fit=crop'
+    },
+    { 
+      id: 2, 
+      title: 'Світанок', 
+      artist: 'Артист Б', 
+      genre: 'Pop', 
+      date: '14.05.2024', 
+      status: 'На модерації',
+      coverUrl: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=100&h=100&fit=crop'
+    },
+    { 
+      id: 3, 
+      title: 'Журба', 
+      artist: 'Артист В', 
+      genre: 'Sad Rap', 
+      date: '15.05.2024', 
+      status: 'На модерації',
+      coverUrl: 'https://images.unsplash.com/photo-1459749411177-042180ce673c?w=100&h=100&fit=crop'
+    },
   ];
 
   const handleAction = (id: number, action: string) => {
@@ -46,10 +69,17 @@ const Moderation = () => {
                 <tr key={track.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded bg-violet-500/20 flex items-center justify-center">
-                        <Play size={16} className="text-violet-500" />
+                      <div className="w-12 h-12 rounded-lg bg-violet-500/20 flex items-center justify-center overflow-hidden border border-white/5">
+                        {track.coverUrl ? (
+                          <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <Music size={20} className="text-violet-500" />
+                        )}
                       </div>
-                      <span className="font-medium">{track.title}</span>
+                      <div>
+                        <p className="font-medium">{track.title}</p>
+                        <p className="text-xs text-gray-500">ID: ZH-MOD-{track.id}</p>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm">{track.artist}</td>
@@ -80,10 +110,10 @@ const Moderation = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-white/10 text-white">
                           <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">
-                            <ExternalLink size={14} className="mr-2" /> Деталі
+                            <Play size={14} className="mr-2" /> Слухати
                           </DropdownMenuItem>
                           <DropdownMenuItem className="hover:bg-white/5 cursor-pointer">
-                            Змінити статус
+                            <ExternalLink size={14} className="mr-2" /> Деталі
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

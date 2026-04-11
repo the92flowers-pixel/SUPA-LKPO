@@ -10,7 +10,8 @@ import {
   Settings, 
   Palette, 
   ListTodo,
-  Layers
+  Layers,
+  Users as UsersIcon
 } from 'lucide-react';
 import { useAuthStore, useUIStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const adminLinks = [
     { to: '/admin/moderation', icon: ShieldCheck, label: 'Модерація' },
+    { to: '/admin/users', icon: UsersIcon, label: 'Користувачі' },
     { to: '/admin/statistics', icon: BarChart3, label: 'Статистика' },
     { to: '/admin/statuses', icon: ListTodo, label: 'Статуси' },
     { to: '/admin/fields', icon: Layers, label: 'Поля' },

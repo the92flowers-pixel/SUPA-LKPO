@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import NewRelease from "./pages/NewRelease";
 import Profile from "./pages/Profile";
 import Moderation from "./pages/admin/Moderation";
+import Users from "./pages/admin/Users";
 import Statistics from "./pages/admin/Statistics";
 import Statuses from "./pages/admin/Statuses";
 import Fields from "./pages/admin/Fields";
@@ -47,6 +48,7 @@ const App = () => (
           
           {/* Admin Routes */}
           <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
           <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><Statistics /></ProtectedRoute>} />
           <Route path="/admin/statuses" element={<ProtectedRoute role="admin"><Statuses /></ProtectedRoute>} />
           <Route path="/admin/fields" element={<ProtectedRoute role="admin"><Fields /></ProtectedRoute>} />
