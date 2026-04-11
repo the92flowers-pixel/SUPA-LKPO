@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Music, ArrowRight } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,10 +15,8 @@ const Login = () => {
   const { users, loginPageConfig: content } = useDataStore();
 
   const onSubmit = (data: any) => {
-    // Check against our "Local DB"
     const user = users.find(u => u.login === data.login);
     
-    // For demo purposes, we check password directly (in real app use bcrypt)
     if (data.login === 'admin' && data.password === 'admin2') {
       const adminUser = users.find(u => u.role === 'admin');
       setAuth(
@@ -41,71 +39,69 @@ const Login = () => {
     if (user && data.password) {
       setAuth(user, 'mock-jwt');
       showSuccess('Успішний вхід!');
-      navigate(user.role === 'admin' ? '/admin/moderation' : '/');
+      navigate(user.role === 'admin' ? '/admin/moderation' : '/dashboard');
     } else {
       showError('Невірний логін або пароль');
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0a0a0a] text-white overflow-hidden">
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 bg-gradient-to-br from-red-900/20 to-black border-r border-white/5">
+    <div className="min-h-screen flex bg-[#050505] text-white overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-16 bg-black border-r border-white/5">
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-12">
-            <div className="w-10 h-10 bg-red-700 rounded-xl flex items-center justify-center">
-              <Music className="text-white" />
-            </div>
-            <span className="text-2xl font-bold tracking-tighter">{content.logoText}</span>
+          <div className="flex items-center gap-3 mb-20">
+            <img src="https://jurbamusic.iceiy.com/whitemonster.png" alt="Logo" className="h-12 w-auto" />
+            <span className="text-2xl font-black tracking-[0.3em] uppercase">{content.logoText}</span>
           </div>
-          <div className="space-y-4">
-            <h2 className="text-6xl font-black leading-tight tracking-tighter">
+          <div className="space-y-6">
+            <h2 className="text-7xl font-black leading-[0.9] tracking-tighter uppercase">
               {content.leftTitle}<br />
               <span className="text-red-700">{content.leftText1}</span>
             </h2>
-            <p className="text-xl text-gray-400 max-w-md leading-relaxed">{content.leftText2}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 max-w-md leading-relaxed">{content.leftText2}</p>
           </div>
         </div>
-        <div className="relative z-10 grid grid-cols-3 gap-6">
+        <div className="relative z-10 grid grid-cols-1 gap-4">
           {[content.feature1, content.feature2, content.feature3].map((f, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm font-medium text-gray-300">
-              <CheckCircle2 size={16} className="text-red-700" />
+            <div key={i} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              <div className="w-1 h-1 bg-red-700" />
               {f}
             </div>
           ))}
         </div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-700/10 blur-[120px] rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-900/5 blur-[150px] rounded-full" />
       </div>
 
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center lg:text-left">
-            <h1 className="text-3xl font-bold tracking-tight">{content.welcomeTitle}</h1>
-            <p className="text-gray-500 mt-2">{content.welcomeSubtitle}</p>
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
+        <div className="w-full max-w-md space-y-12">
+          <div className="text-center lg:text-left space-y-4">
+            <h1 className="text-4xl font-black tracking-tight uppercase">{content.welcomeTitle}</h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">{content.welcomeSubtitle}</p>
           </div>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="login">Логін (Email)</Label>
-              <Input id="login" {...register('login')} className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" placeholder="name@example.com" />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Логін (Email)</Label>
+              <Input {...register('login')} className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" placeholder="name@example.com" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Пароль</Label>
-                <a href="#" className="text-xs text-red-700 hover:underline">Забули пароль?</a>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пароль</Label>
+                <a href="#" className="text-[9px] font-black uppercase tracking-widest text-red-700 hover:underline">Забули?</a>
               </div>
-              <Input id="password" type="password" {...register('password')} className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" placeholder="••••••••" />
+              <Input type="password" {...register('password')} className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" placeholder="••••••••" />
             </div>
-            <Button type="submit" className="w-full h-12 bg-red-700 hover:bg-red-800 text-white font-bold text-lg">
+            <Button type="submit" className="w-full h-14 bg-red-700 hover:bg-red-800 text-white font-black uppercase tracking-widest text-xs rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]">
               {content.buttonText}
-              <ArrowRight className="ml-2" size={20} />
+              <ArrowRight className="ml-3" size={18} />
             </Button>
           </form>
-          <div className="text-center space-y-4">
-            <p className="text-sm text-gray-500">
+          <div className="text-center space-y-6">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
               Немає акаунту?{' '}
-              <Link to="/register" className="text-red-700 hover:underline font-medium">Зареєструватися</Link>
+              <Link to="/register" className="text-red-700 hover:underline">Зареєструватися</Link>
             </p>
-            <div className="p-4 bg-red-700/5 border border-red-700/10 rounded-lg">
-              <p className="text-xs text-red-700 font-mono">Демо: admin / admin2</p>
+            <div className="p-4 bg-red-900/5 border border-red-900/10 rounded-none">
+              <p className="text-[10px] text-red-700 font-black uppercase tracking-widest">Демо: admin / admin2</p>
             </div>
           </div>
         </div>

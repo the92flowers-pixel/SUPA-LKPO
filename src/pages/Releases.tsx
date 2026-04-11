@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Play, Info, Music, Link as LinkIcon, Plus, Trash2, Globe, Eye } from 'lucide-react';
+import { Search, Filter, MoreVertical, Play, Info, Music, Link as LinkIcon, Plus, Trash2, Globe, Eye, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -97,6 +98,25 @@ const Releases = () => {
     window.open(`/s/${customSlug}`, '_blank');
   };
 
+  const exportToExcel = () => {
+    const data = userReleases.map(r => ({
+      ID: r.id,
+      Назва: r.title,
+      Артист: r.artist,
+      Жанр: r.genre,
+      Статус: r.status,
+      Стріми: r.streams,
+      Дата_релізу: r.releaseDate,
+      Створено: new Date(r.createdAt).toLocaleDateString()
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "My Releases");
+    XLSX.writeFile(wb, `my_releases_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showSuccess('Експорт завершено!');
+  };
+
   const releaseFields = fields.filter(f => f.section === 'release');
 
   return (
@@ -106,10 +126,18 @@ const Releases = () => {
           <h1 className="text-4xl font-black tracking-tight text-white uppercase">Каталог</h1>
           <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Керування вашою спадщиною</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <Button 
+            onClick={exportToExcel}
+            variant="outline"
+            className="bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-widest h-12 px-6 rounded-none hover:bg-white/10"
+          >
+            <Download size={14} className="mr-2 text-red-700" />
+            Export XLSX
+          </Button>
           <Input 
             placeholder="Пошук..." 
-            className="bg-black/40 border-white/5 w-64 h-12 rounded-none" 
+            className="bg-black/40 border-white/5 w-full md:w-64 h-12 rounded-none" 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
           />

@@ -57,7 +57,7 @@ const Index = () => {
             >
               Made in Ukraine
             </div>
-            <h1 className="text-7xl md:text-9xl font-black leading-[0.85] tracking-tighter mb-12 uppercase">
+            <h1 className="text-5xl md:text-9xl font-black leading-[0.85] tracking-tighter mb-12 uppercase">
               {config.heroTitle.split(' ').map((word: string, i: number) => (
                 <span key={i} className={i === config.heroTitle.split(' ').length - 1 ? "text-red-700" : ""}>
                   {word}{' '}
@@ -80,11 +80,6 @@ const Index = () => {
                   </Button>
                 </Link>
               )}
-              <Link to="/login">
-                <Button variant="outline" className="h-16 px-12 border-zinc-800 hover:bg-white/5 text-sm font-black tracking-widest uppercase rounded-none">
-                  Демо кабінету
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
