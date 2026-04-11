@@ -11,7 +11,8 @@ import {
   Palette, 
   ListTodo,
   Layers,
-  Users as UsersIcon
+  Users as UsersIcon,
+  Music
 } from 'lucide-react';
 import { useAuthStore, useUIStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const artistLinks = [
     { to: '/', icon: LayoutDashboard, label: 'Дашборд' },
+    { to: '/releases', icon: Music, label: 'Мої релізи' },
     { to: '/new-release', icon: PlusCircle, label: 'Новий реліз' },
     { to: '/profile', icon: User, label: 'Профіль' },
   ];

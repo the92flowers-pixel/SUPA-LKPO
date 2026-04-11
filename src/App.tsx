@@ -8,6 +8,7 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Releases from "./pages/Releases";
 import NewRelease from "./pages/NewRelease";
 import Profile from "./pages/Profile";
 import Moderation from "./pages/admin/Moderation";
@@ -43,6 +44,7 @@ const App = () => (
           
           {/* Artist Routes */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/releases" element={<ProtectedRoute><Releases /></ProtectedRoute>} />
           <Route path="/new-release" element={<ProtectedRoute><NewRelease /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           
