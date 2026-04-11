@@ -1,15 +1,20 @@
-import React from 'react';
-import { Users as UsersIcon, UserCog, Trash2, Mail, Shield, Music } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users as UsersIcon, UserCog, Trash2, Mail, Shield, Music, Save } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess } from '@/utils/toast';
 
 const Users = () => {
-  const { users, releases } = useDataStore();
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const { users, releases, updateUser, deleteUser } = useDataStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredUsers = users.filter(u => 
     u.login.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -18,6 +23,24 @@ const Users = () => {
 
   const getTracksCount = (userId: string) => {
     return releases.filter(r => r.userId === userId).length;
+  };
+
+  const handleEdit = (user: any) => {
+    setEditingUser({ ...user });
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    updateUser(editingUser.id, editingUser);
+    showSuccess('Дані користувача оновлено');
+    setIsDialogOpen(false);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm('Ви впевнені, що хочете видалити цього користувача?')) {
+      deleteUser(id);
+      showSuccess('Користувача видалено');
+    }
   };
 
   return (
@@ -36,9 +59,6 @@ const Users = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button className="bg-violet-600 hover:bg-violet-700">
-            Додати користувача
-          </Button>
         </div>
       </div>
 
@@ -87,15 +107,20 @@ const Users = () => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0 hover:bg-white/10"
+                        onClick={() => handleEdit(user)}
+                      >
                         <UserCog size={16} />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                        onClick={() => showSuccess('Користувача видалено')}
-                        disabled={user.role === 'admin'}
+                        onClick={() => handleDelete(user.id)}
+                        disabled={user.role === 'admin' && users.filter(u => u.role === 'admin').length === 1}
                       >
                         <Trash2 size={16} />
                       </Button>
@@ -107,6 +132,55 @@ const Users = () => {
           </table>
         </div>
       </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white">
+          <DialogHeader>
+            <DialogTitle>Редагувати користувача</DialogTitle>
+          </DialogHeader>
+          {editingUser && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Логін (Email)</Label>
+                <Input 
+                  value={editingUser.login} 
+                  onChange={(e) => setEditingUser({...editingUser, login: e.target.value})}
+                  className="bg-black/40 border-white/5"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Сценічне ім'я</Label>
+                <Input 
+                  value={editingUser.artistName} 
+                  onChange={(e) => setEditingUser({...editingUser, artistName: e.target.value})}
+                  className="bg-black/40 border-white/5"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Роль</Label>
+                <Select 
+                  value={editingUser.role} 
+                  onValueChange={(v) => setEditingUser({...editingUser, role: v})}
+                >
+                  <SelectTrigger className="bg-black/40 border-white/5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0a0a0a] border-white/5 text-white">
+                    <SelectItem value="admin">Адмін</SelectItem>
+                    <SelectItem value="artist">Артист</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Скасувати</Button>
+            <Button onClick={handleSave} className="bg-violet-600 hover:bg-violet-700">
+              <Save size={16} className="mr-2" /> Зберегти
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -12,7 +12,6 @@ import Dashboard from "./pages/Dashboard";
 import Releases from "./pages/Releases";
 import NewRelease from "./pages/NewRelease";
 import Profile from "./pages/Profile";
-import Finance from "./pages/Finance";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Moderation from "./pages/admin/Moderation";
 import Users from "./pages/admin/Users";
@@ -52,7 +51,6 @@ const App = () => (
           <Route path="/releases" element={<ProtectedRoute><Releases /></ProtectedRoute>} />
           <Route path="/new-release" element={<ProtectedRoute><NewRelease /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
           
           {/* Admin Routes */}
           <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />

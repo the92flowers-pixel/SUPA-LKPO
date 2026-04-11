@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Music, Info } from 'lucide-react';
+import { Upload, Music, FileUp } from 'lucide-react';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,7 @@ const NewRelease = () => {
     };
 
     if (field.type === 'textarea') return <Textarea {...commonProps} className={cn(commonProps.className, "min-h-[120px] py-4 resize-none")} />;
+    
     if (field.type === 'select') {
       const options = JSON.parse(field.options || '[]');
       return (
@@ -52,6 +53,39 @@ const NewRelease = () => {
         </Select>
       );
     }
+
+    if (field.type === 'file') {
+      return (
+        <div className="relative">
+          <Input 
+            type="file" 
+            accept={field.fileTypes}
+            className="hidden" 
+            id={`file-${field.name}`}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                if (file.size > (field.maxSize || 5) * 1024 * 1024) {
+                  alert(`Файл занадто великий. Максимум: ${field.maxSize}MB`);
+                  e.target.value = '';
+                  return;
+                }
+                setValue(field.name, file.name);
+                showSuccess(`Файл ${file.name} обрано`);
+              }
+            }}
+          />
+          <Label 
+            htmlFor={`file-${field.name}`}
+            className="flex items-center justify-center gap-3 w-full h-12 bg-black/40 border border-white/5 border-dashed hover:border-red-900/50 cursor-pointer transition-colors text-zinc-500 text-xs font-bold uppercase tracking-widest"
+          >
+            <FileUp size={16} />
+            Завантажити ({field.fileTypes || 'всі типи'})
+          </Label>
+        </div>
+      );
+    }
+
     return <Input type={field.type} {...commonProps} />;
   };
 
@@ -62,7 +96,7 @@ const NewRelease = () => {
           <Music className="text-red-700" size={32} />
         </div>
         <h1 className="text-4xl font-black tracking-tight text-white uppercase">Новий реліз</h1>
-        <p className="text-zinc-500 text-xs font-bold uppercase tracking-[0.3em]">Створення нового артефакту у вашому каталозі</p>
+        <p className="text-zinc-500 text-xs font-bold uppercase tracking-[0.3em]">Створення нового артефакту</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
@@ -85,7 +119,7 @@ const NewRelease = () => {
           <div className="flex-1 text-center md:text-left">
             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Готові до публікації?</h3>
             <p className="text-xs text-zinc-600 font-medium leading-relaxed">
-              Перевірте правильність усіх метаданих. Після відправки реліз потрапить у чергу модерації ЖУРБА MUSIC.
+              Перевірте правильність усіх метаданих. Після відправки реліз потрапить у чергу модерації.
             </p>
           </div>
           <Button type="submit" className="w-full md:w-auto bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest px-12 h-14 rounded-none shadow-[0_0_30px_rgba(185,28,28,0.3)]">

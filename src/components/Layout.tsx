@@ -16,13 +16,11 @@ import {
   Bell,
   Menu,
   X,
-  LayoutGrid,
-  Wallet
+  LayoutGrid
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -41,7 +39,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
     { to: '/releases', icon: Music, label: 'Мої релізи' },
     { to: '/new-release', icon: PlusCircle, label: 'Новий реліз' },
-    { to: '/finance', icon: Wallet, label: 'Фінанси' },
     { to: '/profile', icon: User, label: 'Профіль' },
   ];
 

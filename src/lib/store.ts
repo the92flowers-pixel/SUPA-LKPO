@@ -7,15 +7,6 @@ interface StreamHistory {
   count: number;
 }
 
-interface Transaction {
-  id: string;
-  userId: string;
-  amount: number;
-  type: 'royalty' | 'payout';
-  description: string;
-  date: string;
-}
-
 interface User {
   id: string;
   login: string;
@@ -46,7 +37,6 @@ interface Release {
 interface DataState {
   users: User[];
   releases: Release[];
-  transactions: Transaction[];
   statuses: any[];
   fields: any[];
   settings: any;
@@ -56,10 +46,11 @@ interface DataState {
   
   addUser: (user: User) => void;
   updateUser: (id: string, data: Partial<User>) => void;
+  deleteUser: (id: string) => void;
   addRelease: (release: any) => void;
+  updateRelease: (id: string, data: Partial<Release>) => void;
   updateReleaseStatus: (id: string, status: string) => void;
   updateReleaseStreams: (id: string, count: number, date: string) => void;
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   updateSettings: (settings: any) => void;
   updateFields: (fields: any[]) => void;
   addField: (field: any) => void;
@@ -75,7 +66,7 @@ export const useDataStore = create<DataState>()(
     (set) => ({
       users: [
         { id: '1', login: 'admin', role: 'admin', artistName: 'Адмін', balance: 0, createdAt: new Date().toISOString() },
-        { id: '2', login: 'artist@demo.com', role: 'artist', artistName: 'Demo Artist', balance: 1250.50, createdAt: new Date().toISOString() }
+        { id: '2', login: 'artist@demo.com', role: 'artist', artistName: 'Demo Artist', balance: 0, createdAt: new Date().toISOString() }
       ],
       releases: [
         { 
@@ -96,9 +87,6 @@ export const useDataStore = create<DataState>()(
           ],
           createdAt: new Date().toISOString() 
         }
-      ],
-      transactions: [
-        { id: 't1', userId: '2', amount: 1250.50, type: 'royalty', description: 'Роялті за травень 2024', date: '2024-06-01' }
       ],
       statuses: initialStatuses,
       fields: initialFields,
@@ -128,6 +116,10 @@ export const useDataStore = create<DataState>()(
         users: state.users.map(u => u.id === id ? { ...u, ...data } : u)
       })),
 
+      deleteUser: (id) => set((state) => ({
+        users: state.users.filter(u => u.id !== id)
+      })),
+
       addRelease: (release) => set((state) => ({ 
         releases: [
           ...state.releases, 
@@ -139,6 +131,10 @@ export const useDataStore = create<DataState>()(
             history: []
           }
         ] 
+      })),
+
+      updateRelease: (id, data) => set((state) => ({
+        releases: state.releases.map(r => r.id === id ? { ...r, ...data } : r)
       })),
 
       updateReleaseStatus: (id, status) => set((state) => ({
@@ -161,17 +157,6 @@ export const useDataStore = create<DataState>()(
         })
       })),
 
-      addTransaction: (tx) => set((state) => {
-        const newTx = { ...tx, id: Math.random().toString(36).substr(2, 9) };
-        return {
-          transactions: [newTx, ...state.transactions],
-          users: state.users.map(u => u.id === tx.userId 
-            ? { ...u, balance: u.balance + (tx.type === 'royalty' ? tx.amount : -tx.amount) } 
-            : u
-          )
-        };
-      }),
-
       updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
       updateFields: (fields) => set({ fields }),
       addField: (field) => set((state) => ({ fields: [...state.fields, { ...field, id: Date.now() }] })),
@@ -182,7 +167,7 @@ export const useDataStore = create<DataState>()(
       updateAdminConfig: (config) => set({ adminPanelConfig: config }),
     }),
     {
-      name: 'zhurba-db-v5',
+      name: 'zhurba-db-v6',
     }
   )
 );
@@ -203,7 +188,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, token: null }),
     }),
     {
-      name: 'zhurba-auth-v5',
+      name: 'zhurba-auth-v6',
     }
   )
 );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, Save } from 'lucide-react';
+import { Layers, Plus, Trash2, Edit2, GripVertical, Eye, EyeOff, Save, FileUp } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,13 +25,19 @@ const Fields = () => {
     forRole: 'artist',
     order: 1,
     visible: true,
-    options: ''
+    options: '',
+    fileTypes: '',
+    maxSize: '5'
   });
 
   const handleOpenDialog = (field: any = null) => {
     if (field) {
       setEditingField(field);
-      setFormData(field);
+      setFormData({
+        ...field,
+        fileTypes: field.fileTypes || '',
+        maxSize: field.maxSize || '5'
+      });
     } else {
       setEditingField(null);
       setFormData({
@@ -43,7 +49,9 @@ const Fields = () => {
         forRole: 'artist',
         order: fields.length + 1,
         visible: true,
-        options: ''
+        options: '',
+        fileTypes: '',
+        maxSize: '5'
       });
     }
     setIsDialogOpen(true);
@@ -82,15 +90,14 @@ const Fields = () => {
                 <Badge variant="secondary" className="bg-white/5 text-zinc-500 border-none text-[9px] uppercase font-black tracking-widest">
                   {field.type}
                 </Badge>
+                {field.type === 'file' && (
+                  <Badge className="bg-blue-900/20 text-blue-400 border-none text-[9px] uppercase font-black tracking-widest">
+                    {field.maxSize}MB
+                  </Badge>
+                )}
                 {field.required && (
                   <span className="text-red-800 text-[9px] font-black uppercase tracking-widest">* Обов'язкове</span>
                 )}
-                <Badge className={cn(
-                  "text-[9px] uppercase tracking-widest border-none rounded-none",
-                  field.forRole === 'admin' ? "bg-amber-900/20 text-amber-500" : "bg-red-900/20 text-red-500"
-                )}>
-                  {field.forRole === 'admin' ? 'Тільки адмін' : 'Артист'}
-                </Badge>
               </div>
               <p className="text-[10px] text-zinc-600 mt-1 font-mono uppercase tracking-tighter">ID: {field.name}</p>
             </div>
@@ -103,7 +110,6 @@ const Fields = () => {
               >
                 {field.visible ? <Eye size={16} /> : <EyeOff size={16} className="text-zinc-800" />}
               </Button>
-              <div className="w-px h-4 bg-white/10 mx-1" />
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -131,7 +137,7 @@ const Fields = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-white uppercase">Управління полями</h1>
-          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Налаштування динамічних форм релізів та профілю</p>
+          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Налаштування динамічних форм</p>
         </div>
         <Button onClick={() => handleOpenDialog()} className="bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest px-8 rounded-none h-12">
           <Plus size={18} className="mr-2" />
@@ -167,7 +173,6 @@ const Fields = () => {
                 value={formData.name} 
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="bg-black/40 border-white/5 rounded-none h-12"
-                placeholder="title_uk"
               />
             </div>
             <div className="space-y-2">
@@ -176,7 +181,6 @@ const Fields = () => {
                 value={formData.label} 
                 onChange={(e) => setFormData({...formData, label: e.target.value})}
                 className="bg-black/40 border-white/5 rounded-none h-12"
-                placeholder="Назва треку"
               />
             </div>
             <div className="space-y-2">
@@ -189,9 +193,9 @@ const Fields = () => {
                   <SelectItem value="text">Текст</SelectItem>
                   <SelectItem value="textarea">Довгий текст</SelectItem>
                   <SelectItem value="select">Список (Select)</SelectItem>
+                  <SelectItem value="file">Файл (Upload)</SelectItem>
                   <SelectItem value="date">Дата</SelectItem>
                   <SelectItem value="url">URL</SelectItem>
-                  <SelectItem value="number">Число</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -207,20 +211,32 @@ const Fields = () => {
                 </SelectContent>
               </Select>
             </div>
-            {formData.type === 'select' && (
-              <div className="col-span-2 space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Опції (JSON масив)</Label>
-                <Input 
-                  value={formData.options} 
-                  onChange={(e) => setFormData({...formData, options: e.target.value})}
-                  className="bg-black/40 border-white/5 rounded-none h-12"
-                  placeholder='["Rock", "Pop", "Jazz"]'
-                />
-              </div>
+            
+            {formData.type === 'file' && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Типи файлів (через кому)</Label>
+                  <Input 
+                    value={formData.fileTypes} 
+                    onChange={(e) => setFormData({...formData, fileTypes: e.target.value})}
+                    className="bg-black/40 border-white/5 rounded-none h-12"
+                    placeholder=".jpg, .png, .mp3"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Макс. розмір (MB)</Label>
+                  <Input 
+                    type="number"
+                    value={formData.maxSize} 
+                    onChange={(e) => setFormData({...formData, maxSize: e.target.value})}
+                    className="bg-black/40 border-white/5 rounded-none h-12"
+                  />
+                </div>
+              </>
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="text-[10px] font-black uppercase tracking-widest text-zinc-500 rounded-none">Скасувати</Button>
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Скасувати</Button>
             <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 rounded-none h-12">
               <Save size={16} className="mr-2" /> Зберегти
             </Button>

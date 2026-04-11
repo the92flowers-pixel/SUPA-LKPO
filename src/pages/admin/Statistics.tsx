@@ -20,7 +20,7 @@ const months = [
 const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 const Statistics = () => {
-  const { releases, users, updateReleaseStreams, addTransaction } = useDataStore();
+  const { releases, users, updateReleaseStreams } = useDataStore();
   const [selectedArtistId, setSelectedArtistId] = useState<string>("");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
   const [artistOpen, setArtistOpen] = useState(false);
@@ -56,24 +56,11 @@ const Statistics = () => {
     
     const count = parseInt(data.count);
     const dateStr = `${data.year}-${(parseInt(data.month) + 1).toString().padStart(2, '0')}-01`;
-    const track = releases.find(r => r.id === selectedTrackId);
     
     // Update streams
     updateReleaseStreams(selectedTrackId, count, dateStr);
     
-    // Calculate royalty (e.g., $0.004 per stream)
-    const royaltyAmount = count * 0.004;
-    if (royaltyAmount > 0 && track) {
-      addTransaction({
-        userId: track.userId,
-        amount: royaltyAmount,
-        type: 'royalty',
-        description: `Роялті за ${track.title} (${months[parseInt(data.month)]} ${data.year})`,
-        date: new Date().toISOString().split('T')[0]
-      });
-    }
-    
-    showSuccess('Статистику та роялті успішно оновлено!');
+    showSuccess('Статистику успішно оновлено!');
     reset({ 
       count: '',
       month: data.month,
@@ -93,7 +80,7 @@ const Statistics = () => {
     <div className="space-y-10">
       <div>
         <h1 className="text-4xl font-black text-white tracking-tight uppercase">Керування статистикою</h1>
-        <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Оновлення даних про прослуховування та нарахування роялті</p>
+        <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Оновлення даних про прослуховування</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -233,7 +220,6 @@ const Statistics = () => {
                   className="bg-black/40 border-white/5 rounded-none h-12 text-white"
                   placeholder="0"
                 />
-                <p className="text-[9px] text-zinc-600 uppercase font-bold">Буде нараховано: ${(parseInt(watch('count') || '0') * 0.004).toFixed(2)}</p>
               </div>
 
               <Button type="submit" className="w-full bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest h-14 rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]">
