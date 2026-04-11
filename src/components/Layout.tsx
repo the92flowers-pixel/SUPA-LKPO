@@ -15,7 +15,8 @@ import {
   Music,
   Bell,
   Menu,
-  X
+  X,
+  LayoutGrid
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -36,13 +37,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const artistLinks = [
-    { to: '/', icon: LayoutDashboard, label: 'Дашборд' },
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
     { to: '/releases', icon: Music, label: 'Мої релізи' },
     { to: '/new-release', icon: PlusCircle, label: 'Новий реліз' },
     { to: '/profile', icon: User, label: 'Профіль' },
   ];
 
   const adminLinks = [
+    { to: '/admin/dashboard', icon: LayoutGrid, label: 'Огляд' },
     { to: '/admin/moderation', icon: ShieldCheck, label: 'Модерація' },
     { to: '/admin/users', icon: UsersIcon, label: 'Користувачі' },
     { to: '/admin/statistics', icon: BarChart3, label: 'Статистика' },
@@ -54,7 +56,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const links = user?.role === 'admin' ? adminLinks : artistLinks;
   
-  // Real notifications based on user's releases
   const notifications = React.useMemo(() => {
     if (!user) return [];
     return releases
@@ -71,7 +72,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#e5e5e5] flex">
-      {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-[#1a1a1a] border-r border-white/5 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0",
         !sidebarOpen && "-translate-x-full"
@@ -123,9 +123,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
         <header className="h-16 border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-40">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={toggleSidebar}>
             <Menu size={20} />

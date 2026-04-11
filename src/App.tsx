@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Releases from "./pages/Releases";
 import NewRelease from "./pages/NewRelease";
 import Profile from "./pages/Profile";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import Moderation from "./pages/admin/Moderation";
 import Users from "./pages/admin/Users";
 import Statistics from "./pages/admin/Statistics";
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           
           {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
           <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><Statistics /></ProtectedRoute>} />

@@ -1,12 +1,14 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Music, Share2, Play, ExternalLink, ChevronRight } from 'lucide-react';
+import { Music, Share2, Play, ExternalLink, ChevronRight, Copy, Check } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
+import { showSuccess } from '@/utils/toast';
 
 const SmartLink = () => {
   const { id } = useParams();
   const { releases } = useDataStore();
+  const [copied, setCopied] = React.useState(false);
   const release = releases.find(r => r.id === id);
 
   if (!release) {
@@ -19,6 +21,13 @@ const SmartLink = () => {
       </div>
     );
   }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    showSuccess('Посилання скопійовано!');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const platforms = [
     { name: 'Spotify', icon: 'https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg', color: '#1DB954' },
@@ -76,6 +85,14 @@ const SmartLink = () => {
             <span>ЖУРБА MUSIC DISTRIBUTION</span>
           </div>
           <div className="mt-6 flex justify-center gap-4">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="rounded-full border-white/10 hover:bg-white/5"
+              onClick={handleCopy}
+            >
+              {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
+            </Button>
             <Button variant="outline" size="icon" className="rounded-full border-white/10 hover:bg-white/5">
               <Share2 size={18} />
             </Button>
