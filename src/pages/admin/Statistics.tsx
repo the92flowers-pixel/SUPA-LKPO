@@ -20,7 +20,7 @@ const months = [
 const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 const Statistics = () => {
-  const { releases, users, updateReleaseStreams } = useDataStore();
+  const { releases, users, updateReleaseStreams, addTransaction } = useDataStore();
   const [selectedArtistId, setSelectedArtistId] = useState<string>("");
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
   const [artistOpen, setArtistOpen] = useState(false);
@@ -54,10 +54,26 @@ const Statistics = () => {
       return;
     }
     
+    const count = parseInt(data.count);
     const dateStr = `${data.year}-${(parseInt(data.month) + 1).toString().padStart(2, '0')}-01`;
-    updateReleaseStreams(selectedTrackId, parseInt(data.count), dateStr);
+    const track = releases.find(r => r.id === selectedTrackId);
     
-    showSuccess('Статистику успішно оновлено!');
+    // Update streams
+    updateReleaseStreams(selectedTrackId, count, dateStr);
+    
+    // Calculate royalty (e.g., $0.004 per stream)
+    const royaltyAmount = count * 0.004;
+    if (royaltyAmount > 0 && track) {
+      addTransaction({
+        userId: track.userId,
+        amount: royaltyAmount,
+        type: 'royalty',
+        description: `Роялті за ${track.title} (${months[parseInt(data.month)]} ${data.year})`,
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
+    
+    showSuccess('Статистику та роялті успішно оновлено!');
     reset({ 
       count: '',
       month: data.month,
@@ -77,7 +93,7 @@ const Statistics = () => {
     <div className="space-y-10">
       <div>
         <h1 className="text-4xl font-black text-white tracking-tight uppercase">Керування статистикою</h1>
-        <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Оновлення даних про прослуховування за періоди</p>
+        <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Оновлення даних про прослуховування та нарахування роялті</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -90,7 +106,6 @@ const Statistics = () => {
           </CardHeader>
           <CardContent className="pt-8">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-              {/* Artist Searchable Select */}
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист</Label>
                 <Popover open={artistOpen} onOpenChange={setArtistOpen}>
@@ -98,7 +113,6 @@ const Statistics = () => {
                     <Button
                       variant="outline"
                       role="combobox"
-                      aria-expanded={artistOpen}
                       className="w-full justify-between bg-black/40 border-white/5 rounded-none h-12 text-white hover:bg-white/5"
                     >
                       {selectedArtistId
@@ -124,12 +138,7 @@ const Statistics = () => {
                               }}
                               className="flex items-center gap-3 p-3 cursor-pointer hover:bg-red-900/10"
                             >
-                              <Check
-                                className={cn(
-                                  "h-4 w-4 text-red-700",
-                                  selectedArtistId === artist.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
+                              <Check className={cn("h-4 w-4 text-red-700", selectedArtistId === artist.id ? "opacity-100" : "opacity-0")} />
                               <div className="flex flex-col">
                                 <span className="text-xs font-bold uppercase tracking-widest">{artist.artistName || artist.login}</span>
                                 <span className="text-[9px] text-zinc-600 font-mono">{artist.login}</span>
@@ -143,7 +152,6 @@ const Statistics = () => {
                 </Popover>
               </div>
 
-              {/* Track Searchable Select */}
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Трек</Label>
                 <Popover open={trackOpen} onOpenChange={setTrackOpen}>
@@ -151,7 +159,6 @@ const Statistics = () => {
                     <Button
                       variant="outline"
                       role="combobox"
-                      aria-expanded={trackOpen}
                       disabled={!selectedArtistId}
                       className="w-full justify-between bg-black/40 border-white/5 rounded-none h-12 text-white hover:bg-white/5 disabled:opacity-30"
                     >
@@ -177,12 +184,7 @@ const Statistics = () => {
                               }}
                               className="flex items-center gap-3 p-3 cursor-pointer hover:bg-red-900/10"
                             >
-                              <Check
-                                className={cn(
-                                  "h-4 w-4 text-red-700",
-                                  selectedTrackId === track.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
+                              <Check className={cn("h-4 w-4 text-red-700", selectedTrackId === track.id ? "opacity-100" : "opacity-0")} />
                               <span className="text-xs font-bold uppercase tracking-widest">{track.title}</span>
                             </CommandItem>
                           ))}
@@ -193,7 +195,6 @@ const Statistics = () => {
                 </Popover>
               </div>
 
-              {/* Period Selection */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Місяць</Label>
@@ -232,10 +233,11 @@ const Statistics = () => {
                   className="bg-black/40 border-white/5 rounded-none h-12 text-white"
                   placeholder="0"
                 />
+                <p className="text-[9px] text-zinc-600 uppercase font-bold">Буде нараховано: ${(parseInt(watch('count') || '0') * 0.004).toFixed(2)}</p>
               </div>
 
               <Button type="submit" className="w-full bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest h-14 rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]">
-                Оновити статистику
+                Оновити дані
               </Button>
             </form>
           </CardContent>
