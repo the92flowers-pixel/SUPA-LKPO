@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDataStore } from '@/lib/store';
-import { Music, Instagram, Send, Youtube, Globe, Info, X } from 'lucide-react';
+import { Music, Instagram, Send, Youtube, Globe, Info, X, Play, Cloud, Disc, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+const PlatformIcon = ({ name }: { name: string }) => {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('spotify')) return <Music className="text-[#1DB954]" size={20} />;
+  if (lowerName.includes('apple') || lowerName.includes('itunes')) return <Apple className="text-[#FA243C]" size={20} />;
+  if (lowerName.includes('youtube')) return <Youtube className="text-[#FF0000]" size={20} />;
+  if (lowerName.includes('soundcloud')) return <Cloud className="text-[#FF3300]" size={20} />;
+  if (lowerName.includes('deezer')) return <Disc className="text-[#EF5466]" size={20} />;
+  return <Music size={20} />;
+};
 
 const SmartLinkPage = () => {
   const { slug } = useParams();
@@ -41,7 +51,7 @@ const SmartLinkPage = () => {
               <div key={p.id} className="flex items-center justify-between p-5 hover:bg-white/5 transition-all group">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-white/5 rounded-sm flex items-center justify-center border border-white/5">
-                    <Music size={18} className="text-zinc-500 group-hover:text-white transition-colors" />
+                    <PlatformIcon name={p.name} />
                   </div>
                   <span className="font-black uppercase tracking-widest text-[11px]">{p.name}</span>
                 </div>

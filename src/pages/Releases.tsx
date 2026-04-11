@@ -8,8 +8,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+
+const PLATFORMS_LIST = [
+  "Apple Music",
+  "Deezer",
+  "iTunes",
+  "SoundCloud",
+  "Spotify",
+  "YouTube",
+  "YouTube Music"
+];
 
 const Releases = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,7 +59,7 @@ const Releases = () => {
       title: selectedRelease.title,
       artist: selectedRelease.artist,
       coverUrl: selectedRelease.coverUrl,
-      platforms: platforms.filter(p => p.url !== '').map(p => ({ ...p, icon: 'music' })),
+      platforms: platforms.filter(p => p.url !== '').map(p => ({ ...p, icon: p.name.toLowerCase().replace(/\s+/g, '-') })),
       createdAt: new Date().toISOString()
     });
     
@@ -121,25 +132,34 @@ const Releases = () => {
               {platforms.map((p, index) => (
                 <div key={p.id} className="flex gap-3 items-end">
                   <div className="flex-1 space-y-2">
-                    <Input value={p.name} onChange={(e) => {
+                    <Select value={p.name} onValueChange={(val) => {
                       const newP = [...platforms];
-                      newP[index].name = e.target.value;
+                      newP[index].name = val;
                       setPlatforms(newP);
-                    }} className="bg-black/40 border-white/5 h-10 text-xs" placeholder="Назва (Spotify...)" />
+                    }}>
+                      <SelectTrigger className="bg-black/40 border-white/5 h-10 text-xs rounded-none">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                        {PLATFORMS_LIST.map(plat => (
+                          <SelectItem key={plat} value={plat} className="text-xs">{plat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex-[2] space-y-2">
                     <Input value={p.url} onChange={(e) => {
                       const newP = [...platforms];
                       newP[index].url = e.target.value;
                       setPlatforms(newP);
-                    }} className="bg-black/40 border-white/5 h-10 text-xs" placeholder="URL (https://...)" />
+                    }} className="bg-black/40 border-white/5 h-10 text-xs rounded-none" placeholder="URL (https://...)" />
                   </div>
                   <Button variant="ghost" size="icon" className="text-red-900 h-10 w-10" onClick={() => setPlatforms(platforms.filter((_, i) => i !== index))}>
                     <Trash2 size={16} />
                   </Button>
                 </div>
               ))}
-              <Button variant="outline" className="w-full border-white/5 text-[10px] font-black uppercase tracking-widest h-10" onClick={() => setPlatforms([...platforms, { id: Date.now().toString(), name: '', url: '' }])}>
+              <Button variant="outline" className="w-full border-white/5 text-[10px] font-black uppercase tracking-widest h-10 rounded-none" onClick={() => setPlatforms([...platforms, { id: Date.now().toString(), name: 'Spotify', url: '' }])}>
                 <Plus size={14} className="mr-2" /> Додати платформу
               </Button>
             </div>
