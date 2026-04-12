@@ -3,8 +3,12 @@
  * Не требует установки @supabase/supabase-js.
  */
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ВАШ_ПРОЕКТ.supabase.co'; // Замените на ваш URL из настроек Supabase
+const supabaseAnonKey = 'sb_publishable_dOp-xTq5eAZYnUrdedlfTA_WwaNV84P';
+
+if (supabaseUrl.includes('ВАШ_ПРОЕКТ')) {
+  console.warn('ВНИМАНИЕ: Необходимо указать VITE_SUPABASE_URL в настройках или в файле src/lib/supabase-fetch.ts');
+}
 
 export const supabaseApi = {
   auth: {
