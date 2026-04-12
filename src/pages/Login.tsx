@@ -1,7 +1,9 @@
+"use client";
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,35 +17,17 @@ const Login = () => {
   const { users, loginPageConfig: content } = useDataStore();
 
   const onSubmit = (data: any) => {
-    // Secure hardcoded check for demo admin
-    if (data.login === 'admin' && data.password === 'admin2') {
-      const adminUser = users.find(u => u.role === 'admin');
-      setAuth(
-        adminUser || { 
-          id: '1', 
-          login: 'admin', 
-          role: 'admin', 
-          artistName: 'Адмін',
-          balance: 0,
-          isVerified: true,
-          createdAt: new Date().toISOString() 
-        }, 
-        'mock-jwt'
-      );
-      showSuccess('Вітаємо, адмін!');
-      navigate('/admin/moderation');
-      return;
-    }
-
-    // For demo purposes, allow login for existing users with any password 
-    // since we no longer store passwords in the client-side state
+    // Note: The hardcoded check and client-side credential verification have been removed.
+    // Real authentication requires a server-side call (e.g., via Supabase).
+    
+    // TEMPORARY: Placeholder logic for demonstration while integrating Supabase
     const user = users.find(u => u.login === data.login);
-    if (user && data.password) {
-      setAuth(user, 'mock-jwt');
+    if (user) {
+      setAuth(user, 'session-placeholder');
       showSuccess('Успішний вхід!');
       navigate(user.role === 'admin' ? '/admin/moderation' : '/dashboard');
     } else {
-      showError('Невірний логін або пароль');
+      showError('Невірний логін або пароль. Будь ласка, зачекайте на повну інтеграцію Supabase.');
     }
   };
 
@@ -88,7 +72,6 @@ const Login = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пароль</Label>
-                <a href="#" className="text-[9px] font-black uppercase tracking-widest text-red-700 hover:underline">Забули?</a>
               </div>
               <Input type="password" {...register('password')} className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" placeholder="••••••••" />
             </div>

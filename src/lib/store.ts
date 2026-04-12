@@ -36,7 +36,6 @@ interface QuarterlyReport {
 interface User {
   id: string;
   login: string;
-  password?: string;
   role: 'admin' | 'artist';
   artistName?: string;
   isVerified: boolean;
@@ -91,13 +90,11 @@ interface DataState {
   deleteArtistWebsite: (id: string) => void;
   updateLabelSocials: (socials: SocialLink[]) => void;
 
-  // Finance Actions
   getUserBalance: (userId: string) => number;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
   addWithdrawalRequest: (request: Omit<WithdrawalRequest, 'id' | 'createdAt' | 'status'>) => void;
   updateWithdrawalStatus: (id: string, status: WithdrawalRequest['status'], comment?: string) => void;
   
-  // Reports Actions
   addReport: (report: Omit<QuarterlyReport, 'id' | 'createdAt'>) => void;
   deleteReport: (id: string) => void;
 }
@@ -106,8 +103,8 @@ export const useDataStore = create<DataState>()(
   persist(
     (set, get) => ({
       users: [
-        { id: '1', login: 'admin', password: 'admin2', role: 'admin', artistName: 'Адмін', isVerified: true, createdAt: new Date().toISOString() },
-        { id: '2', login: 'artist@demo.com', password: 'password', role: 'artist', artistName: 'Demo Artist', isVerified: false, createdAt: new Date().toISOString() }
+        { id: '1', login: 'admin', role: 'admin', artistName: 'Адмін', isVerified: true, createdAt: new Date().toISOString() },
+        { id: '2', login: 'artist@demo.com', role: 'artist', artistName: 'Demo Artist', isVerified: false, createdAt: new Date().toISOString() }
       ],
       releases: [],
       statuses: initialStatuses,
@@ -204,7 +201,6 @@ export const useDataStore = create<DataState>()(
       })),
       updateLabelSocials: (socials) => set({ labelSocials: socials }),
 
-      // Finance Actions
       addTransaction: (t) => set((state) => {
         const newTransaction = { ...t, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() };
         return { 
@@ -255,7 +251,6 @@ export const useDataStore = create<DataState>()(
         };
       }),
 
-      // Reports Actions
       addReport: (report) => set((state) => ({
         quarterlyReports: [...state.quarterlyReports, { ...report, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() }]
       })),
@@ -263,7 +258,7 @@ export const useDataStore = create<DataState>()(
         quarterlyReports: state.quarterlyReports.filter(r => r.id !== id)
       })),
     }),
-    { name: 'zhurba-db-v13' }
+    { name: 'zhurba-db-v14' }
   )
 );
 
@@ -282,7 +277,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => set({ user, token }),
       logout: () => set({ user: null, token: null }),
     }),
-    { name: 'zhurba-auth-v13' }
+    { name: 'zhurba-auth-v14' }
   )
 );
 
