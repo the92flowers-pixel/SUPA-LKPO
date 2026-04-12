@@ -3,31 +3,53 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
+import { supabaseApi } from '@/lib/supabase-fetch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showSuccess, showError } from '@/utils/toast';
 
 const Login = () => {
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-  const { users, loginPageConfig: content } = useDataStore();
+  const { loginPageConfig: content } = useDataStore();
 
-  const onSubmit = (data: any) => {
-    // Note: The hardcoded check and client-side credential verification have been removed.
-    // Real authentication requires a server-side call (e.g., via Supabase).
-    
-    // TEMPORARY: Placeholder logic for demonstration while integrating Supabase
-    const user = users.find(u => u.login === data.login);
-    if (user) {
-      setAuth(user, 'session-placeholder');
+  const onSubmit = async (data: any) => {
+    try {
+      const result = await supabaseApi.auth.signInWithPassword(data.login, data.password);
+      
+      if (result.error) {
+        throw new Error(result.error_description || result.error || 'Помилка входу');
+      }
+
+      const { access_token, user } = result;
+
+      // Получаем профиль пользователя из таблицы profiles для проверки роли
+      // Это предотвращает манипуляцию ролью на стороне клиента
+      const profiles = await supabaseApi.db.from('profiles');
+      const profileData = await profiles.select(access_token);
+      const userProfile = profileData.find((p: any) => p.id === user.id);
+
+      if (!userProfile) {
+        throw new Error('Профіль користувача не знайдено');
+      }
+
+      setAuth({
+        id: user.id,
+        login: user.email,
+        role: userProfile.role,
+        artistName: userProfile.artist_name || '',
+        isVerified: userProfile.is_verified || false,
+        createdAt: userProfile.created_at
+      }, access_token);
+
       showSuccess('Успішний вхід!');
-      navigate(user.role === 'admin' ? '/admin/moderation' : '/dashboard');
-    } else {
-      showError('Невірний логін або пароль. Будь ласка, зачекайте на повну інтеграцію Supabase.');
+      navigate(userProfile.role === 'admin' ? '/admin/moderation' : '/dashboard');
+    } catch (error: any) {
+      showError(error.message);
     }
   };
 
@@ -67,17 +89,38 @@ const Login = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Логін (Email)</Label>
-              <Input {...register('login')} className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" placeholder="name@example.com" />
+              <Input 
+                {...register('login', { required: true })} 
+                className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" 
+                placeholder="name@example.com" 
+                disabled={isSubmitting}
+              />
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пароль</Label>
               </div>
-              <Input type="password" {...register('password')} className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" placeholder="••••••••" />
+              <Input 
+                type="password" 
+                {...register('password', { required: true })} 
+                className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" 
+                placeholder="••••••••" 
+                disabled={isSubmitting}
+              />
             </div>
-            <Button type="submit" className="w-full h-14 bg-red-700 hover:bg-red-800 text-white font-black uppercase tracking-widest text-xs rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]">
-              {content.buttonText}
-              <ArrowRight className="ml-3" size={18} />
+            <Button 
+              type="submit" 
+              className="w-full h-14 bg-red-700 hover:bg-red-800 text-white font-black uppercase tracking-widest text-xs rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <>
+                  {content.buttonText}
+                  <ArrowRight className="ml-3" size={18} />
+                </>
+              )}
             </Button>
           </form>
           <div className="text-center space-y-6">

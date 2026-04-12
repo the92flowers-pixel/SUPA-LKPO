@@ -1,90 +1,141 @@
+"use client";
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, AlertCircle } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
+import { supabaseApi } from '@/lib/supabase-fetch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showSuccess, showError } from '@/utils/toast';
 
 const Register = () => {
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-  const { addUser, users, settings } = useDataStore();
+  const { loginPageConfig: content } = useDataStore();
 
-  if (!settings.registrationEnabled) {
-    return (
-      <div className="min-h-screen flex bg-[#050505] text-white items-center justify-center p-8">
-        <div className="text-center space-y-6 max-w-md">
-          <AlertCircle className="mx-auto text-red-700" size={64} />
-          <h1 className="text-3xl font-black uppercase tracking-tight">Реєстрація закрита</h1>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 leading-relaxed">Зверніться до адміністратора для створення акаунту або спробуйте пізніше.</p>
-          <Link to="/">
-            <Button variant="outline" className="mt-8 border-white/10 rounded-none h-12 px-10 text-[10px] font-black uppercase tracking-widest">На головну</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const onSubmit = async (data: any) => {
+    try {
+      // Регистрируем пользователя в Supabase Auth
+      const result = await supabaseApi.auth.signUp(data.email, data.password);
+      
+      if (result.error) {
+        throw new Error(result.error_description || result.error || 'Помилка реєстрації');
+      }
 
-  const onSubmit = (data: any) => {
-    if (users.find(u => u.login === data.login)) {
-      showError('Користувач з таким email вже існує');
-      return;
+      const { user, session } = result;
+
+      if (!user) {
+        showSuccess('Реєстрація успішна! Перевірте пошту для підтвердження.');
+        navigate('/login');
+        return;
+      }
+
+      // Если сессия сразу доступна, сохраняем её
+      if (session) {
+        // В реальном приложении здесь должен быть триггер в БД для создания профиля
+        // Но для надежности мы также можем сделать это через API, если RLS позволяет
+        setAuth({
+          id: user.id,
+          login: user.email,
+          role: 'artist',
+          artistName: data.artistName || '',
+          isVerified: false,
+          createdAt: new Date().toISOString()
+        }, session.access_token);
+
+        showSuccess('Ви успішно зареєстровані!');
+        navigate('/dashboard');
+      } else {
+        showSuccess('Будь ласка, увійдіть зі своїми даними.');
+        navigate('/login');
+      }
+    } catch (error: any) {
+      showError(error.message);
     }
-
-    // Strip password before adding to the store to prevent sensitive data exposure
-    const { password, ...userData } = data;
-
-    const newUser = { 
-      ...userData,
-      id: Math.random().toString(36).substr(2, 9), 
-      role: 'artist' as const, 
-      isVerified: false,
-      balance: 0,
-      createdAt: new Date().toISOString()
-    };
-    
-    addUser(newUser);
-    setAuth(newUser, 'mock-jwt');
-    showSuccess('Акаунт успішно створено!');
-    navigate('/dashboard');
   };
 
   return (
-    <div className="min-h-screen flex bg-[#050505] text-white items-center justify-center p-8">
-      <div className="w-full max-w-md space-y-12">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center mb-8">
-            <img src="https://jurbamusic.iceiy.com/whitemonster.png" alt="Logo" className="h-16 w-auto" />
+    <div className="min-h-screen flex bg-[#050505] text-white overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-16 bg-black border-r border-white/5">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-20">
+            <img src="https://jurbamusic.iceiy.com/whitemonster.png" alt="Logo" className="h-12 w-auto" />
+            <span className="text-2xl font-black tracking-[0.3em] uppercase">{content.logoText}</span>
           </div>
-          <h1 className="text-4xl font-black tracking-tight uppercase">Створити акаунт</h1>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Приєднуйтесь до {settings.siteName}</p>
+          <div className="space-y-6">
+            <h2 className="text-7xl font-black leading-[0.9] tracking-tighter uppercase">
+              ПРИЄДНУЙСЯ<br />
+              <span className="text-red-700">ДО НАС</span>
+            </h2>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 max-w-md leading-relaxed">
+              Отримай доступ до потужних інструментів для просування своєї музики.
+            </p>
+          </div>
         </div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-900/5 blur-[150px] rounded-full" />
+      </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          <div className="space-y-3">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне ім'я</Label>
-            <Input {...register('artistName', { required: true })} className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" placeholder="Ваш псевдонім" />
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
+        <div className="w-full max-w-md space-y-12">
+          <div className="text-center lg:text-left space-y-4">
+            <h1 className="text-4xl font-black tracking-tight uppercase">РЕЄСТРАЦІЯ</h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Створи свій акаунт за хвилину</p>
           </div>
-          <div className="space-y-3">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Email</Label>
-            <Input type="email" {...register('login', { required: true })} className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" placeholder="name@example.com" />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Email</Label>
+              <Input 
+                {...register('email', { required: true })} 
+                className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" 
+                placeholder="name@example.com" 
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Псевдонім артиста</Label>
+              <Input 
+                {...register('artistName', { required: true })} 
+                className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" 
+                placeholder="Ваше сценічне ім'я" 
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пароль</Label>
+              <Input 
+                type="password" 
+                {...register('password', { required: true, minLength: 6 })} 
+                className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" 
+                placeholder="Мінімум 6 символів" 
+                disabled={isSubmitting}
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full h-14 bg-red-700 hover:bg-red-800 text-white font-black uppercase tracking-widest text-xs rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <>
+                  Створити акаунт
+                  <ArrowRight className="ml-3" size={18} />
+                </>
+              )}
+            </Button>
+          </form>
+          <div className="text-center space-y-6">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
+              Вже маєте акаунт?{' '}
+              <Link to="/login" className="text-red-700 hover:underline">Увійти</Link>
+            </p>
           </div>
-          <div className="space-y-3">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пароль</Label>
-            <Input type="password" {...register('password', { required: true })} className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" placeholder="••••••••" />
-          </div>
-          <Button type="submit" className="w-full h-14 bg-red-700 hover:bg-red-800 text-white font-black uppercase tracking-widest text-xs rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]">
-            Зареєструватися
-            <UserPlus className="ml-3" size={18} />
-          </Button>
-        </form>
-        <p className="text-center text-[10px] font-black uppercase tracking-widest text-zinc-600">
-          Вже маєте акаунт? <Link to="/login" className="text-red-700 hover:underline">Увійти</Link>
-        </p>
+        </div>
       </div>
     </div>
   );
