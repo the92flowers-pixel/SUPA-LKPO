@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { showSuccess } from '@/utils/toast';
+import { sanitizeUrl } from '@/utils/security';
 
 const AdminReports = () => {
   const { quarterlyReports, users, addReport, deleteReport } = useDataStore();
@@ -85,7 +86,12 @@ const AdminReports = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <a href={report.fileUrl} target="_blank" className="text-[10px] text-red-700 hover:underline font-mono truncate max-w-[150px] block">
+                        <a 
+                          href={sanitizeUrl(report.fileUrl)} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-red-700 hover:underline font-mono truncate max-w-[150px] block"
+                        >
                           {report.fileName || 'view_file'}
                         </a>
                       </td>
