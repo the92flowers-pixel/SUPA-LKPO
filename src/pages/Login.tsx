@@ -22,20 +22,19 @@ const Login = () => {
       const result = await supabaseApi.auth.signInWithPassword(data.login, data.password);
       
       if (result.error) {
-        throw new Error(result.error_description || result.error || 'Помилка входу');
+        throw new Error(result.error);
       }
 
       const { access_token, user } = result;
 
-      // Получаем профиль пользователя из таблицы profiles для проверки роли
-      // Это предотвращает манипуляцию ролью на стороне клиента
-      const profiles = await supabaseApi.db.from('profiles');
-      const profileData = await profiles.select(access_token);
-      const userProfile = profileData.find((p: any) => p.id === user.id);
-
-      if (!userProfile) {
-        throw new Error('Профіль користувача не знайдено');
+      // Получаем профиль пользователя напрямую по ID
+      const profileResult = await supabaseApi.db.getProfile(user.id, access_token);
+      
+      if (profileResult.error || !profileResult.data) {
+        throw new Error(profileResult.error || 'Профіль користувача не знайдено. Переконайтеся, що ви виконали SQL скрипт в Supabase.');
       }
+
+      const userProfile = profileResult.data;
 
       setAuth({
         id: user.id,

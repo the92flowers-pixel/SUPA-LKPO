@@ -20,10 +20,10 @@ const Register = () => {
   const onSubmit = async (data: any) => {
     try {
       // Регистрируем пользователя в Supabase Auth
-      const result = await supabaseApi.auth.signUp(data.email, data.password);
+      const result = await supabaseApi.auth.signUp(data.email, data.password, data.artistName);
       
       if (result.error) {
-        throw new Error(result.error_description || result.error || 'Помилка реєстрації');
+        throw new Error(result.error);
       }
 
       const { user, session } = result;
@@ -36,21 +36,30 @@ const Register = () => {
 
       // Если сессия сразу доступна, сохраняем её
       if (session) {
-        // В реальном приложении здесь должен быть триггер в БД для создания профиля
-        // Но для надежности мы также можем сделать это через API, если RLS позволяет
-        setAuth({
-          id: user.id,
-          login: user.email,
-          role: 'artist',
-          artistName: data.artistName || '',
-          isVerified: false,
-          createdAt: new Date().toISOString()
-        }, session.access_token);
+        // Ждем немного, чтобы триггер в БД успел создать профиль
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const profileResult = await supabaseApi.db.getProfile(user.id, session.access_token);
+        
+        if (profileResult.data) {
+          const userProfile = profileResult.data;
+          setAuth({
+            id: user.id,
+            login: user.email,
+            role: userProfile.role,
+            artistName: userProfile.artist_name || data.artistName,
+            isVerified: userProfile.is_verified || false,
+            createdAt: userProfile.created_at
+          }, session.access_token);
 
-        showSuccess('Ви успішно зареєстровані!');
-        navigate('/dashboard');
+          showSuccess('Ви успішно зареєстровані!');
+          navigate('/dashboard');
+        } else {
+          showSuccess('Реєстрація успішна! Будь ласка, увійдіть.');
+          navigate('/login');
+        }
       } else {
-        showSuccess('Будь ласка, увійдіть зі своїми даними.');
+        showSuccess('Будь ласка, підтвердіть пошту або увійдіть.');
         navigate('/login');
       }
     } catch (error: any) {
@@ -83,7 +92,7 @@ const Register = () => {
         <div className="w-full max-w-md space-y-12">
           <div className="text-center lg:text-left space-y-4">
             <h1 className="text-4xl font-black tracking-tight uppercase">РЕЄСТРАЦІЯ</h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Створи свій акаунт за хвилину</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Створи свой акаунт за хвилину</p>
           </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-3">

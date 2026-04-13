@@ -3,12 +3,8 @@
  * Не требует установки @supabase/supabase-js.
  */
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ВАШ_ПРОЕКТ.supabase.co'; // Замените на ваш URL из настроек Supabase
+const supabaseUrl = 'https://dhouzqxqsmchbxmxrhnh.supabase.co';
 const supabaseAnonKey = 'sb_publishable_dOp-xTq5eAZYnUrdedlfTA_WwaNV84P';
-
-if (supabaseUrl.includes('ВАШ_ПРОЕКТ')) {
-  console.warn('ВНИМАНИЕ: Необходимо указать VITE_SUPABASE_URL в настройках или в файле src/lib/supabase-fetch.ts');
-}
 
 export const supabaseApi = {
   auth: {
@@ -21,18 +17,30 @@ export const supabaseApi = {
         },
         body: JSON.stringify({ email, password })
       });
-      return res.json();
+      const data = await res.json();
+      if (!res.ok) return { error: data.error_description || data.error || 'Login failed' };
+      return data;
     },
-    async signUp(email, password) {
+    async signUp(email, password, artistName) {
       const res = await fetch(`${supabaseUrl}/auth/v1/signup`, {
         method: 'POST',
         headers: {
           'apikey': supabaseAnonKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ 
+          email, 
+          password,
+          options: {
+            data: {
+              artistName: artistName
+            }
+          }
+        })
       });
-      return res.json();
+      const data = await res.json();
+      if (!res.ok) return { error: data.error_description || data.error || 'Signup failed' };
+      return data;
     },
     async signOut(jwt) {
       const res = await fetch(`${supabaseUrl}/auth/v1/logout`, {
@@ -46,19 +54,18 @@ export const supabaseApi = {
     }
   },
   db: {
-    async from(table) {
-      return {
-        select: async (jwt) => {
-          const res = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
-            method: 'GET',
-            headers: {
-              'apikey': supabaseAnonKey,
-              'Authorization': `Bearer ${jwt}`
-            }
-          });
-          return res.json();
+    async getProfile(userId, jwt) {
+      const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${jwt}`,
+          'Range': '0-0'
         }
-      };
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.message || 'Failed to fetch profile' };
+      return { data: data[0] };
     }
   }
 };
