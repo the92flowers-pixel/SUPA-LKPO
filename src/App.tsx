@@ -3,8 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
-import { useAuthStore, useDataStore } from "./lib/store";
+import { useAuthStore } from "./lib/store";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -38,13 +37,11 @@ const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 'admin' | 'artist' }) => {
   const { user, token } = useAuthStore();
-  const fetchInitialData = useDataStore(s => s.fetchInitialData);
-
-  useEffect(() => {
-    if (token) fetchInitialData(token);
-  }, [token, fetchInitialData]);
   
+  // Если нет токена, перенаправляем на логин
   if (!token || !user) return <Navigate to="/login" replace />;
+  
+  // Проверка роли теперь основана на данных, полученных после успешной серверной авторизации
   if (role && user.role !== role) return <Navigate to="/dashboard" replace />;
   
   return <Layout>{children}</Layout>;

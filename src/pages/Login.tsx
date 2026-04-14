@@ -20,42 +20,32 @@ const Login = () => {
   const onSubmit = async (data: any) => {
     try {
       const result = await supabaseApi.auth.signInWithPassword(data.login, data.password);
-
+      
       if (result.error) {
-        // Если пользователь не найден или пароль неверный – покажем сообщение
-        if (result.error.message.includes('Invalid login credentials')) {
-          showError('Неправильний Email або пароль');
-        } else {
-          throw new Error(result.error.message);
-        }
-        return;
+        throw new Error(result.error);
       }
 
-      const { user, session } = result.data;
+      const { access_token, user } = result.data;
 
-      if (!user) {
-        showSuccess('Успішний вхід!');
-        navigate('/dashboard');
-        return;
-      }
-
-      // Получаем профиль пользователя
-      const profileResult = await supabaseApi.profiles.get(user.id, session.access_token);
+      // Получаем профиль пользователя напрямую по ID
+      const profileResult = await supabaseApi.profiles.get(user.id, access_token);
+      
       if (profileResult.error || !profileResult.data) {
-        throw new Error(profileResult.error || 'Не вдалося завантажити профіль користувача');
+        throw new Error(profileResult.error || 'Профіль користувача не знайдено. Переконайтеся, що ви виконали SQL скрипт в Supabase.');
       }
 
       const userProfile = profileResult.data;
+
       setAuth({
         id: user.id,
         login: user.email,
         role: userProfile.role,
         artistName: userProfile.artist_name || '',
         isVerified: userProfile.is_verified || false,
-        createdAt: userProfile.created_at,
-      }, session.access_token);
+        createdAt: userProfile.created_at
+      }, access_token);
 
-      // Перенаправляем в админку или дашборд в зависимости от роли
+      showSuccess('Успішний вхід!');
       navigate(userProfile.role === 'admin' ? '/admin/moderation' : '/dashboard');
     } catch (error: any) {
       showError(error.message);
@@ -78,6 +68,14 @@ const Login = () => {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 max-w-md leading-relaxed">{content.leftText2}</p>
           </div>
         </div>
+        <div className="relative z-10 grid grid-cols-1 gap-4">
+          {[content.feature1, content.feature2, content.feature3].map((f, i) => (
+            <div key={i} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              <div className="w-1 h-1 bg-red-700" />
+              {f}
+            </div>
+          ))}
+        </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-900/5 blur-[150px] rounded-full" />
       </div>
 
@@ -98,12 +96,15 @@ const Login = () => {
               />
             </div>
             <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пароль</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пароль</Label>
+              </div>
               <Input 
                 type="password" 
                 {...register('password', { required: true })} 
                 className="bg-black/40 border-white/5 rounded-none h-14 focus:border-red-700 text-white placeholder:text-zinc-800" 
-                placeholder="••••••••"                 disabled={isSubmitting}
+                placeholder="••••••••" 
+                disabled={isSubmitting}
               />
             </div>
             <Button 

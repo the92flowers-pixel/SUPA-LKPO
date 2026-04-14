@@ -19,17 +19,11 @@ const Register = () => {
 
   const onSubmit = async (data: any) => {
     try {
-      // Регистрация через Supabase Auth
+      // Регистрируем пользователя в Supabase Auth
       const result = await supabaseApi.auth.signUp(data.email, data.password, data.artistName);
-
+      
       if (result.error) {
-        // Если пользователь уже существует – покажем дружелюбное сообщение
-        if (result.error.message.includes('already exists')) {
-          showError('Користувач з таким Email вже зареєстрований');
-        } else {
-          throw new Error(result.error.message);
-        }
-        return;
+        throw new Error(result.error);
       }
 
       const { user, session } = result.data;
@@ -40,27 +34,30 @@ const Register = () => {
         return;
       }
 
+      // Если сессия сразу доступна, сохраняем её
       if (session) {
-        // Небольшая задержка, щоб триггер в БД успел створити профіль
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
+        // Ждем немного, чтобы триггер в БД успел создать профиль
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         const profileResult = await supabaseApi.profiles.get(user.id, session.access_token);
-        if (profileResult.error || !profileResult.data) {
-          throw new Error(profileResult.error || 'Не вдалося завантажити профіль користувача');
+        
+        if (profileResult.data) {
+          const userProfile = profileResult.data;
+          setAuth({
+            id: user.id,
+            login: user.email,
+            role: userProfile.role,
+            artistName: userProfile.artist_name || data.artistName,
+            isVerified: userProfile.is_verified || false,
+            createdAt: userProfile.created_at
+          }, session.access_token);
+
+          showSuccess('Ви успішно зареєстровані!');
+          navigate('/dashboard');
+        } else {
+          showSuccess('Реєстрація успішна! Будь ласка, увійдіть.');
+          navigate('/login');
         }
-
-        const userProfile = profileResult.data;
-        setAuth({
-          id: user.id,
-          login: user.email,
-          role: userProfile.role,
-          artistName: userProfile.artist_name || data.artistName,
-          isVerified: userProfile.is_verified || false,
-          createdAt: userProfile.created_at,
-        }, session.access_token);
-
-        showSuccess('Ви успішно зареєстровані!');
-        navigate('/dashboard');
       } else {
         showSuccess('Будь ласка, підтвердіть пошту або увійдіть.');
         navigate('/login');
@@ -80,10 +77,12 @@ const Register = () => {
           </div>
           <div className="space-y-6">
             <h2 className="text-7xl font-black leading-[0.9] tracking-tighter uppercase">
-              {content.leftTitle}<br />
-              <span className="text-red-700">{content.leftText1}</span>
+              ПРИЄДНУЙСЯ<br />
+              <span className="text-red-700">ДО НАС</span>
             </h2>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 max-w-md leading-relaxed">{content.leftText2}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500 max-w-md leading-relaxed">
+              Отримай доступ до потужних інструментів для просування своєї музики.
+            </p>
           </div>
         </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-900/5 blur-[150px] rounded-full" />
@@ -92,8 +91,8 @@ const Register = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
         <div className="w-full max-w-md space-y-12">
           <div className="text-center lg:text-left space-y-4">
-            <h1 className="text-4xl font-black tracking-tight uppercase">{content.welcomeTitle}</h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">{content.welcomeSubtitle}</p>
+            <h1 className="text-4xl font-black tracking-tight uppercase">РЕЄСТРАЦІЯ</h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Створи свой акаунт за хвилину</p>
           </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-3">
@@ -141,7 +140,7 @@ const Register = () => {
           </form>
           <div className="text-center space-y-6">
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
-              Немає акаунту?{' '}
+              Вже маєте акаунт?{' '}
               <Link to="/login" className="text-red-700 hover:underline">Увійти</Link>
             </p>
           </div>
