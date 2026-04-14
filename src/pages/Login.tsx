@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,10 +26,14 @@ const Login = () => {
       if (error) throw error;
 
       if (authData.user) {
+        const role = authData.user.user_metadata?.role || 'artist';
         showSuccess('Успішний вхід!');
-        // Перенаправлення відбудеться автоматично через App.tsx, 
-        // але для впевненості додаємо базове
-        navigate('/dashboard');
+        
+        if (role === 'admin') {
+          navigate('/admin/moderation');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error: any) {
       showError(error.message || 'Помилка при вході');
