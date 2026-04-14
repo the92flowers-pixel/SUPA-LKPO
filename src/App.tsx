@@ -59,6 +59,12 @@ const App = () => {
   const { setAuth, logout, user } = useAuthStore();
   const { fetchInitialData } = useDataStore();
 
+  // 1. Завантажуємо публічні дані відразу (назва сайту, дизайн тощо)
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  // 2. Перевіряємо сесію
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -93,6 +99,7 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // 3. Завантажуємо дані користувача, коли він увійшов
   useEffect(() => {
     if (user) {
       fetchInitialData(user.id, user.role);
