@@ -105,7 +105,10 @@ interface DataState {
 export const useDataStore = create<DataState>()(
   persist(
     (set) => ({
-      users: [], // Removed hardcoded credentials
+      users: [
+        { id: '1', login: 'admin', password: 'admin2', role: 'admin', artistName: 'Адмін', balance: 0, isVerified: true, createdAt: new Date().toISOString() },
+        { id: '2', login: 'artist@demo.com', password: 'password', role: 'artist', artistName: 'Demo Artist', balance: 1250, isVerified: false, createdAt: new Date().toISOString() }
+      ],
       releases: [],
       statuses: initialStatuses,
       fields: initialFields,
@@ -274,7 +277,7 @@ export const useDataStore = create<DataState>()(
         quarterlyReports: state.quarterlyReports.filter(r => r.id !== id)
       })),
     }),
-    { name: 'zhurba-db-v13' }
+    { name: 'zhurba-db-v12' }
   )
 );
 
@@ -293,7 +296,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => set({ user, token }),
       logout: () => set({ user: null, token: null }),
     }),
-    { name: 'zhurba-auth-v13' }
+    { name: 'zhurba-auth-v12' }
   )
 );
 

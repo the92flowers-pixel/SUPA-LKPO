@@ -1,12 +1,9 @@
-"use client";
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Music, Globe, Zap, Shield, ArrowRight, Instagram, Send, Youtube, Twitter, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Navigate } from 'react-router-dom';
-import { sanitizeUrl } from '@/utils/security';
 
 const SocialIcon = ({ name }: { name: string }) => {
   const lowerName = name.toLowerCase();
@@ -60,7 +57,7 @@ const Index = () => {
             >
               Made in Ukraine
             </div>
-            <h1 className="text-5xl md:text-9xl font-black leading-[0.85] tracking-tighter mb-12 uppercase">
+            <h1 className="text-7xl md:text-9xl font-black leading-[0.85] tracking-tighter mb-12 uppercase">
               {config.heroTitle.split(' ').map((word: string, i: number) => (
                 <span key={i} className={i === config.heroTitle.split(' ').length - 1 ? "text-red-700" : ""}>
                   {word}{' '}
@@ -83,6 +80,11 @@ const Index = () => {
                   </Button>
                 </Link>
               )}
+              <Link to="/login">
+                <Button variant="outline" className="h-16 px-12 border-zinc-800 hover:bg-white/5 text-sm font-black tracking-widest uppercase rounded-none">
+                  Демо кабінету
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -129,10 +131,10 @@ const Index = () => {
             {labelSocials.map((social) => (
               <a 
                 key={social.id} 
-                href={sanitizeUrl(social.url)} 
+                href={social.url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="hover:text-red-600 transition-colors"
                 title={social.name}
               >
                 <SocialIcon name={social.name} />

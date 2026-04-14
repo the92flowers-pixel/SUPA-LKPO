@@ -1,11 +1,8 @@
-"use client";
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useDataStore } from '@/lib/store';
 import { Music, Instagram, Send, Youtube, Globe, Cloud, Disc, Apple, Twitter, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { sanitizeUrl } from '@/utils/security';
 
 const PlatformIcon = ({ name }: { name: string }) => {
   const lowerName = name.toLowerCase();
@@ -63,7 +60,7 @@ const SmartLinkPage = () => {
                   <span className="font-black uppercase tracking-widest text-[11px]">{p.name}</span>
                 </div>
                 <Button 
-                  onClick={() => window.open(sanitizeUrl(p.url), '_blank')}
+                  onClick={() => window.open(p.url, '_blank')}
                   className="bg-white/10 hover:bg-white text-white hover:text-black text-[9px] font-black uppercase tracking-widest px-6 h-9 rounded-none transition-all"
                 >
                   Слухати
@@ -78,7 +75,7 @@ const SmartLinkPage = () => {
             {labelSocials.map((social) => (
               <a 
                 key={social.id} 
-                href={sanitizeUrl(social.url)} 
+                href={social.url} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
