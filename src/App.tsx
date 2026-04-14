@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,17 +20,16 @@ import Finances from "./pages/Finances";
 import Reports from "./pages/Reports";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Moderation from "./pages/admin/Moderation";
+import AllReleases from "./pages/admin/AllReleases";
+import SmartLinksManagement from "./pages/admin/SmartLinksManagement";
+import ArtistWebsitesManagement from "./pages/admin/ArtistWebsitesManagement";
 import Users from "./pages/admin/Users";
 import Statistics from "./pages/admin/Statistics";
 import Statuses from "./pages/admin/Statuses";
 import Fields from "./pages/admin/Fields";
+import LabelSocials from "./pages/admin/LabelSocials";
 import LoginCustomization from "./pages/admin/LoginCustomization";
 import Settings from "./pages/admin/Settings";
-import Export from "./pages/admin/Export";
-import LabelSocials from "./pages/admin/LabelSocials";
-import AllReleases from "./pages/admin/AllReleases";
-import SmartLinksManagement from "./pages/admin/SmartLinksManagement";
-import ArtistWebsitesManagement from "./pages/admin/ArtistWebsitesManagement";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminReports from "./pages/admin/AdminReports";
 import SmartLinkPage from "./pages/SmartLinkPage";
@@ -46,23 +47,16 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 
 
 const App = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
-  const fetchInitialData = useDataStore((state) => state.fetchInitialData);
+  const { fetchInitialData, subscribeToChanges } = useDataStore();
 
   useEffect(() => {
-    // Перевірка поточної сесії
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        fetchProfile(session);
-      }
+      if (session) fetchProfile(session);
     });
 
-    // Слухач змін авторизації
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        fetchProfile(session);
-      } else {
-        setAuth(null, null);
-      }
+      if (session) fetchProfile(session);
+      else setAuth(null, null);
     });
 
     return () => subscription.unsubscribe();
@@ -86,10 +80,17 @@ const App = () => {
         createdAt: profile.created_at
       };
       setAuth(userData, session);
-      // Завантажуємо дані для цього користувача
       fetchInitialData(profile.id, profile.role);
     }
   };
+
+  const user = useAuthStore((s) => s.user);
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToChanges(user.id, user.role);
+      return () => unsubscribe();
+    }
+  }, [user]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -123,7 +124,6 @@ const App = () => {
             <Route path="/admin/label-socials" element={<ProtectedRoute role="admin"><LabelSocials /></ProtectedRoute>} />
             <Route path="/admin/login-customization" element={<ProtectedRoute role="admin"><LoginCustomization /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
-            <Route path="/admin/export" element={<ProtectedRoute role="admin"><Export /></ProtectedRoute>} />
             <Route path="/admin/finance" element={<ProtectedRoute role="admin"><AdminFinance /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminReports /></ProtectedRoute>} />
             
