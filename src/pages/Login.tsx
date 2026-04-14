@@ -25,10 +25,10 @@ const Login = () => {
         throw new Error(result.error);
       }
 
-      const { access_token, user } = result;
+      const { access_token, user } = result.data;
 
       // Получаем профиль пользователя напрямую по ID
-      const profileResult = await supabaseApi.db.getProfile(user.id, access_token);
+      const profileResult = await supabaseApi.profiles.get(user.id, access_token);
       
       if (profileResult.error || !profileResult.data) {
         throw new Error(profileResult.error || 'Профіль користувача не знайдено. Переконайтеся, що ви виконали SQL скрипт в Supabase.');

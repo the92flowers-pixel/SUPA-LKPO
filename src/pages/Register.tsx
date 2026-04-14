@@ -26,7 +26,7 @@ const Register = () => {
         throw new Error(result.error);
       }
 
-      const { user, session } = result;
+      const { user, session } = result.data;
 
       if (!user) {
         showSuccess('Реєстрація успішна! Перевірте пошту для підтвердження.');
@@ -39,7 +39,7 @@ const Register = () => {
         // Ждем немного, чтобы триггер в БД успел создать профиль
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        const profileResult = await supabaseApi.db.getProfile(user.id, session.access_token);
+        const profileResult = await supabaseApi.profiles.get(user.id, session.access_token);
         
         if (profileResult.data) {
           const userProfile = profileResult.data;
