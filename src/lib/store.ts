@@ -270,7 +270,7 @@ export const useDataStore = create<DataState>()((set, get) => ({
     await supabaseApi.reports.delete(id, jwt);
     set(state => ({ quarterlyReports: state.quarterlyReports.filter(r => r.id !== id) }));
   }
-})));
+}));
 
 interface AuthState {
   user: any | null;
