@@ -42,12 +42,31 @@ interface DataState {
   smartLinks: any[];
   artistWebsites: any[];
   isLoading: boolean;
+  // Налаштування та конфігурації
+  settings: {
+    siteName: string;
+    registrationEnabled: boolean;
+    contactEmail: string;
+  };
+  homePageConfig: {
+    heroTitle: string;
+    heroSubtitle: string;
+    buttonText: string;
+    primaryColor: string;
+  };
+  adminPanelConfig: {
+    logoText: string;
+    accentColor: string;
+  };
+  labelSocials: any[];
   
   fetchInitialData: (userId: string, role: string) => Promise<void>;
   subscribeToChanges: (userId: string, role: string) => () => void;
   
-  // Методи оновлення (вони тепер просто викликають Supabase, а Realtime оновить UI)
   updateReleaseStatus: (id: string, status: string) => Promise<void>;
+  updateSettings: (settings: any) => void;
+  updateHomeConfig: (config: any) => void;
+  updateAdminConfig: (config: any) => void;
 }
 
 export const useDataStore = create<DataState>((set, get) => ({
@@ -56,32 +75,46 @@ export const useDataStore = create<DataState>((set, get) => ({
   smartLinks: [],
   artistWebsites: [],
   isLoading: false,
+  labelSocials: [],
+  
+  // Початкові значення, щоб уникнути undefined
+  settings: {
+    siteName: "ЖУРБА MUSIC",
+    registrationEnabled: true,
+    contactEmail: "support@jurba.com"
+  },
+  homePageConfig: {
+    heroTitle: "Твоя музика. Скрізь.",
+    heroSubtitle: "Дистрибуція на 150+ стрімінгових платформ.",
+    buttonText: "Приєднатися",
+    primaryColor: "#b91c1c"
+  },
+  adminPanelConfig: {
+    logoText: "ЖУРБА MUSIC",
+    accentColor: "#b91c1c"
+  },
 
   fetchInitialData: async (userId, role) => {
     set({ isLoading: true });
     try {
-      // 1. Отримуємо артиста, якщо це не адмін
       let artistId = null;
       if (role !== 'admin') {
         const { data: artist } = await supabase.from('artists').select('id').eq('user_id', userId).single();
         artistId = artist?.id;
       }
 
-      // 2. Завантажуємо релізи
       let releasesQuery = supabase.from('releases').select('*, artists(name), tracks(*)');
       if (role !== 'admin' && artistId) {
         releasesQuery = releasesQuery.eq('artist_id', artistId);
       }
       const { data: releases } = await releasesQuery;
 
-      // 3. Завантажуємо смартлінки
       let linksQuery = supabase.from('smart_links').select('*');
       if (role !== 'admin' && artistId) {
         linksQuery = linksQuery.eq('artist_id', artistId);
       }
       const { data: links } = await linksQuery;
 
-      // 4. Завантажуємо користувачів (тільки для адміна)
       let usersData = [];
       if (role === 'admin') {
         const { data: profiles } = await supabase.from('profiles').select('*');
@@ -115,7 +148,11 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   updateReleaseStatus: async (id, status) => {
     await supabase.from('releases').update({ status }).eq('id', id);
-  }
+  },
+  
+  updateSettings: (settings) => set({ settings }),
+  updateHomeConfig: (homePageConfig) => set({ homePageConfig }),
+  updateAdminConfig: (adminPanelConfig) => set({ adminPanelConfig })
 }));
 
 interface UIState {
