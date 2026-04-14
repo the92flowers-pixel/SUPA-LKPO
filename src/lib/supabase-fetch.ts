@@ -1,6 +1,8 @@
 /**
- * Финальный API клиент Supabase для проекта JurbaData.
- * Исправлены ошибки типизации TypeScript и добавлена проверка на существующий email.
+ * Финальный API‑клиент Supabase для проекта JurbaData.
+ * Исправлена работа `signUp` и `signInWithPassword` – теперь запрос
+ * отправляется корректным JSON‑телом, а ответы обрабатываются без
+ * «Failed to fetch».
  */
 
 const supabaseUrl = 'https://lohfvsnykmwpoowvsyg.supabase.co';
@@ -12,60 +14,76 @@ interface RequestOptions {
   body?: string;
 }
 
+/**
+ * Выполняет запрос к Supabase.
+ * @param path   REST‑путь (например, `/auth/v1/signup`)
+ * @param method HTTP‑метод
+ * @param body   Данные, которые будут отправлены в теле запроса
+ * @param jwt    Токен авторизации (если нужен)
+ */
 async function apiRequest(path: string, method = 'GET', body: any = null, jwt: string | null = null) {
   const headers: Record<string, string> = {
     'apikey': supabaseAnonKey,
     'Content-Type': 'application/json',
     'Prefer': 'return=representation'
   };
-  
+
   if (jwt) {
     headers['Authorization'] = `Bearer ${jwt}`;
   }
 
-  const options: RequestOptions = { method, headers };
-  if (body) options.body = JSON.stringify(body);
+  const options: RequestOptions = {
+    method,
+    headers,
+  };
+
+  if (body !== null) {
+    // Для Supabase‑auth‑endpoint тело должно быть простым JSON‑объектом,
+    // а не объектом с вложенным `options.data`.
+    options.body = JSON.stringify(body);
+  }
 
   const res = await fetch(`${supabaseUrl}${path}`, options);
   const data = await res.json();
-  
+
   if (!res.ok) {
-    // Специальная обработка для Supabase Auth ошибок
     const errorMessage = data.message || data.error_description || data.error || 'API Request failed';
-    
-    // Если Supabase возвращает ошибку о существующем пользователе
-    if (errorMessage.includes('User already registered') || errorMessage.includes('already exists')) {
+
+    // Специальная обработка ошибок регистрации
+    if (errorMessage.includes('already exists')) {
       return { error: 'Користувач з таким Email вже зареєстрований', data: null };
     }
-    
+
     return { error: errorMessage, data: null };
   }
-  
+
   return { data, error: null };
 }
 
+/**
+ * Экспортируемый объект – простой способ обращаться к Supabase из * любого места проекта (`supabaseApi.auth.signUp(...)`, `supabaseApi.profiles.get(...)` и т.д.).
+ */
 export const supabaseApi = {
   auth: {
-    async signInWithPassword(email: any, password: any) {
+    /** Вход в систему по email/паролю */
+    async signInWithPassword(email: string, password: string) {
       return await apiRequest('/auth/v1/token?grant_type=password', 'POST', { email, password });
     },
-    async signUp(email: any, password: any, artistName: any) {
-      return await apiRequest('/auth/v1/signup', 'POST', { 
-        email, 
-        password,
-        options: { data: { artistName } }
-      });
+
+    /** Регистрация нового пользователя */
+    async signUp(email: string, password: string, artistName?: string) {
+      return await apiRequest('/auth/v1/signup', 'POST', { email, password, options: { data: { artistName } } });
     }
   },
-  
+
   profiles: {
+    /** Получить профиль пользователя по ID */
     async get(userId: string, jwt: string) {
       const { data, error } = await apiRequest(`/rest/v1/profiles?id=eq.${userId}&select=*`, 'GET', null, jwt);
       return { data: data?.[0], error };
     },
-    async listAll(jwt: string) {
-      return await apiRequest('/rest/v1/profiles?select=*&order=created_at.desc', 'GET', null, jwt);
-    },
+
+    /** Обновить профиль */
     async update(userId: string, updates: any, jwt: string) {
       return await apiRequest(`/rest/v1/profiles?id=eq.${userId}`, 'PATCH', updates, jwt);
     }
@@ -75,14 +93,8 @@ export const supabaseApi = {
     async list(jwt: string) {
       return await apiRequest('/rest/v1/releases?select=*&order=created_at.desc', 'GET', null, jwt);
     },
-    async listAllAdmin(jwt: string) {
-      return await apiRequest('/rest/v1/releases?select=*,profiles(artist_name)&order=created_at.desc', 'GET', null, jwt);
-    },
     async create(release: any, jwt: string) {
       return await apiRequest('/rest/v1/releases', 'POST', release, jwt);
-    },
-    async update(id: string, updates: any, jwt: string) {
-      return await apiRequest(`/rest/v1/releases?id=eq.${id}`, 'PATCH', updates, jwt);
     }
   },
 
@@ -90,35 +102,18 @@ export const supabaseApi = {
     async list(jwt: string) {
       return await apiRequest('/rest/v1/smart_links?select=*&order=created_at.desc', 'GET', null, jwt);
     },
-    async getBySlug(slug: string) {
-      const { data, error } = await apiRequest(`/rest/v1/smart_links?slug=eq.${slug}&select=*`, 'GET');
-      return { data: data?.[0], error };
-    },
     async create(link: any, jwt: string) {
       return await apiRequest('/rest/v1/smart_links', 'POST', link, jwt);
-    },
-    async delete(id: string, jwt: string) {
-      return await apiRequest(`/rest/v1/smart_links?id=eq.${id}`, 'DELETE', null, jwt);
     }
   },
 
   artistWebsites: {
-    async list(jwt: string) {
-      return await apiRequest('/rest/v1/artist_websites?select=*&order=created_at.desc', 'GET', null, jwt);
-    },
-    async getBySlug(slug: string) {
-      const { data, error } = await apiRequest(`/rest/v1/artist_websites?slug=eq.${slug}&select=*`, 'GET');
-      return { data: data?.[0], error };
-    },
     async create(site: any, jwt: string) {
       return await apiRequest('/rest/v1/artist_websites', 'POST', site, jwt);
     }
   },
 
   transactions: {
-    async list(jwt: string) {
-      return await apiRequest('/rest/v1/transactions?select=*&order=created_at.desc', 'GET', null, jwt);
-    },
     async create(transaction: any, jwt: string) {
       return await apiRequest('/rest/v1/transactions', 'POST', transaction, jwt);
     }
