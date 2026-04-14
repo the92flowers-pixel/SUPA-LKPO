@@ -1,10 +1,10 @@
 /**
- * Расширенный API клиент Supabase.
- * Добавлена поддержка Смарт-линков, Сайтов артистов и Админ-панели.
+ * Финальный API клиент Supabase для проекта JurbaData.
+ * Использует прямые fetch-запросы для обхода ограничений установки пакетов.
  */
 
-const supabaseUrl = 'https://dhouzqxqsmchbxmxrhnh.supabase.co';
-const supabaseAnonKey = 'sb_publishable_dOp-xTq5eAZYnUrdedlfTA_WwaNV84P';
+const supabaseUrl = 'https://lohfvsxnykmwpoowvsyg.supabase.co';
+const supabaseAnonKey = 'sb_publishable_9EUyR2PdPmaMrNubzIpBmQ_Q_vhC-B4';
 
 async function apiRequest(path, method = 'GET', body = null, jwt = null) {
   const headers = {
@@ -98,6 +98,21 @@ export const supabaseApi = {
     },
     async create(site, jwt) {
       return await apiRequest('/rest/v1/artist_websites', 'POST', site, jwt);
+    }
+  },
+
+  transactions: {
+    async list(jwt) {
+      return await apiRequest('/rest/v1/transactions?select=*&order=created_at.desc', 'GET', null, jwt);
+    },
+    async create(transaction, jwt) {
+      return await apiRequest('/rest/v1/transactions', 'POST', transaction, jwt);
+    }
+  },
+
+  reports: {
+    async list(jwt) {
+      return await apiRequest('/rest/v1/reports?select=*&order=created_at.desc', 'GET', null, jwt);
     }
   },
 
