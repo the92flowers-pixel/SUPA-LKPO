@@ -34,6 +34,16 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
+interface UIState {
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+}
+
+export const useUIStore = create<UIState>((set) => ({
+  sidebarOpen: true,
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+}));
+
 interface DataState {
   adminPanelConfig: any;
   updateAdminConfig: (config: any) => void;
