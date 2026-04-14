@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Check, X, Play, Music, Info, Calendar, Tag, User, Clock } from 'lucide-react';
-import { useDataStore } from '@/lib/store';
+import { Check, X, Play, Music, Info, Calendar, Tag, User, Clock, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,23 +13,39 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 
 const Moderation = () => {
-  const { releases, updateReleaseStatus, statuses, fields } = useDataStore();
+  const { releases, updateReleaseStatus, statuses, fields, fetchInitialData } = useDataStore();
+  const { user } = useAuthStore();
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
   const defaultStatus = statuses.find(s => s.isDefault)?.name || 'На модерації';
   const pendingReleases = releases.filter(r => r.status === defaultStatus);
 
-  const handleAction = (id: string, action: 'approve' | 'reject') => {
+  const handleAction = async (id: string, action: 'approve' | 'reject') => {
     const newStatus = action === 'approve' 
       ? (statuses.find(s => s.color === 'green')?.name || 'Опубліковано')
       : (statuses.find(s => s.color === 'red')?.name || 'Відхилено');
     
-    updateReleaseStatus(id, newStatus);
-    showSuccess(`Реліз ${action === 'approve' ? 'схвалено' : 'відхилено'}`);
-    setSelectedTrack(null);
+    setIsProcessing(id);
+    try {
+      const { error } = await supabase
+        .from('releases')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      updateReleaseStatus(id, newStatus);
+      showSuccess(`Реліз ${action === 'approve' ? 'схвалено' : 'відхилено'}`);
+      setSelectedTrack(null);
+    } catch (error: any) {
+      showError(error.message);
+    } finally {
+      setIsProcessing(null);
+    }
   };
 
   const releaseFields = fields.filter(f => f.section === 'release');
@@ -87,16 +104,18 @@ const Moderation = () => {
                 </Button>
                 <div className="flex gap-2">
                   <Button 
+                    disabled={isProcessing === track.id}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                     onClick={() => handleAction(track.id, 'approve')}
                   >
-                    <Check size={18} />
+                    {isProcessing === track.id ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
                   </Button>
                   <Button 
+                    disabled={isProcessing === track.id}
                     className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                     onClick={() => handleAction(track.id, 'reject')}
                   >
-                    <X size={18} />
+                    {isProcessing === track.id ? <Loader2 className="animate-spin" size={18} /> : <X size={18} />}
                   </Button>
                 </div>
               </CardFooter>
@@ -161,16 +180,18 @@ const Moderation = () => {
             </Button>
             <Button 
               variant="destructive" 
+              disabled={isProcessing === selectedTrack?.id}
               className="bg-red-600 hover:bg-red-700 text-white"
               onClick={() => handleAction(selectedTrack?.id, 'reject')}
             >
-              <X size={18} className="mr-2" /> Відхилити
+              {isProcessing === selectedTrack?.id ? <Loader2 className="animate-spin mr-2" size={18} /> : <X size={18} className="mr-2" />} Відхилити
             </Button>
             <Button 
+              disabled={isProcessing === selectedTrack?.id}
               className="bg-green-600 hover:bg-green-700 text-white"
               onClick={() => handleAction(selectedTrack?.id, 'approve')}
             >
-              <Check size={18} className="mr-2" /> Схвалити
+              {isProcessing === selectedTrack?.id ? <Loader2 className="animate-spin mr-2" size={18} /> : <Check size={18} className="mr-2" />} Схвалити
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -124,10 +124,12 @@ export const useDataStore = create<DataState>()(
       fetchInitialData: async (userId, role) => {
         set({ isLoading: true });
         try {
-          // Завантаження релізів
-          let releasesQuery = supabase.from('releases').select('*');
+          // Завантаження релізів з приєднанням імені артиста
+          let releasesQuery = supabase
+            .from('releases')
+            .select('*, artists(name)');
+          
           if (role !== 'admin') {
-            // Для артиста спочатку треба знайти його artist_id
             const { data: artist } = await supabase.from('artists').select('id').eq('user_id', userId).single();
             if (artist) {
               releasesQuery = releasesQuery.eq('artist_id', artist.id);
@@ -138,21 +140,41 @@ export const useDataStore = create<DataState>()(
           
           const { data: releases } = await releasesQuery;
           if (releases) {
-            // Мапінг для сумісності з існуючим UI (додаємо streams та history, якщо їх немає в БД)
             const mappedReleases = releases.map(r => ({
-              ...r,
-              userId: userId, // Спрощення для UI
+              id: r.id,
+              title: r.title,
+              artist: r.artists?.name || 'Unknown',
+              genre: r.genre,
+              releaseDate: r.release_date,
+              coverUrl: r.cover_url,
+              status: r.status,
               streams: r.streams || 0,
-              history: r.history || []
+              history: r.history || [],
+              userId: userId,
+              createdAt: r.created_at
             }));
             set({ releases: mappedReleases });
           }
 
-          // Завантаження смартлінків
+          // Завантаження користувачів для адміна
+          if (role === 'admin') {
+            const { data: profiles } = await supabase.from('profiles').select('*');
+            if (profiles) {
+              set({ users: profiles.map(p => ({
+                id: p.id,
+                login: p.email,
+                role: p.role,
+                artistName: p.full_name,
+                balance: p.balance || 0,
+                isVerified: p.is_verified || false,
+                createdAt: p.created_at
+              })) });
+            }
+          }
+
           const { data: smartLinks } = await supabase.from('smart_links').select('*');
           if (smartLinks) set({ smartLinks });
 
-          // Завантаження сайтів артистів
           const { data: websites } = await supabase.from('artist_websites').select('*');
           if (websites) set({ artistWebsites: websites });
 
