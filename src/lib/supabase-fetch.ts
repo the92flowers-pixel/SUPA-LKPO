@@ -1,10 +1,10 @@
 /**
- * Финальный API клиент Supabase для проекта JurbaData.
- * Исправлены ошибки типизации TypeScript и добавлена проверка на существующий email.
+ * API клиент Supabase для проекта JurbaData.
+ * Використовує змінні оточення для безпечної конфігурації.
  */
 
-const supabaseUrl = 'https://lohfvsnykmwpoowvsyg.supabase.co';
-const supabaseAnonKey = 'sb_publishable_9EUyR2PdPmaMrNubzIpBmQ_Q_vhC-B4';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://lohfvsnykmwpoowvsyg.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_9EUyR2PdPmaMrNubzIpBmQ_Q_vhC-B4';
 
 interface RequestOptions {
   method: string;
@@ -26,22 +26,24 @@ async function apiRequest(path: string, method = 'GET', body: any = null, jwt: s
   const options: RequestOptions = { method, headers };
   if (body) options.body = JSON.stringify(body);
 
-  const res = await fetch(`${supabaseUrl}${path}`, options);
-  const data = await res.json();
-  
-  if (!res.ok) {
-    // Специальная обработка для Supabase Auth ошибок
-    const errorMessage = data.message || data.error_description || data.error || 'API Request failed';
+  try {
+    const res = await fetch(`${supabaseUrl}${path}`, options);
+    const data = await res.json();
     
-    // Если Supabase возвращает ошибку о существующем пользователе
-    if (errorMessage.includes('User already registered') || errorMessage.includes('already exists')) {
-      return { error: 'Користувач з таким Email вже зареєстрований', data: null };
+    if (!res.ok) {
+      const errorMessage = data.message || data.error_description || data.error || 'API Request failed';
+      
+      if (errorMessage.includes('User already registered') || errorMessage.includes('already exists')) {
+        return { error: 'Користувач з таким Email вже зареєстрований', data: null };
+      }
+      
+      return { error: errorMessage, data: null };
     }
     
-    return { error: errorMessage, data: null };
+    return { data, error: null };
+  } catch (err) {
+    return { error: 'Мережева помилка. Перевірте з\'єднання з інтернетом.', data: null };
   }
-  
-  return { data, error: null };
 }
 
 export const supabaseApi = {
