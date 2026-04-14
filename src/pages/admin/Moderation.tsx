@@ -1,7 +1,8 @@
+"use client";
+
 import React, { useState } from 'react';
 import { Check, X, Play, Music, Info, Calendar, Tag, User, Clock, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { useDataStore, useAuthStore } from '@/lib/store';
+import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,8 +17,7 @@ import {
 import { showSuccess, showError } from '@/utils/toast';
 
 const Moderation = () => {
-  const { releases, updateReleaseStatus, statuses, fields, fetchInitialData } = useDataStore();
-  const { user } = useAuthStore();
+  const { releases, updateReleaseStatus, statuses, fields } = useDataStore();
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
@@ -31,18 +31,11 @@ const Moderation = () => {
     
     setIsProcessing(id);
     try {
-      const { error } = await supabase
-        .from('releases')
-        .update({ status: newStatus })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      updateReleaseStatus(id, newStatus);
+      await updateReleaseStatus(id, newStatus);
       showSuccess(`Реліз ${action === 'approve' ? 'схвалено' : 'відхилено'}`);
       setSelectedTrack(null);
     } catch (error: any) {
-      showError(error.message);
+      showError(error.message || "Помилка при оновленні статусу");
     } finally {
       setIsProcessing(null);
     }
@@ -69,7 +62,7 @@ const Moderation = () => {
             <Card key={track.id} className="bg-[#1a1a1a] border-white/5 overflow-hidden flex flex-col group hover:border-violet-500/30 transition-all duration-300">
               <div className="aspect-square relative overflow-hidden">
                 <img 
-                  src={track.coverUrl} 
+                  src={track.cover_image_url || track.coverUrl} 
                   alt={track.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                 />
@@ -89,7 +82,7 @@ const Moderation = () => {
                     <Tag size={14} /> {track.genre}
                   </div>
                   <div className="flex items-center gap-1.5 text-slate-400">
-                    <Calendar size={14} /> {track.releaseDate}
+                    <Calendar size={14} /> {track.release_date || track.releaseDate}
                   </div>
                 </div>
               </CardContent>
@@ -137,12 +130,12 @@ const Moderation = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               <div className="space-y-6">
                 <div className="aspect-square rounded-xl overflow-hidden border border-white/5 shadow-2xl">
-                  <img src={selectedTrack.coverUrl} alt={selectedTrack.title} className="w-full h-full object-cover" />
+                  <img src={selectedTrack.cover_image_url || selectedTrack.coverUrl} alt={selectedTrack.title} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-4 bg-[#0a0a0a] rounded-xl border border-white/5 space-y-4">
                   <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Аудіофайл</p>
                   <div className="flex items-center gap-4">
-                    <Button size="icon" className="rounded-full bg-violet-600 hover:bg-violet-700" onClick={() => window.open(selectedTrack.audioUrl, '_blank')}>
+                    <Button size="icon" className="rounded-full bg-violet-600 hover:bg-violet-700" onClick={() => window.open(selectedTrack.audio_file_url || selectedTrack.audioUrl, '_blank')}>
                       <Play size={20} />
                     </Button>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -161,14 +154,6 @@ const Moderation = () => {
                       <p className="font-medium text-white">{selectedTrack[field.name] || '—'}</p>
                     </div>
                   ))}
-                </div>
-
-                <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-lg">
-                  <p className="text-xs text-amber-500 font-bold mb-2 uppercase tracking-wider">Нотатка модератора</p>
-                  <textarea 
-                    className="w-full bg-transparent border-none text-sm text-slate-300 focus:ring-0 p-0 resize-none h-20 placeholder:text-slate-600"
-                    placeholder="Додайте коментар для артиста..."
-                  />
                 </div>
               </div>
             </div>
