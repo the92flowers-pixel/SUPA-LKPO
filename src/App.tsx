@@ -39,9 +39,19 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 'admin' | 'artist' }) => {
-  const { user } = useAuthStore();
+  const { user, isLoading } = useAuthStore();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-red-700 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  
   if (!user) return <Navigate to="/login" replace />;
   if (role && user.role !== role) return <Navigate to="/dashboard" replace />;
+  
   return <Layout>{children}</Layout>;
 };
 
@@ -50,10 +60,13 @@ const App = () => {
   const { fetchInitialData, subscribeToChanges } = useDataStore();
 
   useEffect(() => {
+    // Перевірка поточної сесії
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) fetchProfile(session);
+      else useAuthStore.setState({ isLoading: false });
     });
 
+    // Підписка на зміни стану аутентифікації
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) fetchProfile(session);
       else setAuth(null, null);
@@ -63,24 +76,31 @@ const App = () => {
   }, []);
 
   const fetchProfile = async (session: any) => {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
 
-    if (profile) {
-      const userData = {
-        id: profile.id,
-        login: profile.email,
-        role: profile.role,
-        artistName: profile.full_name,
-        balance: profile.balance || 0,
-        isVerified: profile.is_verified || false,
-        createdAt: profile.created_at
-      };
-      setAuth(userData, session);
-      fetchInitialData(profile.id, profile.role);
+      if (error) throw error;
+
+      if (profile) {
+        const userData = {
+          id: profile.id,
+          login: profile.email,
+          role: profile.role,
+          artistName: profile.full_name,
+          balance: profile.balance || 0,
+          isVerified: profile.is_verified || false,
+          createdAt: profile.created_at
+        };
+        setAuth(userData, session);
+        fetchInitialData(profile.id, profile.role);
+      }
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+      useAuthStore.setState({ isLoading: false });
     }
   };
 

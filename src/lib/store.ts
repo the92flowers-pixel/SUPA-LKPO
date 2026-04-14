@@ -17,6 +17,7 @@ interface User {
 interface AuthState {
   user: User | null;
   session: any | null;
+  isLoading: boolean;
   setAuth: (user: User | null, session: any | null) => void;
   logout: () => Promise<void>;
 }
@@ -26,10 +27,11 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       session: null,
-      setAuth: (user, session) => set({ user, session }),
+      isLoading: true, // Початковий стан завантаження
+      setAuth: (user, session) => set({ user, session, isLoading: false }),
       logout: async () => {
         await supabase.auth.signOut();
-        set({ user: null, session: null });
+        set({ user: null, session: null, isLoading: false });
       },
     }),
     { name: 'zhurba-auth-v2' }
@@ -42,7 +44,6 @@ interface DataState {
   smartLinks: any[];
   artistWebsites: any[];
   isLoading: boolean;
-  // Налаштування та конфігурації
   settings: {
     siteName: string;
     registrationEnabled: boolean;
@@ -62,7 +63,6 @@ interface DataState {
   
   fetchInitialData: (userId: string, role: string) => Promise<void>;
   subscribeToChanges: (userId: string, role: string) => () => void;
-  
   updateReleaseStatus: (id: string, status: string) => Promise<void>;
   updateSettings: (settings: any) => void;
   updateHomeConfig: (config: any) => void;
@@ -77,7 +77,6 @@ export const useDataStore = create<DataState>((set, get) => ({
   isLoading: false,
   labelSocials: [],
   
-  // Початкові значення, щоб уникнути undefined
   settings: {
     siteName: "ЖУРБА MUSIC",
     registrationEnabled: true,
@@ -152,7 +151,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   
   updateSettings: (settings) => set({ settings }),
   updateHomeConfig: (homePageConfig) => set({ homePageConfig }),
-  updateAdminConfig: (adminPanelConfig) => set({ adminPanelConfig })
+  updateAdminConfig: (adminPanelConfig) => set({ adminPanelConfig: (adminPanelConfig) => set({ adminPanelConfig })
 }));
 
 interface UIState {
