@@ -1,6 +1,6 @@
 /**
  * Финальный API клиент Supabase для проекта JurbaData.
- * Исправлены ошибки типизации TypeScript.
+ * Исправлены ошибки типизации TypeScript и добавлена проверка на существующий email.
  */
 
 const supabaseUrl = 'https://lohfvsnykmwpoowvsyg.supabase.co';
@@ -30,7 +30,15 @@ async function apiRequest(path: string, method = 'GET', body: any = null, jwt: s
   const data = await res.json();
   
   if (!res.ok) {
-    return { error: data.message || data.error_description || data.error || 'API Request failed', data: null };
+    // Специальная обработка для Supabase Auth ошибок
+    const errorMessage = data.message || data.error_description || data.error || 'API Request failed';
+    
+    // Если Supabase возвращает ошибку о существующем пользователе
+    if (errorMessage.includes('User already registered') || errorMessage.includes('already exists')) {
+      return { error: 'Користувач з таким Email вже зареєстрований', data: null };
+    }
+    
+    return { error: errorMessage, data: null };
   }
   
   return { data, error: null };
