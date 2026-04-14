@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuthStore } from "./lib/store";
+import { useAuthStore, useDataStore } from "./lib/store";
 import { supabase } from "./lib/supabase";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
@@ -46,6 +46,7 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode, role?: 
 
 const App = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
+  const fetchInitialData = useDataStore((state) => state.fetchInitialData);
 
   useEffect(() => {
     // Перевірка поточної сесії
@@ -75,7 +76,7 @@ const App = () => {
       .single();
 
     if (profile) {
-      setAuth({
+      const userData = {
         id: profile.id,
         login: profile.email,
         role: profile.role,
@@ -83,7 +84,10 @@ const App = () => {
         balance: profile.balance || 0,
         isVerified: profile.is_verified || false,
         createdAt: profile.created_at
-      }, session);
+      };
+      setAuth(userData, session);
+      // Завантажуємо дані для цього користувача
+      fetchInitialData(profile.id, profile.role);
     }
   };
 

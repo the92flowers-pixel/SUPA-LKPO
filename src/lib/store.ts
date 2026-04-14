@@ -46,14 +46,12 @@ export const useUIStore = create<UIState>((set) => ({
 }));
 
 interface DataState {
-  // Конфігурації
   settings: any;
   homePageConfig: any;
   adminPanelConfig: any;
   loginPageConfig: any;
   labelSocials: any[];
   
-  // Дані
   releases: any[];
   users: any[];
   fields: any[];
@@ -64,14 +62,15 @@ interface DataState {
   withdrawalRequests: any[];
   quarterlyReports: any[];
   
-  // Методи оновлення конфігурацій
+  isLoading: boolean;
+  
+  fetchInitialData: (userId: string, role: string) => Promise<void>;
   updateAdminConfig: (config: any) => void;
   updateSettings: (settings: any) => void;
   updateHomeConfig: (config: any) => void;
   updateLoginConfig: (config: any) => void;
   updateLabelSocials: (socials: any[]) => void;
   
-  // Методи роботи з даними (заглушки для сумісності, будуть замінені на Supabase calls)
   updateUser: (id: string, data: any) => void;
   deleteUser: (id: string) => void;
   updateRelease: (id: string, data: any) => void;
@@ -98,7 +97,7 @@ interface DataState {
 
 export const useDataStore = create<DataState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       settings: { siteName: "ЖУРБА MUSIC", contactEmail: "support@jurba.com", registrationEnabled: true },
       homePageConfig: {
         heroTitle: "Твоя музика. Скрізь.",
@@ -119,6 +118,50 @@ export const useDataStore = create<DataState>()(
       transactions: [],
       withdrawalRequests: [],
       quarterlyReports: [],
+      
+      isLoading: false,
+
+      fetchInitialData: async (userId, role) => {
+        set({ isLoading: true });
+        try {
+          // Завантаження релізів
+          let releasesQuery = supabase.from('releases').select('*');
+          if (role !== 'admin') {
+            // Для артиста спочатку треба знайти його artist_id
+            const { data: artist } = await supabase.from('artists').select('id').eq('user_id', userId).single();
+            if (artist) {
+              releasesQuery = releasesQuery.eq('artist_id', artist.id);
+            } else {
+              set({ releases: [] });
+            }
+          }
+          
+          const { data: releases } = await releasesQuery;
+          if (releases) {
+            // Мапінг для сумісності з існуючим UI (додаємо streams та history, якщо їх немає в БД)
+            const mappedReleases = releases.map(r => ({
+              ...r,
+              userId: userId, // Спрощення для UI
+              streams: r.streams || 0,
+              history: r.history || []
+            }));
+            set({ releases: mappedReleases });
+          }
+
+          // Завантаження смартлінків
+          const { data: smartLinks } = await supabase.from('smart_links').select('*');
+          if (smartLinks) set({ smartLinks });
+
+          // Завантаження сайтів артистів
+          const { data: websites } = await supabase.from('artist_websites').select('*');
+          if (websites) set({ artistWebsites: websites });
+
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
 
       updateAdminConfig: (config) => set({ adminPanelConfig: config }),
       updateSettings: (settings) => set({ settings }),
@@ -133,7 +176,7 @@ export const useDataStore = create<DataState>()(
       updateReleaseStreams: (id, count, date) => set((state) => ({ 
         releases: state.releases.map(r => r.id === id ? { 
           ...r, 
-          streams: r.streams + count,
+          streams: (r.streams || 0) + count,
           history: [...(r.history || []), { date, count }]
         } : r) 
       })),
