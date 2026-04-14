@@ -36,8 +36,10 @@ interface QuarterlyReport {
 interface User {
   id: string;
   login: string;
+  password?: string;
   role: 'admin' | 'artist';
   artistName?: string;
+  balance: number;
   isVerified: boolean;
   createdAt: string;
   [key: string]: any;
@@ -65,7 +67,7 @@ interface DataState {
   withdrawalRequests: WithdrawalRequest[];
   quarterlyReports: QuarterlyReport[];
   
-  addUser: (user: Omit<User, 'isVerified' | 'createdAt'>) => void;
+  addUser: (user: User) => void;
   updateUser: (id: string, data: Partial<User>) => void;
   deleteUser: (id: string) => void;
   addRelease: (release: any) => void;
@@ -90,22 +92,20 @@ interface DataState {
   deleteArtistWebsite: (id: string) => void;
   updateLabelSocials: (socials: SocialLink[]) => void;
 
-  getUserBalance: (userId: string) => number;
+  // Finance Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
   addWithdrawalRequest: (request: Omit<WithdrawalRequest, 'id' | 'createdAt' | 'status'>) => void;
   updateWithdrawalStatus: (id: string, status: WithdrawalRequest['status'], comment?: string) => void;
   
+  // Reports Actions
   addReport: (report: Omit<QuarterlyReport, 'id' | 'createdAt'>) => void;
   deleteReport: (id: string) => void;
 }
 
 export const useDataStore = create<DataState>()(
   persist(
-    (set, get) => ({
-      users: [
-        { id: '1', login: 'admin', role: 'admin', artistName: 'Адмін', isVerified: true, createdAt: new Date().toISOString() },
-        { id: '2', login: 'artist@demo.com', role: 'artist', artistName: 'Demo Artist', isVerified: false, createdAt: new Date().toISOString() }
-      ],
+    (set) => ({
+      users: [], // Removed hardcoded credentials
       releases: [],
       statuses: initialStatuses,
       fields: initialFields,
@@ -132,25 +132,11 @@ export const useDataStore = create<DataState>()(
         { id: '1', name: 'Instagram', url: 'https://instagram.com/zhurba' },
         { id: '2', name: 'Telegram', url: 'https://t.me/zhurba' }
       ],
-      transactions: [
-        { id: 'init-demo', userId: '2', amount: 1250, type: 'deposit', status: 'completed', description: 'Початковий баланс', createdAt: new Date().toISOString() }
-      ],
+      transactions: [],
       withdrawalRequests: [],
       quarterlyReports: [],
 
-      getUserBalance: (userId) => {
-        const userTransactions = get().transactions.filter(t => t.userId === userId);
-        return userTransactions.reduce((acc, t) => {
-          if (t.status === 'cancelled') return acc;
-          if (t.type === 'deposit' || t.type === 'admin_adjust') return acc + t.amount;
-          if (t.type === 'withdrawal') return acc - t.amount;
-          return acc;
-        }, 0);
-      },
-
-      addUser: (user) => set((state) => ({ 
-        users: [...state.users, { ...user, isVerified: false, createdAt: new Date().toISOString() } as User] 
-      })),
+      addUser: (user) => set((state) => ({ users: [...state.users, { ...user, isVerified: false }] })),
       updateUser: (id, data) => set((state) => ({
         users: state.users.map(u => u.id === id ? { ...u, ...data } : u)
       })),
@@ -201,24 +187,36 @@ export const useDataStore = create<DataState>()(
       })),
       updateLabelSocials: (socials) => set({ labelSocials: socials }),
 
+      // Finance Actions
       addTransaction: (t) => set((state) => {
         const newTransaction = { ...t, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() };
+        const updatedUsers = state.users.map(u => {
+          if (u.id === t.userId) {
+            const amount = t.type === 'withdrawal' ? -t.amount : t.amount;
+            return { ...u, balance: u.balance + amount };
+          }
+          return u;
+        });
         return { 
-          transactions: [newTransaction, ...state.transactions]
+          transactions: [newTransaction, ...state.transactions],
+          users: updatedUsers
         };
       }),
 
       addWithdrawalRequest: (req) => set((state) => {
-        const requestId = Math.random().toString(36).substr(2, 9);
         const newReq = { 
           ...req, 
-          id: requestId, 
+          id: Math.random().toString(36).substr(2, 9), 
           status: 'pending' as const, 
           createdAt: new Date().toISOString() 
         };
         
+        const updatedUsers = state.users.map(u => 
+          u.id === req.userId ? { ...u, balance: u.balance - req.amount } : u
+        );
+
         const newTransaction = {
-          id: `tx-${requestId}`,
+          id: Math.random().toString(36).substr(2, 9),
           userId: req.userId,
           amount: req.amount,
           type: 'withdrawal' as const,
@@ -229,6 +227,7 @@ export const useDataStore = create<DataState>()(
 
         return { 
           withdrawalRequests: [newReq, ...state.withdrawalRequests],
+          users: updatedUsers,
           transactions: [newTransaction, ...state.transactions]
         };
       }),
@@ -237,20 +236,37 @@ export const useDataStore = create<DataState>()(
         const req = state.withdrawalRequests.find(r => r.id === id);
         if (!req) return state;
 
-        const updatedTransactions = state.transactions.map(t => 
-          (t.id === `tx-${id}`) 
-            ? { ...t, status: status === 'paid' ? 'completed' as const : status === 'rejected' ? 'cancelled' as const : 'pending' as const } 
+        let updatedUsers = [...state.users];
+        let updatedTransactions = [...state.transactions];
+
+        if (status === 'rejected') {
+          updatedUsers = state.users.map(u => 
+            u.id === req.userId ? { ...u, balance: u.balance + req.amount } : u
+          );
+          
+          updatedTransactions = state.transactions.map(t => 
+            (t.userId === req.userId && t.amount === req.amount && t.status === 'pending') 
+            ? { ...t, status: 'cancelled' as const } 
             : t
-        );
+          );
+        } else if (status === 'paid') {
+          updatedTransactions = state.transactions.map(t => 
+            (t.userId === req.userId && t.amount === req.amount && t.status === 'pending') 
+            ? { ...t, status: 'completed' as const } 
+            : t
+          );
+        }
 
         return {
           withdrawalRequests: state.withdrawalRequests.map(r => 
             r.id === id ? { ...r, status, adminComment: comment } : r
           ),
+          users: updatedUsers,
           transactions: updatedTransactions
         };
       }),
 
+      // Reports Actions
       addReport: (report) => set((state) => ({
         quarterlyReports: [...state.quarterlyReports, { ...report, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() }]
       })),
@@ -258,7 +274,7 @@ export const useDataStore = create<DataState>()(
         quarterlyReports: state.quarterlyReports.filter(r => r.id !== id)
       })),
     }),
-    { name: 'zhurba-db-v14' }
+    { name: 'zhurba-db-v13' }
   )
 );
 
@@ -277,7 +293,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (user, token) => set({ user, token }),
       logout: () => set({ user: null, token: null }),
     }),
-    { name: 'zhurba-auth-v14' }
+    { name: 'zhurba-auth-v13' }
   )
 );
 

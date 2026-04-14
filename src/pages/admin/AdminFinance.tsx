@@ -15,7 +15,7 @@ import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 const AdminFinance = () => {
-  const { withdrawalRequests, users, updateWithdrawalStatus, addTransaction, getUserBalance } = useDataStore();
+  const { withdrawalRequests, users, updateWithdrawalStatus, addTransaction } = useDataStore();
   const [selectedReq, setSelectedReq] = useState<any>(null);
   const [adminComment, setAdminComment] = useState('');
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
@@ -160,7 +160,7 @@ const AdminFinance = () => {
                         </Badge>
                       </td>
                       <td className="px-6 py-4 text-right text-sm font-black text-white">
-                        {getUserBalance(u.id).toLocaleString()} ₴
+                        {u.balance.toLocaleString()} ₴
                       </td>
                     </tr>
                   ))}

@@ -13,7 +13,6 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { showSuccess } from '@/utils/toast';
-import { sanitizeUrl } from '@/utils/security';
 
 const Moderation = () => {
   const { releases, updateReleaseStatus, statuses, fields } = useDataStore();
@@ -53,7 +52,7 @@ const Moderation = () => {
             <Card key={track.id} className="bg-[#1a1a1a] border-white/5 overflow-hidden flex flex-col group hover:border-violet-500/30 transition-all duration-300">
               <div className="aspect-square relative overflow-hidden">
                 <img 
-                  src={sanitizeUrl(track.coverUrl)} 
+                  src={track.coverUrl} 
                   alt={track.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                 />
@@ -119,16 +118,12 @@ const Moderation = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               <div className="space-y-6">
                 <div className="aspect-square rounded-xl overflow-hidden border border-white/5 shadow-2xl">
-                  <img src={sanitizeUrl(selectedTrack.coverUrl)} alt={selectedTrack.title} className="w-full h-full object-cover" />
+                  <img src={selectedTrack.coverUrl} alt={selectedTrack.title} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-4 bg-[#0a0a0a] rounded-xl border border-white/5 space-y-4">
                   <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Аудіофайл</p>
                   <div className="flex items-center gap-4">
-                    <Button 
-                      size="icon" 
-                      className="rounded-full bg-violet-600 hover:bg-violet-700" 
-                      onClick={() => window.open(sanitizeUrl(selectedTrack.audioUrl), '_blank')}
-                    >
+                    <Button size="icon" className="rounded-full bg-violet-600 hover:bg-violet-700" onClick={() => window.open(selectedTrack.audioUrl, '_blank')}>
                       <Play size={20} />
                     </Button>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">

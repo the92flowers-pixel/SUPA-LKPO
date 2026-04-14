@@ -3,7 +3,6 @@ import { FileText, Download, Music, Calendar } from 'lucide-react';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { sanitizeUrl } from '@/utils/security';
 
 const Reports = () => {
   const { user } = useAuthStore();
@@ -56,7 +55,7 @@ const Reports = () => {
                     <td className="px-8 py-6 text-right">
                       <Button 
                         variant="outline"
-                        onClick={() => window.open(sanitizeUrl(report.fileUrl), '_blank')}
+                        onClick={() => window.open(report.fileUrl, '_blank')}
                         className="border-red-900/30 text-red-500 hover:bg-red-900/10 text-[10px] font-black uppercase tracking-widest h-10 rounded-none px-6"
                       >
                         <Download size={14} className="mr-2" /> Завантажити

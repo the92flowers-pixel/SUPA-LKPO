@@ -13,14 +13,13 @@ import { cn } from '@/lib/utils';
 
 const Finances = () => {
   const { user } = useAuthStore();
-  const { users, transactions, addWithdrawalRequest, getUserBalance } = useDataStore();
+  const { users, transactions, addWithdrawalRequest } = useDataStore();
   
   const currentUser = users.find(u => u.id === user?.id) || user;
   const userTransactions = transactions.filter(t => t.userId === currentUser?.id);
-  const currentBalance = getUserBalance(currentUser?.id || '');
   
   const totalProfit = userTransactions
-    .filter(t => t.type === 'deposit' && t.status === 'completed')
+    .filter(t => t.type === 'deposit')
     .reduce((acc, t) => acc + t.amount, 0);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,7 +33,7 @@ const Finances = () => {
       showError('Мінімальна сума виводу: 100 ₴');
       return;
     }
-    if (val > currentBalance) {
+    if (val > (currentUser?.balance || 0)) {
       showError('Недостатньо коштів на балансі');
       return;
     }
@@ -61,7 +60,7 @@ const Finances = () => {
     setAgreed(false);
   };
 
-  const isBalanceZero = currentBalance <= 0;
+  const isBalanceZero = (currentUser?.balance || 0) <= 0;
 
   return (
     <div className="space-y-10">
@@ -79,7 +78,7 @@ const Finances = () => {
           </CardHeader>
           <CardContent>
             <div className="text-5xl font-black text-white tracking-tighter">
-              {currentBalance.toLocaleString()} <span className="text-2xl text-zinc-700">₴</span>
+              {currentUser?.balance?.toLocaleString() || 0} <span className="text-2xl text-zinc-700">₴</span>
             </div>
             <Button 
               onClick={() => setIsModalOpen(true)}
@@ -173,7 +172,7 @@ const Finances = () => {
           <div className="space-y-8 py-6">
             <div className="p-4 bg-red-900/5 border border-red-900/10 text-center">
               <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-1">Доступно для виводу</p>
-              <p className="text-2xl font-black text-white">{currentBalance.toLocaleString()} ₴</p>
+              <p className="text-2xl font-black text-white">{currentUser?.balance?.toLocaleString() || 0} ₴</p>
             </div>
 
             <div className="space-y-3">
