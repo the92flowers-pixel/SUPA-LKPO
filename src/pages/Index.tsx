@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Music, Globe, Zap, Shield, ArrowRight, Instagram, Send, Youtube, Twitter, MessageCircle } from 'lucide-react';
+import { Music, Globe, Zap, Shield, ArrowRight, Instagram, Send, Youtube, Twitter, MessageCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Navigate } from 'react-router-dom';
@@ -20,11 +20,24 @@ const SocialIcon = ({ name }: { name: string }) => {
 
 const Index = () => {
   const { user } = useAuthStore();
-  const { settings, homePageConfig: config, labelSocials } = useDataStore();
+  const { settings, homePageConfig: config, labelSocials, isLoading } = useDataStore();
 
   if (user) {
     return <Navigate to={user.role === 'admin' ? '/admin/moderation' : '/dashboard'} replace />;
   }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <Loader2 className="text-red-700 animate-spin" size={48} />
+      </div>
+    );
+  }
+
+  const heroTitle = config?.heroTitle || "ЖУРБА MUSIC";
+  const heroSubtitle = config?.heroSubtitle || "Твоя музика. Скрізь.";
+  const buttonText = config?.buttonText || "Почати";
+  const primaryColor = config?.primaryColor || "#b91c1c";
 
   return (
     <div className="min-h-screen bg-transparent text-white selection:bg-red-900/50">
@@ -37,11 +50,11 @@ const Index = () => {
             <Link to="/login">
               <Button variant="ghost" className="text-xs font-black tracking-widest text-zinc-400 hover:text-white uppercase rounded-none">Увійти</Button>
             </Link>
-            {settings.registrationEnabled && (
+            {settings?.registrationEnabled !== false && (
               <Link to="/register">
                 <Button 
                   className="text-xs font-black tracking-widest uppercase px-8 rounded-none border border-white/10"
-                  style={{ backgroundColor: config.primaryColor }}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   Приєднатися
                 </Button>
@@ -56,29 +69,29 @@ const Index = () => {
           <div className="max-w-4xl">
             <div 
               className="inline-flex items-center gap-2 px-4 py-1 rounded-none border-l-2 bg-white/5 text-[10px] font-black uppercase tracking-[0.4em] mb-10"
-              style={{ borderColor: config.primaryColor, color: config.primaryColor }}
+              style={{ borderColor: primaryColor, color: primaryColor }}
             >
               Made in Ukraine
             </div>
             <h1 className="text-5xl md:text-9xl font-black leading-[0.85] tracking-tighter mb-12 uppercase">
-              {config.heroTitle.split(' ').map((word: string, i: number) => (
-                <span key={i} className={i === config.heroTitle.split(' ').length - 1 ? "text-red-700" : ""}>
+              {heroTitle.split(' ').map((word: string, i: number) => (
+                <span key={i} className={i === heroTitle.split(' ').length - 1 ? "text-red-700" : ""}>
                   {word}{' '}
                   {i === 0 && <br />}
                 </span>
               ))}
             </h1>
             <p className="text-lg text-zinc-500 mb-14 leading-relaxed max-w-xl font-bold tracking-wide uppercase">
-              {config.heroSubtitle}
+              {heroSubtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-6">
-              {settings.registrationEnabled && (
+              {settings?.registrationEnabled !== false && (
                 <Link to="/register">
                   <Button 
                     className="h-16 px-12 text-sm font-black tracking-widest uppercase rounded-none group transition-all duration-500"
-                    style={{ backgroundColor: config.primaryColor }}
+                    style={{ backgroundColor: primaryColor }}
                   >
-                    {config.buttonText}
+                    {buttonText}
                     <ArrowRight className="ml-3 group-hover:translate-x-2 transition-transform" size={18} />
                   </Button>
                 </Link>
@@ -123,10 +136,10 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-12">
           <div className="flex items-center gap-3">
             <img src="https://jurbamusic.iceiy.com/whitemonster.png" alt="Logo" className="h-8 w-auto" />
-            <span className="font-black tracking-[0.3em] uppercase text-xs text-zinc-500">{settings.siteName} © 2024</span>
+            <span className="font-black tracking-[0.3em] uppercase text-xs text-zinc-500">{(settings?.siteName || "ЖУРБА MUSIC")} © 2024</span>
           </div>
           <div className="flex gap-8 text-zinc-600">
-            {labelSocials.map((social) => (
+            {(labelSocials || []).map((social: any) => (
               <a 
                 key={social.id} 
                 href={sanitizeUrl(social.url)} 
