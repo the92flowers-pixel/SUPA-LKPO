@@ -17,9 +17,7 @@ interface DataState {
   transactions: any[];
   withdrawalRequests: any[];
   quarterlyReports: any[];
-  isLoading: boolean;
   
-  fetchPublicData: () => Promise<void>;
   fetchInitialData: (jwt: string) => Promise<void>;
   
   updateUser: (id: string, data: any) => Promise<void>;
@@ -55,67 +53,43 @@ interface DataState {
 
 export const useDataStore = create<DataState>()((set, get) => ({
   users: [], releases: [], statuses: [], fields: [], settings: {},
-  loginPageConfig: { heroTitle: '', heroSubtitle: '', logoText: 'ЖУРБА' }, 
-  homePageConfig: { heroTitle: 'ЖУРБА MUSIC', heroSubtitle: '', buttonText: 'Увійти' }, 
-  adminPanelConfig: { logoText: 'ЖУРБА', accentColor: '#b91c1c' },
+  loginPageConfig: {}, homePageConfig: {}, adminPanelConfig: {},
   smartLinks: [], artistWebsites: [], labelSocials: [],
   transactions: [], withdrawalRequests: [], quarterlyReports: [],
-  isLoading: true,
-
-  fetchPublicData: async () => {
-    try {
-      const [st, f, s] = await Promise.all([
-        supabaseApi.settings.list(),
-        supabaseApi.fields.list(),
-        supabaseApi.statuses.list()
-      ]);
-
-      const settingsMap: any = {};
-      st.data?.forEach((item: any) => { settingsMap[item.key] = item.value; });
-
-      set({
-        settings: settingsMap,
-        fields: f.data || [],
-        statuses: s.data || [],
-        loginPageConfig: settingsMap.login_config || get().loginPageConfig,
-        homePageConfig: settingsMap.home_config || get().homePageConfig,
-        adminPanelConfig: settingsMap.admin_config || get().adminPanelConfig,
-        labelSocials: settingsMap.label_socials || [],
-        isLoading: false
-      });
-    } catch (e) {
-      console.error("Error fetching public data:", e);
-      set({ isLoading: false });
-    }
-  },
 
   fetchInitialData: async (jwt: string) => {
-    set({ isLoading: true });
-    try {
-      const [u, r, sl, aw, tx, wr, rep] = await Promise.all([
-        supabaseApi.profiles.list(jwt),
-        supabaseApi.releases.list(jwt),
-        supabaseApi.smartLinks.list(jwt),
-        supabaseApi.artistWebsites.list(jwt),
-        supabaseApi.transactions.list(jwt),
-        supabaseApi.withdrawals.list(jwt),
-        supabaseApi.reports.list(jwt)
-      ]);
+    const [u, r, s, f, st, sl, aw, tx, wr, rep] = await Promise.all([
+      supabaseApi.profiles.list(jwt),
+      supabaseApi.releases.list(jwt),
+      supabaseApi.statuses.list(),
+      supabaseApi.fields.list(),
+      supabaseApi.settings.list(),
+      supabaseApi.smartLinks.list(jwt),
+      supabaseApi.artistWebsites.list(jwt),
+      supabaseApi.transactions.list(jwt),
+      supabaseApi.withdrawals.list(jwt),
+      supabaseApi.reports.list(jwt)
+    ]);
 
-      set({
-        users: u.data || [],
-        releases: r.data || [],
-        smartLinks: sl.data || [],
-        artistWebsites: aw.data || [],
-        transactions: tx.data || [],
-        withdrawalRequests: wr.data || [],
-        quarterlyReports: rep.data || [],
-        isLoading: false
-      });
-    } catch (e) {
-      console.error("Error fetching private data:", e);
-      set({ isLoading: false });
-    }
+    const settingsMap: any = {};
+    st.data?.forEach((item: any) => { settingsMap[item.key] = item.value; });
+
+    set({
+      users: u.data || [],
+      releases: r.data || [],
+      statuses: s.data || [],
+      fields: f.data || [],
+      settings: settingsMap,
+      loginPageConfig: settingsMap.login_config || {},
+      homePageConfig: settingsMap.home_config || {},
+      adminPanelConfig: settingsMap.admin_config || {},
+      labelSocials: settingsMap.label_socials || [],
+      smartLinks: sl.data || [],
+      artistWebsites: aw.data || [],
+      transactions: tx.data || [],
+      withdrawalRequests: wr.data || [],
+      quarterlyReports: rep.data || []
+    });
   },
 
   getUserBalance: (userId: string) => {
@@ -296,7 +270,7 @@ export const useDataStore = create<DataState>()((set, get) => ({
     await supabaseApi.reports.delete(id, jwt);
     set(state => ({ quarterlyReports: state.quarterlyReports.filter(r => r.id !== id) }));
   }
-})));
+}));
 
 interface AuthState {
   user: any | null;
