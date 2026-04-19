@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 interface Track {
@@ -37,7 +37,6 @@ const NewRelease = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Calculate min date (7 days from now)
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 7);
   const minDateStr = minDate.toISOString().split('T')[0];
@@ -130,7 +129,11 @@ const NewRelease = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
     setIsSubmitting(true);
+    const loadingId = showLoading('Створення релізу...');
+    
     try {
       const releaseData: any = {
         ...formData,
@@ -142,12 +145,18 @@ const NewRelease = () => {
       const result = await addRelease(releaseData);
 
       if (result) {
+        dismissToast(loadingId);
         showSuccess('Реліз успішно відправлено на модерацію!');
-        await fetchReleases(user?.id, user?.role);
+        // Don't await fetchReleases to make navigation feel instant
+        fetchReleases(user?.id, user?.role);
         navigate('/releases');
+      } else {
+        throw new Error('Не вдалося отримати дані після створення');
       }
-    } catch (error) {
-      showError('Помилка при створенні релізу');
+    } catch (error: any) {
+      dismissToast(loadingId);
+      console.error('Submit error:', error);
+      showError(error.message || 'Помилка при створенні релізу. Перевірте з\'єднання.');
     } finally {
       setIsSubmitting(false);
     }
@@ -292,7 +301,6 @@ const NewRelease = () => {
                 </p>
               </div>
 
-              {/* Dynamic Fields */}
               {releaseFields.map((field) => (
                 <div key={field.id} className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
