@@ -147,7 +147,6 @@ const NewRelease = () => {
       if (result) {
         dismissToast(loadingId);
         showSuccess('Реліз успішно відправлено на модерацію!');
-        // Don't await fetchReleases to make navigation feel instant
         fetchReleases(user?.id, user?.role);
         navigate('/releases');
       } else {
@@ -167,38 +166,38 @@ const NewRelease = () => {
       case 1:
         return (
           <div className="space-y-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-3">Тип релізу</h2>
-              <p className="text-zinc-500 text-sm">Оберіть формат вашого релізу</p>
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Тип релізу</h2>
+              <p className="text-zinc-500 text-xs sm:text-sm">Оберіть формат вашого релізу</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto">
               <button
                 type="button"
                 onClick={() => setReleaseType('single')}
                 className={cn(
-                  "p-8 border-2 transition-all duration-300 rounded-none text-left group",
+                  "p-6 sm:p-8 border-2 transition-all duration-300 rounded-none text-left group",
                   releaseType === 'single' ? "border-red-700 bg-red-900/10" : "border-white/10 bg-black/40 hover:border-white/30"
                 )}
               >
-                <div className={cn("w-16 h-16 rounded-none flex items-center justify-center mb-6", releaseType === 'single' ? 'bg-red-700' : 'bg-white/10')}>
-                  <Music className="text-white" size={28} />
+                <div className={cn("w-12 h-12 sm:w-16 sm:h-16 rounded-none flex items-center justify-center mb-4 sm:mb-6", releaseType === 'single' ? 'bg-red-700' : 'bg-white/10')}>
+                  <Music className="text-white" size={24} />
                 </div>
-                <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">Single</h3>
-                <p className="text-zinc-500 text-xs uppercase tracking-widest">Один трек або EP до 5 треків</p>
+                <h3 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider mb-2">Single</h3>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest">Один трек або EP до 5 треків</p>
               </button>
               <button
                 type="button"
                 onClick={() => { setReleaseType('album'); if (tracks.length === 1) addTrack(); }}
                 className={cn(
-                  "p-8 border-2 transition-all duration-300 rounded-none text-left group",
+                  "p-6 sm:p-8 border-2 transition-all duration-300 rounded-none text-left group",
                   releaseType === 'album' ? "border-red-700 bg-red-900/10" : "border-white/10 bg-black/40 hover:border-white/30"
                 )}
               >
-                <div className={cn("w-16 h-16 rounded-none flex items-center justify-center mb-6", releaseType === 'album' ? 'bg-red-700' : 'bg-white/10')}>
-                  <Disc className="text-white" size={28} />
+                <div className={cn("w-12 h-12 sm:w-16 sm:h-16 rounded-none flex items-center justify-center mb-4 sm:mb-6", releaseType === 'album' ? 'bg-red-700' : 'bg-white/10')}>
+                  <Disc className="text-white" size={24} />
                 </div>
-                <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">Альбом</h3>
-                <p className="text-zinc-500 text-xs uppercase tracking-widest">Повноформатний альбом від 6 треків</p>
+                <h3 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider mb-2">Альбом</h3>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest">Повноформатний альбом від 6 треків</p>
               </button>
             </div>
           </div>
@@ -206,16 +205,16 @@ const NewRelease = () => {
       case 2:
         return (
           <div className="space-y-8 max-w-2xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-3">Основна інформація</h2>
-              <p className="text-zinc-500 text-sm">Заповніть дані про реліз</p>
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Основна інформація</h2>
+              <p className="text-zinc-500 text-xs sm:text-sm">Заповніть дані про реліз</p>
             </div>
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва релізу *</Label>
-                <Input value={formData.title} onChange={(e) => updateFormData('title', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-14 text-white text-lg" placeholder="Введіть назву..." />
+                <Input value={formData.title} onChange={(e) => updateFormData('title', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12 sm:h-14 text-white text-base sm:text-lg" placeholder="Введіть назву..." />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист *</Label>
                   <Input value={formData.artist} onChange={(e) => updateFormData('artist', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Назва артиста..." />
@@ -225,7 +224,7 @@ const NewRelease = () => {
                   <Input value={formData.performer} onChange={(e) => updateFormData('performer', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Прізвище Ім'я Побатькові..." />
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Композитор (ПІБ) *</Label>
                   <Input value={formData.composer} onChange={(e) => updateFormData('composer', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Прізвище Ім'я Побатькові..." />
@@ -242,7 +241,7 @@ const NewRelease = () => {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Жанр *</Label>
                   <Select value={formData.genre} onValueChange={(val) => updateFormData('genre', val)}>
@@ -271,7 +270,7 @@ const NewRelease = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
                     <Hash size={14} /> UPC (опціонально)
@@ -340,16 +339,16 @@ const NewRelease = () => {
         return (
           <div className="space-y-8 max-w-2xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-3">Обкладинка</h2>
-              <p className="text-zinc-500 text-sm">Вкажіть посилання на обкладинку</p>
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Обкладинка</h2>
+              <p className="text-zinc-500 text-xs sm:text-sm">Вкажіть посилання на обкладинку</p>
             </div>
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Посилання на обкладинку (URL) *</Label>
-                <Input value={formData.coverUrl} onChange={(e) => updateFormData('coverUrl', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-14 text-white" placeholder="https://example.com/cover.jpg" />
+                <Input value={formData.coverUrl} onChange={(e) => updateFormData('coverUrl', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12 sm:h-14 text-white" placeholder="https://example.com/cover.jpg" />
               </div>
               {formData.coverUrl && (
-                <div className="aspect-square max-w-xs mx-auto border border-white/10 overflow-hidden">
+                <div className="aspect-square max-w-xs mx-auto border border-white/10 overflow-hidden shadow-2xl">
                   <img src={formData.coverUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = 'https://jurbamusic.iceiy.com/releasepreview.png')} />
                 </div>
               )}
@@ -360,14 +359,14 @@ const NewRelease = () => {
         return (
           <div className="space-y-8 max-w-3xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-3">{releaseType === 'single' ? 'Трек' : 'Треклист'}</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">{releaseType === 'single' ? 'Трек' : 'Треклист'}</h2>
             </div>
             <div className="space-y-4">
               {tracks.map((track, index) => (
-                <div key={track.id} className="p-6 bg-black/40 border border-white/5 rounded-none relative group">
-                  <div className="absolute top-4 left-4 w-8 h-8 bg-red-900/20 flex items-center justify-center text-red-700 text-xs font-black">{String(index + 1).padStart(2, '0')}</div>
-                  <div className="ml-14 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div key={track.id} className="p-4 sm:p-6 bg-black/40 border border-white/5 rounded-none relative group">
+                  <div className="absolute top-4 left-4 w-6 h-6 sm:w-8 sm:h-8 bg-red-900/20 flex items-center justify-center text-red-700 text-[10px] sm:text-xs font-black">{String(index + 1).padStart(2, '0')}</div>
+                  <div className="ml-10 sm:ml-14 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Назва треку *</Label>
                         <Input value={track.title} onChange={(e) => updateTrack(track.id, 'title', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-10" placeholder="Назва треку..." />
@@ -377,7 +376,7 @@ const NewRelease = () => {
                         <Input value={track.fileName} onChange={(e) => updateTrack(track.id, 'fileName', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-10" placeholder="track_final_v2.wav" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Тривалість (хх:хх)</Label>
                         <Input value={track.duration} onChange={(e) => updateTrack(track.id, 'duration', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-10" placeholder="03:45" />
@@ -403,34 +402,34 @@ const NewRelease = () => {
         return (
           <div className="space-y-8 max-w-3xl mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-3">Підтвердження</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Підтвердження</h2>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-black/40 border border-white/5 p-6 rounded-none">
-                <div className="aspect-square mb-6 overflow-hidden border border-white/5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+              <div className="bg-black/40 border border-white/5 p-4 sm:p-6 rounded-none">
+                <div className="aspect-square mb-6 overflow-hidden border border-white/5 shadow-2xl">
                   <img src={formData.coverUrl || 'https://jurbamusic.iceiy.com/releasepreview.png'} alt="Cover" className="w-full h-full object-cover" />
                 </div>
-                <h3 className="text-xl font-black text-white uppercase tracking-wider truncate">{formData.title || 'Назва'}</h3>
-                <p className="text-sm text-zinc-500 uppercase tracking-wider">{formData.artist || 'Артист'}</p>
+                <h3 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider truncate">{formData.title || 'Назва'}</h3>
+                <p className="text-xs sm:text-sm text-zinc-500 uppercase tracking-wider">{formData.artist || 'Артист'}</p>
               </div>
               <div className="space-y-4">
                 <div className="p-4 bg-white/5 border border-white/5">
                   <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Виконавець</h4>
-                  <p className="text-white font-bold">{formData.performer}</p>
+                  <p className="text-white font-bold text-sm">{formData.performer}</p>
                 </div>
                 <div className="p-4 bg-white/5 border border-white/5">
                   <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Дата релізу</h4>
-                  <p className="text-white font-bold">{formData.releaseDate}</p>
+                  <p className="text-white font-bold text-sm">{formData.releaseDate}</p>
                 </div>
                 
-                <div className="flex items-start space-x-3 p-6 bg-red-900/5 border border-red-900/10 mt-8">
+                <div className="flex items-start space-x-3 p-4 sm:p-6 bg-red-900/5 border border-red-900/10 mt-4 sm:mt-8">
                   <Checkbox 
                     id="copyrightConfirmed" 
                     checked={formData.copyrightConfirmed} 
                     onCheckedChange={(checked) => updateFormData('copyrightConfirmed', checked as boolean)}
-                    className="mt-1 border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none"
+                    className="mt-1 border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none shrink-0"
                   />
-                  <Label htmlFor="copyrightConfirmed" className="text-xs text-zinc-400 leading-relaxed font-bold uppercase tracking-wider cursor-pointer">
+                  <Label htmlFor="copyrightConfirmed" className="text-[10px] sm:text-xs text-zinc-400 leading-relaxed font-bold uppercase tracking-wider cursor-pointer">
                     Я підтверджую виключне авторське право на реліз *
                   </Label>
                 </div>
@@ -445,28 +444,28 @@ const NewRelease = () => {
   return (
     <div className="min-h-screen bg-[#050505]">
       <div className="bg-black/40 border-b border-white/5 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-red-700 flex items-center justify-center"><Music className="text-white" size={20} /></div>
-            <h1 className="text-lg font-black text-white uppercase tracking-wider">Новий реліз</h1>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-700 flex items-center justify-center shrink-0"><Music className="text-white" size={18} /></div>
+            <h1 className="text-sm sm:text-lg font-black text-white uppercase tracking-wider truncate">Новий реліз</h1>
           </div>
-          <Button variant="ghost" onClick={() => navigate('/releases')} className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-none">Скасувати</Button>
+          <Button variant="ghost" onClick={() => navigate('/releases')} className="text-zinc-500 hover:text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-none px-2 sm:px-4">Скасувати</Button>
         </div>
         <div className="h-1 bg-black/40"><div className="h-full bg-red-700 transition-all duration-500" style={{ width: `${progress}%` }} /></div>
       </div>
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="min-h-[500px]">{renderStepContent()}</div>
-        <div className="mt-12 pt-8 border-t border-white/5 flex items-center justify-between">
-          <Button variant="ghost" onClick={handleBack} disabled={currentStep === 1 || isSubmitting} className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest h-12 px-8 rounded-none">
-            <ChevronLeft size={16} className="mr-2" /> Назад
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="min-h-[400px] sm:min-h-[500px]">{renderStepContent()}</div>
+        <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-white/5 flex items-center justify-between gap-4">
+          <Button variant="ghost" onClick={handleBack} disabled={currentStep === 1 || isSubmitting} className="bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] sm:text-[10px] font-black uppercase tracking-widest h-10 sm:h-12 px-4 sm:px-8 rounded-none">
+            <ChevronLeft size={14} className="mr-1 sm:mr-2" /> Назад
           </Button>
           {currentStep < STEPS.length ? (
-            <Button onClick={handleNext} disabled={!canProceed()} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none">
-              Далі <ChevronRight size={16} className="ml-2" />
+            <Button onClick={handleNext} disabled={!canProceed()} className="bg-red-700 hover:bg-red-800 text-[9px] sm:text-[10px] font-black uppercase tracking-widest h-10 sm:h-12 px-6 sm:px-10 rounded-none">
+              Далі <ChevronRight size={14} className="ml-1 sm:ml-2" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none">
-              {isSubmitting ? <Loader2 className="animate-spin" /> : <><Check size={16} className="mr-2" /> Відправити</>}
+            <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} className="bg-red-700 hover:bg-red-800 text-[9px] sm:text-[10px] font-black uppercase tracking-widest h-10 sm:h-12 px-6 sm:px-10 rounded-none">
+              {isSubmitting ? <Loader2 className="animate-spin" /> : <><Check size={14} className="mr-1 sm:mr-2" /> Відправити</>}
             </Button>
           )}
         </div>

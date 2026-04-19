@@ -11,52 +11,52 @@ const Reports = () => {
   const userReports = quarterlyReports.filter(r => r.userId === user?.id);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 sm:space-y-10">
       <div>
-        <h1 className="text-4xl font-black tracking-tight text-white uppercase">Звіти</h1>
-        <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Ваша квартальна аналітика</p>
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white uppercase">Звіти</h1>
+        <p className="text-zinc-500 mt-1 sm:mt-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">Ваша квартальна аналітика</p>
       </div>
 
       <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
         <CardHeader className="border-b border-white/5">
-          <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
+          <CardTitle className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
             <FileText size={18} className="text-red-700" /> Квартальні звіти
           </CardTitle>
         </CardHeader>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-white/5 text-[10px] uppercase text-zinc-500 font-black tracking-widest">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left min-w-[600px]">
+            <thead className="bg-white/5 text-[9px] sm:text-[10px] uppercase text-zinc-500 font-black tracking-widest">
               <tr>
-                <th className="px-8 py-5">Виконавець</th>
-                <th className="px-8 py-5">Квартал</th>
-                <th className="px-8 py-5 text-right">Дія</th>
+                <th className="px-6 sm:px-8 py-4 sm:py-5">Виконавець</th>
+                <th className="px-6 sm:px-8 py-4 sm:py-5">Квартал</th>
+                <th className="px-6 sm:px-8 py-4 sm:py-5 text-right">Дія</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {userReports.length > 0 ? (
                 userReports.map((report) => (
                   <tr key={report.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-8 py-6">
+                    <td className="px-6 sm:px-8 py-5 sm:py-6">
                       <div className="flex items-center gap-3">
                         <Music size={14} className="text-red-700" />
-                        <span className="text-xs font-bold text-white uppercase tracking-wider">
+                        <span className="text-[10px] sm:text-xs font-bold text-white uppercase tracking-wider">
                           {user?.artistName || settings.siteName}
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-6">
+                    <td className="px-6 sm:px-8 py-5 sm:py-6">
                       <div className="flex items-center gap-3">
                         <Calendar size={14} className="text-zinc-600" />
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                        <span className="text-[10px] sm:text-xs font-bold text-zinc-400 uppercase tracking-widest">
                           {report.quarter} квартал {report.year}
                         </span>
                       </div>
                     </td>
-                    <td className="px-8 py-6 text-right">
+                    <td className="px-6 sm:px-8 py-5 sm:py-6 text-right">
                       <Button 
                         variant="outline"
                         onClick={() => window.open(report.fileUrl, '_blank')}
-                        className="border-red-900/30 text-red-500 hover:bg-red-900/10 text-[10px] font-black uppercase tracking-widest h-10 rounded-none px-6"
+                        className="border-red-900/30 text-red-500 hover:bg-red-900/10 text-[9px] sm:text-[10px] font-black uppercase tracking-widest h-9 sm:h-10 rounded-none px-4 sm:px-6"
                       >
                         <Download size={14} className="mr-2" /> Завантажити
                       </Button>
@@ -65,7 +65,7 @@ const Reports = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-8 py-20 text-center text-zinc-800 text-[10px] font-black uppercase tracking-widest">
+                  <td colSpan={3} className="px-8 py-16 sm:py-20 text-center text-zinc-800 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
                     Звітів ще не додано
                   </td>
                 </tr>
