@@ -60,41 +60,41 @@ interface DataState {
   
   // Releases
   fetchReleases: (userId?: string, role?: string) => Promise<void>;
-  addRelease: (data: Partial<Release>) => Promise<void>;
-  updateRelease: (id: string, data: Partial<Release>) => Promise<void>;
+  addRelease: (releaseData: Partial<Release>) => Promise<void>;
+  updateRelease: (id: string, releaseData: Partial<Release>) => Promise<void>;
   updateReleaseStatus: (id: string, status: string) => Promise<void>;
   updateReleaseStreams: (id: string, count: number, date: string) => Promise<void>;
   deleteRelease: (id: string) => Promise<void>;
 
   // Smart Links
   fetchSmartLinks: (userId?: string) => Promise<void>;
-  addSmartLink: (data: Partial<SmartLink>) => Promise<void>;
-  updateSmartLink: (id: string, data: Partial<SmartLink>) => Promise<void>;
+  addSmartLink: (linkData: Partial<SmartLink>) => Promise<void>;
+  updateSmartLink: (id: string, linkData: Partial<SmartLink>) => Promise<void>;
   deleteSmartLink: (id: string) => Promise<void>;
 
   // Artist Websites
   fetchArtistWebsites: (userId?: string) => Promise<void>;
-  addArtistWebsite: (data: Partial<ArtistWebsite>) => Promise<void>;
-  updateArtistWebsite: (id: string, data: Partial<ArtistWebsite>) => Promise<void>;
+  addArtistWebsite: (websiteData: Partial<ArtistWebsite>) => Promise<void>;
+  updateArtistWebsite: (id: string, websiteData: Partial<ArtistWebsite>) => Promise<void>;
   deleteArtistWebsite: (id: string) => Promise<void>;
 
   // Users
   fetchUsers: () => Promise<void>;
-  updateUser: (id: string, data: Partial<Profile>) => Promise<void>;
+  updateUser: (id: string, userData: Partial<Profile>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
 
   // Transactions
   fetchTransactions: (userId?: string) => Promise<void>;
-  addTransaction: (data: Partial<Transaction>) => Promise<void>;
+  addTransaction: (txData: Partial<Transaction>) => Promise<void>;
   
   // Withdrawal Requests
   fetchWithdrawalRequests: () => Promise<void>;
-  addWithdrawalRequest: (data: Partial<WithdrawalRequest>) => Promise<void>;
+  addWithdrawalRequest: (reqData: Partial<WithdrawalRequest>) => Promise<void>;
   updateWithdrawalStatus: (id: string, status: WithdrawalRequest['status'], comment?: string) => Promise<void>;
 
   // Reports
   fetchReports: (userId?: string) => Promise<void>;
-  addReport: (data: Partial<QuarterlyReport>) => Promise<void>;
+  addReport: (reportData: Partial<QuarterlyReport>) => Promise<void>;
   deleteReport: (id: string) => Promise<void>;
 
   // Statuses
@@ -152,45 +152,45 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (role !== 'admin' && userId) {
         query = query.eq('user_id', userId);
       }
-      const { data, error } = await query;
-      if (!error && data) set({ releases: data });
+      const result = await query;
+      if (!result.error && result.data) set({ releases: result.data });
     } catch (e) { console.error(e); }
   },
 
-  addRelease: async (data) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: newRelease, error } = await supabase
+  addRelease: async (releaseData) => {
+    const { data: sessionData } = await supabase.auth.getUser();
+    if (!sessionData?.user) return;
+    const result = await supabase
       .from('releases')
-      .insert({ ...data, user_id: user.id, streams: 0, history: [] })
+      .insert({ ...releaseData, user_id: sessionData.user.id, streams: 0, history: [] })
       .select()
       .single();
-    if (!error && newRelease) {
-      set((state) => ({ releases: [newRelease, ...state.releases] }));
+    if (!result.error && result.data) {
+      set((state) => ({ releases: [result.data, ...state.releases] }));
     }
   },
 
-  updateRelease: async (id, data) => {
-    const { data: updated, error } = await supabase
+  updateRelease: async (id, releaseData) => {
+    const result = await supabase
       .from('releases')
-      .update(data)
+      .update(releaseData)
       .eq('id', id)
       .select()
       .single();
-    if (!error && updated) {
-      set((state) => ({ releases: state.releases.map(r => r.id === id ? updated : r) }));
+    if (!result.error && result.data) {
+      set((state) => ({ releases: state.releases.map(r => r.id === id ? result.data : r) }));
     }
   },
 
   updateReleaseStatus: async (id, status) => {
-    await get().updateRelease(id, { status });
+    await get().updateRelease(id, { status } as Partial<Release>);
   },
 
   updateReleaseStreams: async (id, count, date) => {
     const release = get().releases.find(r => r.id === id);
     if (!release) return;
     const newHistory = [...(release.history || []), { date, count }];
-    await get().updateRelease(id, { streams: release.streams + count, history: newHistory });
+    await get().updateRelease(id, { streams: release.streams + count, history: newHistory } as Partial<Release>);
   },
 
   deleteRelease: async (id) => {
@@ -203,33 +203,33 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       let query = supabase.from('smart_links').select('*');
       if (userId) query = query.eq('user_id', userId);
-      const { data, error } = await query;
-      if (!error && data) set({ smartLinks: data });
+      const result = await query;
+      if (!result.error && result.data) set({ smartLinks: result.data });
     } catch (e) { console.error(e); }
   },
 
-  addSmartLink: async (data) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: newLink, error } = await supabase
+  addSmartLink: async (linkData) => {
+    const { data: sessionData } = await supabase.auth.getUser();
+    if (!sessionData?.user) return;
+    const result = await supabase
       .from('smart_links')
-      .insert({ ...data, user_id: user.id })
+      .insert({ ...linkData, user_id: sessionData.user.id })
       .select()
       .single();
-    if (!error && newLink) {
-      set((state) => ({ smartLinks: [...state.smartLinks, newLink] }));
+    if (!result.error && result.data) {
+      set((state) => ({ smartLinks: [...state.smartLinks, result.data] }));
     }
   },
 
-  updateSmartLink: async (id, data) => {
-    const { data: updated, error } = await supabase
+  updateSmartLink: async (id, linkData) => {
+    const result = await supabase
       .from('smart_links')
-      .update(data)
+      .update(linkData)
       .eq('id', id)
       .select()
       .single();
-    if (!error && updated) {
-      set((state) => ({ smartLinks: state.smartLinks.map(l => l.id === id ? updated : l) }));
+    if (!result.error && result.data) {
+      set((state) => ({ smartLinks: state.smartLinks.map(l => l.id === id ? result.data : l) }));
     }
   },
 
@@ -243,33 +243,33 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       let query = supabase.from('artist_websites').select('*');
       if (userId) query = query.eq('user_id', userId);
-      const { data, error } = await query;
-      if (!error && data) set({ artistWebsites: data });
+      const result = await query;
+      if (!result.error && result.data) set({ artistWebsites: result.data });
     } catch (e) { console.error(e); }
   },
 
-  addArtistWebsite: async (data) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: newSite, error } = await supabase
+  addArtistWebsite: async (websiteData) => {
+    const { data: sessionData } = await supabase.auth.getUser();
+    if (!sessionData?.user) return;
+    const result = await supabase
       .from('artist_websites')
-      .insert({ ...data, user_id: user.id })
+      .insert({ ...websiteData, user_id: sessionData.user.id })
       .select()
       .single();
-    if (!error && newSite) {
-      set((state) => ({ artistWebsites: [...state.artistWebsites, newSite] }));
+    if (!result.error && result.data) {
+      set((state) => ({ artistWebsites: [...state.artistWebsites, result.data] }));
     }
   },
 
-  updateArtistWebsite: async (id, data) => {
-    const { data: updated, error } = await supabase
+  updateArtistWebsite: async (id, websiteData) => {
+    const result = await supabase
       .from('artist_websites')
-      .update(data)
+      .update(websiteData)
       .eq('id', id)
       .select()
       .single();
-    if (!error && updated) {
-      set((state) => ({ artistWebsites: state.artistWebsites.map(s => s.id === id ? updated : s) }));
+    if (!result.error && result.data) {
+      set((state) => ({ artistWebsites: state.artistWebsites.map(s => s.id === id ? result.data : s) }));
     }
   },
 
@@ -281,20 +281,20 @@ export const useDataStore = create<DataState>((set, get) => ({
   // USERS
   fetchUsers: async () => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (!error && data) set({ users: data });
+      const result = await supabase.from('profiles').select('*');
+      if (!result.error && result.data) set({ users: result.data });
     } catch (e) { console.error(e); }
   },
 
-  updateUser: async (id, data) => {
-    const { data: updated, error } => await supabase
+  updateUser: async (id, userData) => {
+    const result = await supabase
       .from('profiles')
-      .update(data)
+      .update(userData)
       .eq('id', id)
       .select()
       .single();
-    if (!error && updated) {
-      set((state) => ({ users: state.users.map(u => u.id === id ? updated : u) }));
+    if (!result.error && result.data) {
+      set((state) => ({ users: state.users.map(u => u.id === id ? result.data : u) }));
     }
   },
 
@@ -308,40 +308,40 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       let query = supabase.from('transactions').select('*').order('created_at', { ascending: false });
       if (userId) query = query.eq('user_id', userId);
-      const { data, error } = await query;
-      if (!error && data) set({ transactions: data });
+      const result = await query;
+      if (!result.error && result.data) set({ transactions: result.data });
     } catch (e) { console.error(e); }
   },
 
-  addTransaction: async (data) => {
-    const { data: newTx, error } = await supabase
+  addTransaction: async (txData) => {
+    const result = await supabase
       .from('transactions')
-      .insert(data)
+      .insert(txData)
       .select()
       .single();
-    if (!error && newTx) {
-      set((state) => ({ transactions: [newTx, ...state.transactions] }));
+    if (!result.error && result.data) {
+      set((state) => ({ transactions: [result.data, ...state.transactions] }));
     }
   },
 
   // WITHDRAWAL REQUESTS
   fetchWithdrawalRequests: async () => {
     try {
-      const { data, error } = await supabase.from('withdrawal_requests').select('*').order('created_at', { ascending: false });
-      if (!error && data) set({ withdrawalRequests: data });
+      const result = await supabase.from('withdrawal_requests').select('*').order('created_at', { ascending: false });
+      if (!result.error && result.data) set({ withdrawalRequests: result.data });
     } catch (e) { console.error(e); }
   },
 
-  addWithdrawalRequest: async (data) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: newReq, error } = await supabase
+  addWithdrawalRequest: async (reqData) => {
+    const { data: sessionData } = await supabase.auth.getUser();
+    if (!sessionData?.user) return;
+    const result = await supabase
       .from('withdrawal_requests')
-      .insert({ ...data, user_id: user.id })
+      .insert({ ...reqData, user_id: sessionData.user.id })
       .select()
       .single();
-    if (!error && newReq) {
-      set((state) => ({ withdrawalRequests: [newReq, ...state.withdrawalRequests] }));
+    if (!result.error && result.data) {
+      set((state) => ({ withdrawalRequests: [result.data, ...state.withdrawalRequests] }));
     }
   },
 
@@ -357,19 +357,19 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       let query = supabase.from('quarterly_reports').select('*').order('created_at', { ascending: false });
       if (userId) query = query.eq('user_id', userId);
-      const { data, error } = await query;
-      if (!error && data) set({ quarterlyReports: data });
+      const result = await query;
+      if (!result.error && result.data) set({ quarterlyReports: result.data });
     } catch (e) { console.error(e); }
   },
 
-  addReport: async (data) => {
-    const { data: newReport, error } = await supabase
+  addReport: async (reportData) => {
+    const result = await supabase
       .from('quarterly_reports')
-      .insert(data)
+      .insert(reportData)
       .select()
       .single();
-    if (!error && newReport) {
-      set((state) => ({ quarterlyReports: [newReport, ...state.quarterlyReports] }));
+    if (!result.error && result.data) {
+      set((state) => ({ quarterlyReports: [result.data, ...state.quarterlyReports] }));
     }
   },
 
@@ -381,8 +381,8 @@ export const useDataStore = create<DataState>((set, get) => ({
   // STATUSES
   fetchStatuses: async () => {
     try {
-      const { data, error } = await supabase.from('statuses').select('*').order('sort_order');
-      if (!error && data) set({ statuses: data });
+      const result = await supabase.from('statuses').select('*').order('sort_order');
+      if (!result.error && result.data) set({ statuses: result.data });
     } catch (e) { console.error(e); }
   },
 
@@ -391,9 +391,9 @@ export const useDataStore = create<DataState>((set, get) => ({
   },
 
   addStatus: async (status) => {
-    const { data: newStatus, error } = await supabase.from('statuses').insert(status).select().single();
-    if (!error && newStatus) {
-      set((state) => ({ statuses: [...state.statuses, newStatus] }));
+    const result = await supabase.from('statuses').insert(status).select().single();
+    if (!result.error && result.data) {
+      set((state) => ({ statuses: [...state.statuses, result.data] }));
     }
   },
 
@@ -405,8 +405,8 @@ export const useDataStore = create<DataState>((set, get) => ({
   // FIELDS
   fetchFields: async () => {
     try {
-      const { data, error } = await supabase.from('fields').select('*').order('sort_order');
-      if (!error && data) set({ fields: data });
+      const result = await supabase.from('fields').select('*').order('sort_order');
+      if (!result.error && result.data) set({ fields: result.data });
     } catch (e) { console.error(e); }
   },
 
@@ -415,9 +415,9 @@ export const useDataStore = create<DataState>((set, get) => ({
   },
 
   addField: async (field) => {
-    const { data: newField, error } = await supabase.from('fields').insert(field).select().single();
-    if (!error && newField) {
-      set((state) => ({ fields: [...state.fields, newField] }));
+    const result = await supabase.from('fields').insert(field).select().single();
+    if (!result.error && result.data) {
+      set((state) => ({ fields: [...state.fields, result.data] }));
     }
   },
 
@@ -429,16 +429,16 @@ export const useDataStore = create<DataState>((set, get) => ({
   // CONFIG
   fetchConfig: async () => {
     try {
-      const { data, error } = await supabase.from('app_config').select('*').single();
-      if (!error && data) {
+      const result = await supabase.from('app_config').select('*').single();
+      if (!result.error && result.data) {
         set({
-          settings: data.settings,
-          homePageConfig: data.home_page,
-          adminPanelConfig: data.admin_panel,
-          loginPageConfig: data.login_page,
-          labelSocials: data.label_socials || [],
-          fields: data.fields || [],
-          statuses: data.statuses || [],
+          settings: result.data.settings,
+          homePageConfig: result.data.home_page,
+          adminPanelConfig: result.data.admin_panel,
+          loginPageConfig: result.data.login_page,
+          labelSocials: result.data.label_socials || [],
+          fields: result.data.fields || [],
+          statuses: result.data.statuses || [],
         });
       }
     } catch (e) { console.error(e); }
