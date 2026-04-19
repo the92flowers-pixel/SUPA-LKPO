@@ -91,6 +91,8 @@ export interface Release {
   isSingle?: boolean;
   isrc?: string;
   tracks?: Track[];
+  copyrights?: string;
+  copyrightConfirmed?: boolean;
 }
 
 export interface SmartLink {

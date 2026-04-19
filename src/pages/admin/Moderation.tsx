@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2 } from 'lucide-react';
+import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -206,6 +206,39 @@ const Moderation = () => {
                         <Button size="icon" variant="outline" className="shrink-0 border-white/5" onClick={() => window.open(selectedTrack.releaseUrl, '_blank')}>
                           <ExternalLink size={14} />
                         </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-red-900/5 border border-red-900/10 space-y-3">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-red-700 flex items-center gap-2">
+                      Юридична інформація
+                    </p>
+                    <div className="space-y-2">
+                      <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Авторські права (Докази)</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={selectedTrack.copyrights || ''} 
+                          onChange={(e) => updateField('copyrights', e.target.value)}
+                          className="bg-black/40 border-white/5 rounded-none h-9 text-[10px]"
+                          placeholder="Посилання на докази..."
+                        />
+                        {selectedTrack.copyrights && (
+                          <Button size="icon" variant="ghost" className="h-9 w-9 text-red-700" onClick={() => window.open(selectedTrack.copyrights, '_blank')}>
+                            <ExternalLink size={14} />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {selectedTrack.copyrightConfirmed ? (
+                        <Badge className="bg-green-500/10 text-green-500 border-none text-[8px] font-black uppercase tracking-widest rounded-none">
+                          <ShieldCheck size={10} className="mr-1" /> Права підтверджено артистом
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-red-500/10 text-red-500 border-none text-[8px] font-black uppercase tracking-widest rounded-none">
+                          <ShieldAlert size={10} className="mr-1" /> Права не підтверджено
+                        </Badge>
                       )}
                     </div>
                   </div>
