@@ -122,6 +122,8 @@ const Releases = () => {
       'На модерації': { bg: 'bg-amber-500/10', text: 'text-amber-500', icon: Clock },
       'Опубліковано': { bg: 'bg-green-500/10', text: 'text-green-500', icon: CheckCircle },
       'Відхилено': { bg: 'bg-red-500/10', text: 'text-red-500', icon: XCircle },
+      'Очікує видалення': { bg: 'bg-red-900/20', text: 'text-red-500', icon: AlertTriangle },
+      'Видаляється': { bg: 'bg-zinc-800', text: 'text-zinc-400', icon: Trash2 },
     };
     const config = statusConfig[status] || statusConfig['На модерації'];
     const Icon = config.icon;
@@ -188,12 +190,6 @@ const Releases = () => {
                 />
                 <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
                   {getStatusBadge(release.status)}
-                  {release.deletion_status === 'pending' && (
-                    <Badge className="bg-red-900/80 text-white border-none text-[9px] uppercase font-black tracking-widest rounded-none px-3 py-1">
-                      <AlertTriangle size={10} className="mr-1.5" />
-                      Запит на видалення
-                    </Badge>
-                  )}
                 </div>
                 <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-4 p-8 backdrop-blur-sm">
                   <Button onClick={() => handleOpenModal(release)} className="w-full bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
@@ -203,15 +199,16 @@ const Releases = () => {
                   <Button onClick={() => setViewingRelease(release)} variant="outline" className="w-full border-white/10 hover:bg-white/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
                     <Eye size={14} className="mr-2" /> Деталі
                   </Button>
-                  {user?.role !== 'admin' && (
+                  
+                  {/* Hide delete button if deletion is already pending or in progress */}
+                  {user?.role !== 'admin' && !release.deletion_status && release.status !== 'Видаляється' && (
                     <Button 
                       onClick={() => handleDeleteRequest(release.id)} 
-                      disabled={release.deletion_status === 'pending'}
                       variant="ghost" 
-                      className="w-full text-zinc-500 hover:text-red-500 hover:bg-red-900/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12 disabled:opacity-50"
+                      className="w-full text-zinc-500 hover:text-red-500 hover:bg-red-900/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12"
                     >
                       <Trash2 size={14} className="mr-2" /> 
-                      {release.deletion_status === 'pending' ? 'Запит надіслано' : 'Подати на видалення'}
+                      Подати на видалення
                     </Button>
                   )}
                 </div>
