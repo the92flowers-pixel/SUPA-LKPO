@@ -12,6 +12,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
+const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
+
 const months = [
   "Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень",
   "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"
@@ -53,6 +55,11 @@ const Statistics = () => {
     }
     
     const count = parseInt(data.count);
+    if (isNaN(count)) {
+      showError('Введіть коректну кількість стрімів');
+      return;
+    }
+
     const dateStr = `${data.year}-${(parseInt(data.month) + 1).toString().padStart(2, '0')}-01`;
     
     updateReleaseStreams(selectedTrackId, count, dateStr);
@@ -68,8 +75,8 @@ const Statistics = () => {
 
   const filteredReleases = releases.filter(r => 
     r.status === 'Опубліковано' && (
-      r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      r.artist.toLowerCase().includes(searchQuery.toLowerCase())
+      (r.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (r.artist || '').toLowerCase().includes(searchQuery.toLowerCase())
     )
   );
 
@@ -172,7 +179,10 @@ const Statistics = () => {
                               className="flex items-center gap-3 p-3 cursor-pointer hover:bg-red-900/10"
                             >
                               <Check className={cn("h-4 w-4 text-red-700", selectedTrackId === track.id ? "opacity-100" : "opacity-0")} />
-                              <span className="text-xs font-bold uppercase tracking-widest">{track.title}</span>
+                              <div className="flex items-center gap-3">
+                                <img src={track.coverUrl || FALLBACK_IMAGE} className="w-8 h-8 object-cover" alt="" />
+                                <span className="text-xs font-bold uppercase tracking-widest">{track.title}</span>
+                              </div>
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -259,10 +269,20 @@ const Statistics = () => {
                 {filteredReleases.length > 0 ? (
                   filteredReleases.map((r) => (
                     <tr key={r.id} className="hover:bg-white/5 transition-colors group">
-                      <td className="px-8 py-6 text-xs font-bold text-white uppercase tracking-wider">{r.title}</td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={r.coverUrl || FALLBACK_IMAGE} 
+                            className="w-10 h-10 object-cover border border-white/5" 
+                            alt="" 
+                            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                          />
+                          <span className="text-xs font-bold text-white uppercase tracking-wider">{r.title}</span>
+                        </div>
+                      </td>
                       <td className="px-8 py-6 text-[10px] font-black text-red-800 uppercase tracking-widest">{r.artist}</td>
                       <td className="px-8 py-6 text-[10px] text-zinc-600 font-mono">
-                        {r.history.length > 0 ? r.history[r.history.length - 1].date : '—'}
+                        {r.history && r.history.length > 0 ? r.history[r.history.length - 1].date : '—'}
                       </td>
                       <td className="px-8 py-6 text-right">
                         <span className="text-white font-black text-sm tracking-tighter">{r.streams.toLocaleString()}</span>

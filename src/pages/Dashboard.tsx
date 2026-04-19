@@ -27,6 +27,8 @@ import { Badge } from '@/components/ui/badge';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
+const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
+
 const Dashboard = () => {
   const { user } = useAuthStore();
   const { releases, isLoading } = useDataStore();
@@ -49,9 +51,11 @@ const Dashboard = () => {
   const lineData = useMemo(() => {
     const historyMap: Record<string, number> = {};
     userReleases.forEach(release => {
-      release.history?.forEach(h => {
-        historyMap[h.date] = (historyMap[h.date] || 0) + h.count;
-      });
+      if (release.history) {
+        release.history.forEach(h => {
+          historyMap[h.date] = (historyMap[h.date] || 0) + h.count;
+        });
+      }
     });
     const sortedDates = Object.keys(historyMap).sort();
     if (sortedDates.length === 0) return [];
@@ -170,8 +174,13 @@ const Dashboard = () => {
                 {releaseList.map((item, i) => (
                   <div key={i} className="flex items-center justify-between group">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-white/5 border border-white/5 flex items-center justify-center text-[10px] font-black text-zinc-700">
-                        0{i + 1}
+                      <div className="w-12 h-12 bg-white/5 border border-white/5 overflow-hidden">
+                        <img 
+                          src={item.coverUrl || FALLBACK_IMAGE} 
+                          className="w-full h-full object-cover" 
+                          alt="" 
+                          onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                        />
                       </div>
                       <div>
                         <p className="text-xs font-black text-white uppercase tracking-wider">{item.title}</p>
