@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Edit2, Trash2, Search, Filter, Eye, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink } from 'lucide-react';
+import { Music, Edit2, Trash2, Search, Filter, Eye, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink, Upload, Loader2 } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import { uploadFile } from '@/lib/supabase';
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
@@ -19,6 +20,7 @@ const AllReleases = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingRelease, setEditingRelease] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchReleases();
@@ -34,6 +36,23 @@ const AllReleases = () => {
   const handleEdit = (release: any) => {
     setEditingRelease({ ...release });
     setIsDialogOpen(true);
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingRelease) return;
+
+    setIsUploading(true);
+    try {
+      const fileName = `${editingRelease.userId}/${Date.now()}-${file.name}`;
+      const publicUrl = await uploadFile('covers', fileName, file);
+      setEditingRelease({ ...editingRelease, coverUrl: publicUrl });
+      showSuccess('Обкладинку оновлено');
+    } catch (error) {
+      showError('Помилка завантаження');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -238,20 +257,22 @@ const AllReleases = () => {
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Обкладинка (URL)</Label>
-                  <Input 
-                    value={editingRelease.coverUrl || ''} 
-                    onChange={(e) => setEditingRelease({...editingRelease, coverUrl: e.target.value})} 
-                    className="bg-black/40 border-white/5 rounded-none h-12" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Аудіо (URL)</Label>
-                  <Input 
-                    value={editingRelease.audioUrl || ''} 
-                    onChange={(e) => setEditingRelease({...editingRelease, audioUrl: e.target.value})} 
-                    className="bg-black/40 border-white/5 rounded-none h-12" 
-                  />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Обкладинка</Label>
+                  <div className="aspect-square border border-white/5 overflow-hidden relative group">
+                    <img 
+                      src={editingRelease.coverUrl || FALLBACK_IMAGE} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <input type="file" id="admin-cover-upload" className="hidden" accept="image/*" onChange={handleCoverUpload} disabled={isUploading} />
+                      <label htmlFor="admin-cover-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                        {isUploading ? <Loader2 className="animate-spin" /> : <Upload />}
+                        <span className="text-[10px] font-black uppercase">Змінити файл</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Дата релізу</Label>
@@ -260,14 +281,6 @@ const AllReleases = () => {
                     value={editingRelease.releaseDate || ''} 
                     onChange={(e) => setEditingRelease({...editingRelease, releaseDate: e.target.value})} 
                     className="bg-black/40 border-white/5 rounded-none h-12" 
-                  />
-                </div>
-                <div className="aspect-square border border-white/5 overflow-hidden mt-4">
-                  <img 
-                    src={editingRelease.coverUrl || FALLBACK_IMAGE} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                   />
                 </div>
               </div>

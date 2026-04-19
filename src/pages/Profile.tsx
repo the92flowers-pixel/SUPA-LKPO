@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { User, Save, Shield, Camera, ShieldCheck, ShieldAlert, Globe, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { User, Save, Shield, Camera, ShieldCheck, ShieldAlert, Globe, Plus, Trash2, ExternalLink, Upload, Loader2, X } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import { uploadFile } from '@/lib/supabase';
 
 const FIXED_AVATAR = "https://jurbamusic.iceiy.com/profileavatar.png";
 
@@ -26,6 +27,7 @@ const Profile = () => {
   const userWebsite = artistWebsites.find(w => w.userId === currentUser?.id);
 
   const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [websiteData, setWebsiteData] = useState<any>({
     slug: '',
     stageName: '',
@@ -65,6 +67,28 @@ const Profile = () => {
       await updateUser(currentUser.id, data);
       setAuth({ ...currentUser, artistName: data.artistName }, 'mock-jwt');
       showSuccess('Профіль успішно оновлено!');
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.includes('jpeg') && !file.type.includes('jpg') && !file.type.includes('png')) {
+      showError('Будь ласка, завантажте JPG або PNG');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileName = `artists/${currentUser?.id}/${Date.now()}-${file.name}`;
+      const publicUrl = await uploadFile('covers', fileName, file);
+      setWebsiteData({ ...websiteData, photoUrl: publicUrl });
+      showSuccess('Фото завантажено');
+    } catch (error) {
+      showError('Помилка завантаження');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -259,13 +283,23 @@ const Profile = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Посилання на фото</Label>
-              <Input 
-                value={websiteData.photoUrl} 
-                onChange={(e) => setWebsiteData({...websiteData, photoUrl: e.target.value})}
-                className="bg-black/40 border-white/5 rounded-none h-12"
-              />
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Фото артиста</Label>
+              <div className="flex items-center gap-6">
+                <div className="w-24 h-24 rounded-full overflow-hidden border border-white/10 bg-black/40 shrink-0">
+                  <img src={websiteData.photoUrl} className="w-full h-full object-cover" alt="" />
+                </div>
+                <div className="flex-1">
+                  <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={isUploading} />
+                  <label htmlFor="photo-upload" className={cn(
+                    "flex items-center justify-center gap-2 w-full h-12 border border-dashed border-white/20 hover:border-red-700/50 hover:bg-red-900/5 cursor-pointer transition-all text-[10px] font-black uppercase tracking-widest",
+                    isUploading && "opacity-50 cursor-not-allowed"
+                  )}>
+                    {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
+                    {isUploading ? 'Завантаження...' : 'Змінити фото'}
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
