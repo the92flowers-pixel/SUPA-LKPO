@@ -1,18 +1,33 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// Get credentials from environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-  global: {
-    fetch: (url, options) => {
-      return fetch(url, {
-        ...options,
-        credentials: 'include',
-      });
-    },
-  },
-});
+// Validate credentials
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase credentials! Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file');
+}
+
+export const supabase: SupabaseClient = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+      global: {
+        headers: {
+          'x-client-info': 'zhurba-music',
+        },
+      },
+    })
+  : ({} as SupabaseClient);
+
+// Debug helper
+export const isSupabaseConfigured = () => {
+  return !!(supabaseUrl && supabaseAnonKey);
+};
 
 // Database types (snake_case from PostgreSQL)
 export interface Profile {
@@ -138,6 +153,9 @@ export interface AppConfig {
 
 // Helper functions for uploads
 export const uploadFile = async (bucket: string, path: string, file: File): Promise<string> => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase is not configured. Please add your Supabase credentials to .env file.');
+  }
   const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
   if (error) throw error;
   const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);

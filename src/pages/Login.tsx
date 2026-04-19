@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music, CheckCircle2, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
-import { supabase, toAppProfile } from '@/lib/supabase';
+import { Music, CheckCircle2, ArrowRight, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { supabase, toAppProfile, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,14 @@ const Login = () => {
     setIsLoading(true);
     setError(null);
     
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      setError('Supabase не налаштовано. Зверніться до адміністратора.');
+      showError('Помилка конфігурації');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.login,
@@ -28,10 +36,23 @@ const Login = () => {
       });
 
       if (authError) {
-        throw authError;
+        // Handle specific auth errors
+        if (authError.message.includes('Invalid login credentials')) {
+          setError('Неправильний email або пароль');
+          showError('Неправильний email або пароль');
+        } else if (authError.message.includes('Email not confirmed')) {
+          setError('Email не підтверджено. Перевірте вашу пошту.');
+          showError('Email не підтверджено');
+        } else {
+          setError(authError.message);
+          showError(authError.message);
+        }
+        setIsLoading(false);
+        return;
       }
 
       if (authData.user) {
+        // Fetch user profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -40,6 +61,7 @@ const Login = () => {
         
         if (profileError) {
           console.error('Profile fetch error:', profileError);
+          
           // If profile doesn't exist, create a basic one
           if (profileError.code === 'PGRST116') {
             showSuccess('Успішний вхід!');
@@ -56,11 +78,18 @@ const Login = () => {
             navigate('/dashboard', { replace: true });
             return;
           }
-          throw new Error('Не вдалося завантажити профіль');
+          
+          setError('Не вдалося завантажити профіль');
+          showError('Помилка завантаження профілю');
+          setIsLoading(false);
+          return;
         }
 
         if (!profile) {
-          throw new Error('Профіль не знайдено');
+          setError('Профіль не знайдено');
+          showError('Профіль не знайдено');
+          setIsLoading(false);
+          return;
         }
 
         // Convert DB profile to App profile and set auth
@@ -74,17 +103,22 @@ const Login = () => {
       }
     } catch (err: unknown) {
       console.error('Login error:', err);
+      
+      // Handle network errors
+      if (err && typeof err === 'object' && 'name' in err) {
+        const errorObj = err as { name: string; message?: string; status?: number };
+        
+        if (errorObj.name === 'AuthRetryableFetchError' || errorObj.status === 0) {
+          setError('Помилка мережі. Перевірте інтернет-з\'єднання або спробуйте пізніше.');
+          showError('Помилка мережі');
+          setIsLoading(false);
+          return;
+        }
+      }
+      
       const message = err instanceof Error ? err.message : 'Невідома помилка';
       setError(message);
-      
-      // Show toast for specific errors
-      if (message.includes('Invalid login credentials')) {
-        showError('Неправильний email або пароль');
-      } else if (message.includes('fetch')) {
-        showError('Помилка з\'єднання. Перевірте інтернет-з\'єднання');
-      } else {
-        showError(message);
-      }
+      showError(message);
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +165,7 @@ const Login = () => {
           {error && (
             <div className="p-4 bg-red-900/20 border border-red-900/30 rounded-lg flex items-start gap-3">
               <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-red-400">{error}</p>
                 <p className="text-xs text-red-500/60 mt-1">
                   Перевірте правильність даних або спробуйте пізніше
@@ -149,6 +183,7 @@ const Login = () => {
                 className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" 
                 placeholder="name@example.com"
                 disabled={isLoading}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -160,12 +195,13 @@ const Login = () => {
                 className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" 
                 placeholder="••••••••"
                 disabled={isLoading}
+                autoComplete="current-password"
               />
             </div>
             <Button 
               type="submit" 
               className="w-full h-12 bg-red-700 hover:bg-red-800 text-white font-bold text-lg disabled:opacity-50"
-              disabled={isLoading}
+              disabled={isLoading || !isSupabaseConfigured()}
             >
               {isLoading ? (
                 <>
