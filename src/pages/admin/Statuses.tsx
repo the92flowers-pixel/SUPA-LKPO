@@ -39,12 +39,17 @@ const Statuses = () => {
   };
 
   const handleSave = () => {
+    if (!formData.name) {
+      showError('Вкажіть назву статусу');
+      return;
+    }
+
     if (editingStatus) {
       const newStatuses = statuses.map(s => s.id === editingStatus.id ? { ...formData, id: s.id } : s);
       updateStatuses(newStatuses);
       showSuccess('Статус оновлено');
     } else {
-      addStatus(formData);
+      addStatus({ ...formData, id: Date.now() });
       showSuccess('Статус додано');
     }
     setIsDialogOpen(false);
@@ -67,7 +72,7 @@ const Statuses = () => {
           <h1 className="text-4xl font-black tracking-tight text-white uppercase">Статуси</h1>
           <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Життєвий цикл релізів</p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest px-8 h-12 rounded-none">
+        <Button onClick={() => handleOpenDialog()} className="bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest px-8 rounded-none h-12">
           <Plus size={18} className="mr-2" />
           Новий статус
         </Button>
@@ -81,7 +86,7 @@ const Statuses = () => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y divide-white/5">
-            {statuses.sort((a, b) => a.order - b.order).map((status) => (
+            {statuses.sort((a, b) => (a.order || 0) - (b.order || 0)).map((status) => (
               <div key={status.id} className="flex items-center gap-6 p-6 hover:bg-white/5 transition-colors group">
                 <div className="cursor-grab text-zinc-800 hover:text-zinc-600">
                   <GripVertical size={20} />
@@ -98,7 +103,7 @@ const Statuses = () => {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-[10px] text-zinc-600 mt-1 font-bold uppercase tracking-widest">Порядок: {status.order}</p>
+                  <p className="text-[10px] text-zinc-600 mt-1 font-bold uppercase tracking-widest">Порядок: {status.order || 1}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button 
@@ -149,11 +154,11 @@ const Statuses = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                    <SelectItem value="gray">Сірий</SelectItem>
-                    <SelectItem value="green">Зелений</SelectItem>
+                    <SelectItem value="gray">Сірий (pending)</SelectItem>
                     <SelectItem value="yellow">Жовтий</SelectItem>
-                    <SelectItem value="red">Червоний</SelectItem>
                     <SelectItem value="blue">Синій</SelectItem>
+                    <SelectItem value="green">Зелений (published)</SelectItem>
+                    <SelectItem value="red">Червоний (rejected)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -162,15 +167,27 @@ const Statuses = () => {
                 <Input 
                   type="number"
                   value={formData.order} 
-                  onChange={(e) => setFormData({...formData, order: parseInt(e.target.value)})}
+                  onChange={(e) => setFormData({...formData, order: parseInt(e.target.value) || 1})}
                   className="bg-black/40 border-white/5 rounded-none h-12"
                 />
               </div>
             </div>
+            <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/5">
+              <input 
+                type="checkbox"
+                id="isDefault"
+                checked={formData.isDefault}
+                onChange={(e) => setFormData({...formData, isDefault: e.target.checked})}
+                className="w-4 h-4"
+              />
+              <Label htmlFor="isDefault" className="text-xs font-bold uppercase tracking-widest cursor-pointer">
+                Статус за замовчуванням (для нових релізів)
+              </Label>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Скасувати</Button>
-            <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">
+            <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 rounded-none h-12">
               Зберегти
             </Button>
           </DialogFooter>

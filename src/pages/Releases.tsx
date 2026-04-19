@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Play, Info, Music, Link as LinkIcon, Plus, Trash2, Globe, Eye, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,13 +13,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 const PLATFORMS_LIST = [
-  "Apple Music",
-  "Deezer",
-  "iTunes",
-  "SoundCloud",
-  "Spotify",
-  "YouTube",
-  "YouTube Music"
+  "Apple Music", "Deezer", "iTunes", "SoundCloud", "Spotify", "YouTube", "YouTube Music"
 ];
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
@@ -31,6 +25,7 @@ interface PlatformItem {
 }
 
 const Releases = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
   const [viewingRelease, setViewingRelease] = useState<any>(null);
@@ -39,25 +34,20 @@ const Releases = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
 
-  const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink, updateSmartLink, fields, fetchReleases } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink, fields, fetchReleases, deleteRelease } = useDataStore();
 
-  // Fetch releases on mount and when user changes
   useEffect(() => {
     if (user) {
       fetchReleases(user.id, user.role);
     }
   }, [user, fetchReleases]);
 
-  // Filter releases based on user role
   const filteredReleases = releases.filter(r => {
-    // Admin/moderator sees all, artist sees only their own
     if (user?.role === 'admin') {
       return r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
              r.artist.toLowerCase().includes(searchQuery.toLowerCase());
     }
-    // For artists, only show their own releases
     return r.userId === user?.id && (
       r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
       r.artist.toLowerCase().includes(searchQuery.toLowerCase())
@@ -101,21 +91,14 @@ const Releases = () => {
       title: selectedRelease.title,
       artist: selectedRelease.artist,
       coverUrl: selectedRelease.coverUrl,
-      platforms: platforms.filter(p => p.url !== '').map(p => ({ 
-        ...p, 
-        icon: p.name.toLowerCase().replace(/\s+/g, '-') 
-      })),
+      platforms: platforms.filter(p => p.url !== '').map(p => ({ ...p, icon: p.name.toLowerCase().replace(/\s+/g, '-') })),
     };
 
     if (isEditing && existingLinkId) {
       updateSmartLink(existingLinkId, linkData);
       showSuccess('Smart Link оновлено!');
     } else {
-      addSmartLink({
-        ...linkData,
-        id: Math.random().toString(36).substr(2, 9),
-        createdAt: new Date().toISOString()
-      });
+      addSmartLink({ ...linkData, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() });
       showSuccess('Smart Link створено!');
     }
     
@@ -123,7 +106,12 @@ const Releases = () => {
     window.open(`/s/${customSlug}`, '_blank');
   };
 
-  const releaseFields = fields.filter(f => f.section === 'release');
+  const handleDelete = async (id: string) => {
+    if (confirm('Ви впевнені, що хочете видалити цей реліз?')) {
+      await deleteRelease(id);
+      showSuccess('Реліз видалено');
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { bg: string; text: string; icon: any }> = {
@@ -131,10 +119,8 @@ const Releases = () => {
       'Опубліковано': { bg: 'bg-green-500/10', text: 'text-green-500', icon: CheckCircle },
       'Відхилено': { bg: 'bg-red-500/10', text: 'text-red-500', icon: XCircle },
     };
-    
     const config = statusConfig[status] || statusConfig['На модерації'];
     const Icon = config.icon;
-    
     return (
       <Badge className={cn("border-none text-[9px] uppercase font-black tracking-widest rounded-none", config.bg, config.text)}>
         <Icon size={10} className="mr-1" />
@@ -204,6 +190,11 @@ const Releases = () => {
                   <Button onClick={() => setViewingRelease(release)} variant="outline" className="w-full border-white/10 hover:bg-white/5 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
                     <Eye size={14} className="mr-2" /> Деталі
                   </Button>
+                  {user?.role !== 'admin' && (
+                    <Button onClick={() => handleDelete(release.id)} variant="outline" className="w-full border-red-900/30 hover:bg-red-900/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12 text-red-500">
+                      <Trash2 size={14} className="mr-2" /> Видалити
+                    </Button>
+                  )}
                 </div>
               </div>
               <CardContent className="p-6">
@@ -263,7 +254,7 @@ const Releases = () => {
                     </Select>
                   </div>
                   <div className="flex-[2] space-y-2">
-                    <Label className="text-[9px] text-zinc-600 uppercase font-black">URL посилання</Label>
+                    <Label className="text-[9px] text-zinc-600 uppercase font-black">URL</Label>
                     <Input value={p.url} onChange={(e) => {
                       const newP = [...platforms];
                       newP[index].url = e.target.value;
@@ -298,12 +289,7 @@ const Releases = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               <div className="space-y-6">
                 <div className="aspect-square border border-white/5 shadow-2xl">
-                  <img 
-                    src={viewingRelease.coverUrl || FALLBACK_IMAGE} 
-                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                    className="w-full h-full object-cover" 
-                    alt="" 
-                  />
+                  <img src={viewingRelease.coverUrl || FALLBACK_IMAGE} onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }} className="w-full h-full object-cover" alt="" />
                 </div>
                 <div className="p-4 bg-white/5 border border-white/5 space-y-3">
                   <div className="space-y-1">
@@ -331,7 +317,7 @@ const Releases = () => {
                 </div>
                 <div className="space-y-1 border-b border-white/5 pb-3">
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Дата релізу</p>
-                  <p className="text-sm font-bold text-white">{viewingRelease.releaseDate || viewingRelease.release_date || '—'}</p>
+                  <p className="text-sm font-bold text-white">{viewingRelease.releaseDate || '—'}</p>
                 </div>
                 {viewingRelease.isrc && (
                   <div className="space-y-1 border-b border-white/5 pb-3">

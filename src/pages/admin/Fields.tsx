@@ -58,12 +58,17 @@ const Fields = () => {
   };
 
   const handleSave = () => {
+    if (!formData.name || !formData.label) {
+      showError('Заповніть всі обов\'язкові поля');
+      return;
+    }
+
     if (editingField) {
       const newFields = fields.map(f => f.id === editingField.id ? { ...formData, id: f.id } : f);
       updateFields(newFields);
       showSuccess('Поле оновлено');
     } else {
-      addField(formData);
+      addField({ ...formData, id: Date.now() });
       showSuccess('Поле додано');
     }
     setIsDialogOpen(false);
@@ -78,7 +83,7 @@ const Fields = () => {
     <div className="divide-y divide-white/5">
       {fields
         .filter(f => f.section === section)
-        .sort((a, b) => a.order - b.order)
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
         .map((field) => (
           <div key={field.id} className="flex items-center gap-4 p-6 hover:bg-white/5 transition-colors group">
             <div className="cursor-grab text-zinc-700 hover:text-zinc-500">
@@ -92,7 +97,7 @@ const Fields = () => {
                 </Badge>
                 {field.type === 'file' && (
                   <Badge className="bg-blue-900/20 text-blue-400 border-none text-[9px] uppercase font-black tracking-widest">
-                    {field.maxSize}MB
+                    {field.maxSize || 5}MB
                   </Badge>
                 )}
                 {field.required && (
@@ -100,6 +105,9 @@ const Fields = () => {
                 )}
               </div>
               <p className="text-[10px] text-zinc-600 mt-1 font-mono uppercase tracking-tighter">ID: {field.name}</p>
+              {field.type === 'select' && field.options && (
+                <p className="text-[9px] text-zinc-700 mt-1">Опції: {field.options}</p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button 
@@ -168,15 +176,16 @@ const Fields = () => {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-6 py-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва (ID)</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва (ID) *</Label>
               <Input 
                 value={formData.name} 
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({...formData, name: e.target.value.toLowerCase().replace(/\s+/g, '_'))}
                 className="bg-black/40 border-white/5 rounded-none h-12"
+                placeholder="field_name"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Заголовок (Label)</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Заголовок (Label) *</Label>
               <Input 
                 value={formData.label} 
                 onChange={(e) => setFormData({...formData, label: e.target.value})}
@@ -193,9 +202,10 @@ const Fields = () => {
                   <SelectItem value="text">Текст</SelectItem>
                   <SelectItem value="textarea">Довгий текст</SelectItem>
                   <SelectItem value="select">Список (Select)</SelectItem>
-                  <SelectItem value="file">Файл (Upload)</SelectItem>
+                  <SelectItem value="number">Число</SelectItem>
                   <SelectItem value="date">Дата</SelectItem>
                   <SelectItem value="url">URL</SelectItem>
+                  <SelectItem value="file">Файл (Upload)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -212,10 +222,22 @@ const Fields = () => {
               </Select>
             </div>
             
+            {formData.type === 'select' && (
+              <div className="col-span-2 space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Опції (через кому)</Label>
+                <Input 
+                  value={formData.options} 
+                  onChange={(e) => setFormData({...formData, options: e.target.value})}
+                  className="bg-black/40 border-white/5 rounded-none h-12"
+                  placeholder="Опція 1, Опція 2, Опція 3"
+                />
+              </div>
+            )}
+
             {formData.type === 'file' && (
               <>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Типи файлів (через кому)</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Типи файлів</Label>
                   <Input 
                     value={formData.fileTypes} 
                     onChange={(e) => setFormData({...formData, fileTypes: e.target.value})}

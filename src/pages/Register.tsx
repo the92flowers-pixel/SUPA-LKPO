@@ -38,20 +38,6 @@ const Register = () => {
     setError(null);
     
     try {
-      // Check if email already exists
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', data.login)
-        .single();
-      
-      if (existingUser) {
-        setError('Користувач з таким email вже існує');
-        showError('Користувач з таким email вже існує');
-        setIsLoading(false);
-        return;
-      }
-
       // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.login,
@@ -72,7 +58,7 @@ const Register = () => {
       }
 
       if (authData.user) {
-        // Create profile
+        // Create profile using the user ID
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
@@ -86,13 +72,13 @@ const Register = () => {
 
         if (profileError) {
           console.error('Profile creation error:', profileError);
-          // Profile might already exist from trigger, continue
+          // Profile might already exist from database trigger
         }
 
         setSuccess(true);
         showSuccess('Акаунт успішно створено!');
         
-        // Auto login after registration
+        // Set auth state
         setAuth({
           id: authData.user.id,
           email: data.login,
@@ -104,13 +90,16 @@ const Register = () => {
           createdAt: new Date().toISOString(),
         });
         
-        navigate('/dashboard', { replace: true });
+        // Redirect to dashboard
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 1500);
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Registration error:', err);
-      const message = err instanceof Error ? err.message : 'Невідома помилка';
-      setError('Помилка реєстрації. Спробуйте пізніше.');
-      showError('Помилка реєстрації');
+      const message = err?.message || 'Невідома помилка';
+      setError(message);
+      showError(message);
     } finally {
       setIsLoading(false);
     }

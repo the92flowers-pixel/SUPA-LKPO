@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Music, FileUp, Check } from 'lucide-react';
+import { Upload, Music, Plus, Trash2, GripVertical, Check, Save, AlertCircle } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,17 +11,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
+interface Track {
+  id: string;
+  title: string;
+  audioUrl: string;
+  duration: string;
+  explicit: boolean;
+  lyrics: string;
+  position: number;
+}
+
 interface ReleaseFormData {
   title: string;
   artist: string;
   genre: string;
   releaseDate: string;
   coverUrl: string;
-  audioUrl: string;
-  isrc?: string;
-  label?: string;
-  description?: string;
-  explicit?: boolean;
+  label: string;
+  description: string;
+  explicit: boolean;
+  isSingle: boolean;
 }
 
 const NewRelease = () => {
@@ -30,6 +39,7 @@ const NewRelease = () => {
       genre: 'Другое',
       releaseDate: new Date().toISOString().split('T')[0],
       explicit: false,
+      isSingle: true,
     }
   });
   const navigate = useNavigate();
@@ -38,14 +48,60 @@ const NewRelease = () => {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string>('');
+  const [tracks, setTracks] = useState<Track[]>([
+    { id: '1', title: '', audioUrl: '', duration: '', explicit: false, lyrics: '', position: 1 }
+  ]);
+  const [releaseType, setReleaseType] = useState<'single' | 'album'>('single');
   
   const releaseFields = fields.filter(f => f.section === 'release' && f.visible);
   const defaultStatus = statuses.find(s => s.isDefault)?.name || 'На модерації';
+  const selectedGenre = watch('genre');
+
+  useEffect(() => {
+    if (selectedGenre) {
+      setValue('genre', selectedGenre);
+    }
+  }, [selectedGenre, setValue]);
+
+  const addTrack = () => {
+    setTracks([...tracks, { 
+      id: Date.now().toString(), 
+      title: '', 
+      audioUrl: '', 
+      duration: '', 
+      explicit: false, 
+      lyrics: '', 
+      position: tracks.length + 1 
+    }]);
+  };
+
+  const removeTrack = (id: string) => {
+    if (tracks.length > 1) {
+      setTracks(tracks.filter(t => t.id !== id).map((t, i) => ({ ...t, position: i + 1 })));
+    }
+  };
+
+  const updateTrack = (id: string, field: keyof Track, value: any) => {
+    setTracks(tracks.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
 
   const onSubmit = async (data: ReleaseFormData) => {
+    // Validate
     if (!data.title || !data.artist) {
       showError('Заповніть обов\'язкові поля');
       return;
+    }
+
+    if (releaseType === 'album' && tracks.length === 0) {
+      showError('Додайте хоча б один трек');
+      return;
+    }
+
+    for (const track of tracks) {
+      if (!track.title) {
+        showError('Всі треки повинні мати назву');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -56,12 +112,12 @@ const NewRelease = () => {
         genre: data.genre,
         releaseDate: data.releaseDate,
         coverUrl: data.coverUrl,
-        audioUrl: data.audioUrl,
-        isrc: data.isrc,
         label: data.label,
         description: data.description,
         explicit: data.explicit,
         status: defaultStatus,
+        isSingle: data.isSingle,
+        tracks: releaseType === 'album' ? tracks : undefined,
       });
 
       if (result) {
@@ -71,19 +127,11 @@ const NewRelease = () => {
         showError('Помилка при створенні релізу');
       }
     } catch (error) {
+      console.error('Error creating release:', error);
       showError('Сталася помилка. Спробуйте пізніше.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleCoverUrlChange = (url: string) => {
-    setValue('coverUrl', url);
-    setCoverPreview(url);
-  };
-
-  const handleUrlInput = (e: React.ChangeEvent<HTMLInputElement>, field: 'coverUrl' | 'audioUrl') => {
-    setValue(field, e.target.value);
   };
 
   return (
@@ -97,6 +145,42 @@ const NewRelease = () => {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
+        {/* Release Type */}
+        <div className="bg-black/40 border border-white/5 p-8 space-y-8">
+          <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+            <h2 className="text-lg font-black text-white uppercase tracking-widest">Тип релізу</h2>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={() => { setReleaseType('single'); setTracks([{ id: '1', title: '', audioUrl: '', duration: '', explicit: false, lyrics: '', position: 1 }]); }}
+              className={cn(
+                "flex-1 p-6 border transition-all rounded-none",
+                releaseType === 'single' 
+                  ? "bg-red-900/10 border-red-700 text-white" 
+                  : "bg-black/40 border-white/5 text-zinc-500 hover:border-white/20"
+              )}
+            >
+              <div className="text-xs font-black uppercase tracking-widest mb-2">Single</div>
+              <div className="text-[10px] text-zinc-600">Один трек</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setReleaseType('album')}
+              className={cn(
+                "flex-1 p-6 border transition-all rounded-none",
+                releaseType === 'album' 
+                  ? "bg-red-900/10 border-red-700 text-white" 
+                  : "bg-black/40 border-white/5 text-zinc-500 hover:border-white/20"
+              )}
+            >
+              <div className="text-xs font-black uppercase tracking-widest mb-2">Альбом / EP</div>
+              <div className="text-[10px] text-zinc-600">Кілька треків</div>
+            </button>
+          </div>
+        </div>
+
         {/* Basic Info Section */}
         <div className="bg-black/40 border border-white/5 p-8 space-y-8">
           <div className="flex items-center gap-3 pb-4 border-b border-white/5">
@@ -107,7 +191,7 @@ const NewRelease = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                Назва треку/альбому <span className="text-red-800">*</span>
+                Назва релізу <span className="text-red-800">*</span>
               </Label>
               <Input 
                 {...register('title', { required: true })}
@@ -131,8 +215,8 @@ const NewRelease = () => {
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
                 Жанр <span className="text-red-800">*</span>
               </Label>
-              <Select onValueChange={(val) => setValue('genre', val)} defaultValue="Другое">
-                <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 text-white focus:ring-0 focus:ring-offset-0">
+              <Select value={selectedGenre || 'Другое'} onValueChange={(val) => setValue('genre', val)}>
+                <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 text-white focus:ring-0">
                   <SelectValue placeholder="Оберіть жанр" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none max-h-[300px]">
@@ -162,82 +246,160 @@ const NewRelease = () => {
         <div className="bg-black/40 border border-white/5 p-8 space-y-8">
           <div className="flex items-center gap-3 pb-4 border-b border-white/5">
             <div className="w-8 h-8 bg-red-700/20 flex items-center justify-center text-red-700 text-xs font-black">02</div>
-            <h2 className="text-lg font-black text-white uppercase tracking-widest">Медіа файли</h2>
+            <h2 className="text-lg font-black text-white uppercase tracking-widest">Обкладинка</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                Посилання на обкладинку (URL)
-              </Label>
-              <Input 
-                {...register('coverUrl')}
-                onChange={(e) => handleCoverUrlChange(e.target.value)}
-                className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
-                placeholder="https://..."
-              />
-              {coverPreview && (
-                <div className="mt-4 relative aspect-square max-w-[200px] border border-white/5 overflow-hidden">
-                  <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" onError={() => setCoverPreview('')} />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                Посилання на аудіо файл (URL)
-              </Label>
-              <Input 
-                {...register('audioUrl')}
-                className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
-                placeholder="https://..."
-              />
-            </div>
+          <div className="space-y-3">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+              Посилання на обкладинку (URL)
+            </Label>
+            <Input 
+              {...register('coverUrl')}
+              onChange={(e) => {
+                setValue('coverUrl', e.target.value);
+                setCoverPreview(e.target.value);
+              }}
+              className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
+              placeholder="https://..."
+            />
+            {coverPreview && (
+              <div className="mt-4 relative aspect-square max-w-[200px] border border-white/5 overflow-hidden">
+                <img src={coverPreview} alt="Cover preview" className="w-full h-full object-cover" onError={() => setCoverPreview('')} />
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Additional Info Section */}
+        {/* Tracks Section */}
         <div className="bg-black/40 border border-white/5 p-8 space-y-8">
-          <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-            <div className="w-8 h-8 bg-red-700/20 flex items-center justify-center text-red-700 text-xs font-black">03</div>
-            <h2 className="text-lg font-black text-white uppercase tracking-widest">Додаткова інформація</h2>
+          <div className="flex items-center justify-between pb-4 border-b border-white/5">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-red-700/20 flex items-center justify-center text-red-700 text-xs font-black">{releaseType === 'album' ? '03' : '03'}</div>
+              <h2 className="text-lg font-black text-white uppercase tracking-widest">
+                {releaseType === 'album' ? 'Треклист' : 'Трек'}
+              </h2>
+            </div>
+            {releaseType === 'album' && (
+              <Button 
+                type="button"
+                onClick={addTrack}
+                className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest h-10 rounded-none"
+              >
+                <Plus size={14} className="mr-2" /> Додати трек
+              </Button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                ISRC код
-              </Label>
-              <Input 
-                {...register('isrc')}
-                className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
-                placeholder="XX-XXX-XXXXX-XX"
-              />
-            </div>
+          <div className="space-y-4">
+            {tracks.map((track, index) => (
+              <div key={track.id} className="p-6 bg-white/5 border border-white/5 rounded-none space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-red-900/10 flex items-center justify-center text-red-700 text-xs font-black">
+                      {index + 1}
+                    </div>
+                    <span className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">
+                      {releaseType === 'album' ? `Трек ${index + 1}` : 'Інформація'}
+                    </span>
+                  </div>
+                  {tracks.length > 1 && (
+                    <Button 
+                      type="button"
+                      variant="ghost"
+                      onClick={() => removeTrack(track.id)}
+                      className="text-red-900 hover:text-red-500 hover:bg-red-900/10 h-8 w-8 p-0"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
+                </div>
 
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                Лейбл
-              </Label>
-              <Input 
-                {...register('label')}
-                className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
-                placeholder="Назва лейблу..."
-              />
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                      Назва треку <span className="text-red-800">*</span>
+                    </Label>
+                    <Input 
+                      value={track.title}
+                      onChange={(e) => updateTrack(track.id, 'title', e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none h-10 focus:border-red-900/50 text-white"
+                      placeholder="Назва треку..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                      Посилання на аудіо (URL)
+                    </Label>
+                    <Input 
+                      value={track.audioUrl}
+                      onChange={(e) => updateTrack(track.id, 'audioUrl', e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none h-10 focus:border-red-900/50 text-white"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
 
-            <div className="md:col-span-2 space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                Опис
-              </Label>
-              <Textarea 
-                {...register('description')}
-                className="bg-black/40 border-white/5 rounded-none min-h-[120px] py-4 resize-none focus:border-red-900/50 text-white placeholder:text-zinc-800"
-                placeholder="Додаткова інформація про реліз..."
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                    Текст пісні / Нотатки
+                  </Label>
+                  <Textarea 
+                    value={track.lyrics}
+                    onChange={(e) => updateTrack(track.id, 'lyrics', e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none min-h-[80px] resize-none text-white"
+                    placeholder="Текст пісні або нотатки..."
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+
+        {/* Additional Fields from Admin */}
+        {releaseFields.length > 0 && (
+          <div className="bg-black/40 border border-white/5 p-8 space-y-8">
+            <div className="flex items-center gap-3 pb-4 border-b border-white/5">
+              <h2 className="text-lg font-black text-white uppercase tracking-widest">Додаткові дані</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {releaseFields.map((field) => (
+                <div key={field.id} className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    {field.label} {field.required && <span className="text-red-800">*</span>}
+                  </Label>
+                  {field.type === 'textarea' ? (
+                    <Textarea 
+                      {...register(field.name as any)}
+                      className="bg-black/40 border-white/5 rounded-none min-h-[100px] resize-none"
+                      placeholder={field.label}
+                    />
+                  ) : field.type === 'select' && field.options ? (
+                    <Select onValueChange={(val) => setValue(field.name as any, val)}>
+                      <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
+                        <SelectValue placeholder={field.label} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                        {field.options.split(',').map(opt => (
+                          <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs">
+                            {opt.trim()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                      {...register(field.name as any, { required: field.required })}
+                      className="bg-black/40 border-white/5 rounded-none h-12"
+                      placeholder={field.label}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Submit Section */}
         <div className="p-10 bg-black/40 border border-white/5 rounded-none flex flex-col md:flex-row items-center gap-8 shadow-2xl relative overflow-hidden">
