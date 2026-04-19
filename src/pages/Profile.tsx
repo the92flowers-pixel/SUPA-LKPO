@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { User, Save, Shield, Camera, ShieldCheck, ShieldAlert, Globe, Plus, Trash2, ExternalLink, Upload, Loader2, X } from 'lucide-react';
+import { User, Save, Shield, Camera, ShieldCheck, ShieldAlert, Globe, Plus, Trash2, ExternalLink, Upload, Loader2, X, Key, Mail } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,11 @@ const Profile = () => {
 
   const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  
+  const [newEmail, setNewEmail] = useState(currentUser?.login || '');
+  const [newPassword, setNewPassword] = useState('');
+
   const [websiteData, setWebsiteData] = useState<any>({
     slug: '',
     stageName: '',
@@ -55,7 +61,6 @@ const Profile = () => {
   const { register, handleSubmit } = useForm<any>({
     defaultValues: {
       artistName: currentUser?.artistName || '',
-      login: currentUser?.login || '',
       bio: currentUser?.bio || 'Український виконавець.'
     }
   });
@@ -67,6 +72,36 @@ const Profile = () => {
       await updateUser(currentUser.id, data);
       setAuth({ ...currentUser, artistName: data.artistName }, 'mock-jwt');
       showSuccess('Профіль успішно оновлено!');
+    }
+  };
+
+  const handleUpdateAuth = async () => {
+    setIsAuthLoading(true);
+    try {
+      const updates: any = {};
+      if (newEmail !== currentUser?.login) updates.email = newEmail;
+      if (newPassword) updates.password = newPassword;
+
+      if (Object.keys(updates).length === 0) {
+        showError('Змін не виявлено');
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser(updates);
+      
+      if (error) throw error;
+
+      if (updates.email) {
+        showSuccess('Email оновлено. Перевірте пошту для підтвердження.');
+      }
+      if (updates.password) {
+        showSuccess('Пароль успішно змінено');
+        setNewPassword('');
+      }
+    } catch (error: any) {
+      showError(error.message);
+    } finally {
+      setIsAuthLoading(false);
     }
   };
 
@@ -162,30 +197,73 @@ const Profile = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <Card className="lg:col-span-1 bg-black/40 border-white/5 rounded-none shadow-2xl h-fit">
-          <CardContent className="pt-12 flex flex-col items-center text-center">
-            <div className="w-40 h-40 rounded-full bg-red-900/5 border border-white/5 flex items-center justify-center mb-8 relative overflow-hidden">
-              <img src={FIXED_AVATAR} className="w-full h-full object-cover" alt="Avatar" />
-            </div>
-            <h3 className="text-xl font-black text-white uppercase tracking-wider">{currentUser?.artistName || currentUser?.login}</h3>
-            <p className="text-[10px] text-zinc-600 mt-2 uppercase font-bold tracking-[0.3em]">{currentUser?.role}</p>
-            
-            <div className="w-full h-px bg-white/5 my-8" />
-            
-            <div className="space-y-6 w-full text-left">
-              <div>
-                <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">ID Артиста</p>
-                <p className="text-xs font-mono text-red-800">#ZH-{currentUser?.id?.slice(0, 8) || '000'}</p>
+        <div className="lg:col-span-1 space-y-8">
+          <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl h-fit">
+            <CardContent className="pt-12 flex flex-col items-center text-center">
+              <div className="w-40 h-40 rounded-full bg-red-900/5 border border-white/5 flex items-center justify-center mb-8 relative overflow-hidden">
+                <img src={FIXED_AVATAR} className="w-full h-full object-cover" alt="Avatar" />
               </div>
-              <div>
-                <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">Дата реєстрації</p>
-                <p className="text-xs font-bold text-zinc-400">
-                  {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
-                </p>
+              <h3 className="text-xl font-black text-white uppercase tracking-wider">{currentUser?.artistName || currentUser?.login}</h3>
+              <p className="text-[10px] text-zinc-600 mt-2 uppercase font-bold tracking-[0.3em]">{currentUser?.role}</p>
+              
+              <div className="w-full h-px bg-white/5 my-8" />
+              
+              <div className="space-y-6 w-full text-left">
+                <div>
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">ID Артиста</p>
+                  <p className="text-xs font-mono text-red-800">#ZH-{currentUser?.id?.slice(0, 8) || '000'}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">Дата реєстрації</p>
+                  <p className="text-xs font-bold text-zinc-400">
+                    {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
+            <CardHeader className="border-b border-white/5 pb-6">
+              <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+                <Shield size={14} className="text-red-700" /> Безпека
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-8 space-y-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Новий Email</Label>
+                <div className="relative">
+                  <Input 
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none h-12 pl-10 text-white"
+                  />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-700" size={16} />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Новий Пароль</Label>
+                <div className="relative">
+                  <Input 
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none h-12 pl-10 text-white"
+                    placeholder="••••••••"
+                  />
+                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-700" size={16} />
+                </div>
+              </div>
+              <Button 
+                onClick={handleUpdateAuth}
+                disabled={isAuthLoading}
+                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest h-12 rounded-none"
+              >
+                {isAuthLoading ? <Loader2 className="animate-spin" size={16} /> : 'Оновити дані входу'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card className="lg:col-span-2 bg-black/40 border-white/5 rounded-none shadow-2xl">
           <CardHeader className="border-b border-white/5 pb-6">
@@ -193,22 +271,12 @@ const Profile = () => {
           </CardHeader>
           <CardContent className="pt-8">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне ім'я</Label>
-                  <Input 
-                    {...register('artistName')} 
-                    className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Email (Логін)</Label>
-                  <Input 
-                    disabled
-                    {...register('login')} 
-                    className="bg-black/20 border-white/5 rounded-none h-12 opacity-40 cursor-not-allowed text-zinc-500"
-                  />
-                </div>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне ім'я</Label>
+                <Input 
+                  {...register('artistName')} 
+                  className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white"
+                />
               </div>
 
               {profileFields.map((field) => (

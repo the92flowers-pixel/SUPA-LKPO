@@ -78,6 +78,7 @@ export interface Release {
   releaseUrl?: string;
   audio_url?: string;
   status: string;
+  deletion_status?: 'pending' | null;
   streams: number;
   history: { date: string; count: number }[];
   created_at?: string;
@@ -232,7 +233,6 @@ export const uploadFile = async (bucket: string, path: string, file: File): Prom
     throw new Error('Supabase is not configured');
   }
 
-  // Sanitize filename: remove non-ascii characters and spaces
   const fileExt = file.name.split('.').pop();
   const sanitizedPath = path.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, "-");
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw, ExternalLink, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,7 +35,7 @@ const Releases = () => {
   const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
 
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink, updateSmartLink, fields, fetchReleases, deleteRelease } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink, fetchReleases, deleteRelease, requestReleaseDeletion } = useDataStore();
 
   useEffect(() => {
     if (user) {
@@ -110,10 +110,10 @@ const Releases = () => {
     window.open(`/s/${customSlug}`, '_blank');
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Ви впевнені, що хочете видалити цей реліз?')) {
-      await deleteRelease(id);
-      showSuccess('Реліз видалено');
+  const handleDeleteRequest = async (id: string) => {
+    if (confirm('Ви впевнені, що хочете подати запит на видалення цього релізу? Це незворотна дія після схвалення адміністратором.')) {
+      await requestReleaseDeletion(id);
+      showSuccess('Запит на видалення надіслано адміністратору');
     }
   };
 
@@ -186,8 +186,14 @@ const Releases = () => {
                   className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" 
                   alt={release.title} 
                 />
-                <div className="absolute top-4 left-4 z-10">
+                <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
                   {getStatusBadge(release.status)}
+                  {release.deletion_status === 'pending' && (
+                    <Badge className="bg-red-900/80 text-white border-none text-[9px] uppercase font-black tracking-widest rounded-none px-3 py-1">
+                      <AlertTriangle size={10} className="mr-1.5" />
+                      Запит на видалення
+                    </Badge>
+                  )}
                 </div>
                 <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-4 p-8 backdrop-blur-sm">
                   <Button onClick={() => handleOpenModal(release)} className="w-full bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
@@ -198,8 +204,14 @@ const Releases = () => {
                     <Eye size={14} className="mr-2" /> Деталі
                   </Button>
                   {user?.role !== 'admin' && (
-                    <Button onClick={() => handleDelete(release.id)} variant="ghost" className="w-full text-zinc-500 hover:text-red-500 hover:bg-red-900/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
-                      <Trash2 size={14} className="mr-2" /> Видалити
+                    <Button 
+                      onClick={() => handleDeleteRequest(release.id)} 
+                      disabled={release.deletion_status === 'pending'}
+                      variant="ghost" 
+                      className="w-full text-zinc-500 hover:text-red-500 hover:bg-red-900/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12 disabled:opacity-50"
+                    >
+                      <Trash2 size={14} className="mr-2" /> 
+                      {release.deletion_status === 'pending' ? 'Запит надіслано' : 'Подати на видалення'}
                     </Button>
                   )}
                 </div>

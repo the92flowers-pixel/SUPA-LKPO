@@ -23,6 +23,7 @@ import NotFound from '@/pages/NotFound';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import Moderation from '@/pages/admin/Moderation';
 import AllReleases from '@/pages/admin/AllReleases';
+import DeletionRequests from '@/pages/admin/DeletionRequests';
 import AdminFinance from '@/pages/admin/AdminFinance';
 import AdminReports from '@/pages/admin/AdminReports';
 import SmartLinksManagement from '@/pages/admin/SmartLinksManagement';
@@ -63,7 +64,6 @@ const App = () => {
   const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests } = useDataStore();
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Init public data (config, statuses, fields)
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -77,7 +77,6 @@ const App = () => {
     initApp();
   }, [init]);
 
-  // Restore session and load user data
   useEffect(() => {
     if (!isInitialized) return;
     
@@ -87,7 +86,6 @@ const App = () => {
         
         if (session?.user) {
           try {
-            // Fetch profile from database
             const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
@@ -95,14 +93,10 @@ const App = () => {
               .single();
             
             if (!error && profile) {
-              // Profile exists - use it
               setAuth(toAppProfile(profile));
-              
-              // Load user's data
               const userId = session.user.id;
               const userRole = profile.role;
               
-              // Fetch all user-related data in parallel
               await Promise.all([
                 fetchReleases(userId, userRole),
                 fetchSmartLinks(userId),
@@ -113,7 +107,6 @@ const App = () => {
                 fetchWithdrawalRequests(),
               ]);
             } else if (error?.code === 'PGRST116') {
-              // Profile doesn't exist - create it
               const { data: newProfile, error: createError } = await supabase
                 .from('profiles')
                 .insert({
@@ -130,7 +123,6 @@ const App = () => {
               if (!createError && newProfile) {
                 setAuth(toAppProfile(newProfile));
               } else {
-                // Fallback - use basic user data
                 setAuth({
                   id: session.user.id,
                   email: session.user.email || '',
@@ -143,7 +135,6 @@ const App = () => {
                 });
               }
             } else {
-              // Other error - use basic user
               setAuth({
                 id: session.user.id,
                 email: session.user.email || '',
@@ -157,7 +148,6 @@ const App = () => {
             }
           } catch (err) {
             console.error('Error fetching profile:', err);
-            // On error, use basic auth
             setAuth({
               id: session.user.id,
               email: session.user.email || '',
@@ -170,7 +160,6 @@ const App = () => {
             });
           }
         } else {
-          // No session - set null
           setAuth(null);
         }
       } catch (error) {
@@ -181,7 +170,6 @@ const App = () => {
     
     restoreSession();
     
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         try {
@@ -193,7 +181,6 @@ const App = () => {
           
           if (profile) {
             setAuth(toAppProfile(profile));
-            // Load data after login
             await Promise.all([
               fetchReleases(session.user.id, profile.role),
               fetchSmartLinks(session.user.id),
@@ -215,7 +202,6 @@ const App = () => {
     };
   }, [isInitialized, setAuth, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests]);
 
-  // Show loading until initialized
   if (!isInitialized) {
     return <LoadingScreen />;
   }
@@ -242,6 +228,7 @@ const App = () => {
         <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
         <Route path="/admin/releases" element={<ProtectedRoute role="admin"><AllReleases /></ProtectedRoute>} />
+        <Route path="/admin/deletion-requests" element={<ProtectedRoute role="admin"><DeletionRequests /></ProtectedRoute>} />
         <Route path="/admin/finance" element={<ProtectedRoute role="admin"><AdminFinance /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminReports /></ProtectedRoute>} />
         <Route path="/admin/smart-links" element={<ProtectedRoute role="admin"><SmartLinksManagement /></ProtectedRoute>} />

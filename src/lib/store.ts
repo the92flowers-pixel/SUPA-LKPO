@@ -53,6 +53,8 @@ interface DataState {
   updateReleaseStatus: (id: string, status: string) => Promise<void>;
   updateReleaseStreams: (id: string, count: number, date: string) => Promise<void>;
   deleteRelease: (id: string) => Promise<void>;
+  requestReleaseDeletion: (id: string) => Promise<void>;
+  rejectReleaseDeletion: (id: string) => Promise<void>;
 
   fetchSmartLinks: (userId?: string) => Promise<void>;
   addSmartLink: (linkData: Partial<SmartLink>) => Promise<void>;
@@ -161,6 +163,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           releaseDate: r.release_date || new Date().toISOString().split('T')[0],
           coverUrl: r.cover_url || '',
           status: r.status || 'На модерації',
+          deletion_status: r.deletion_status,
           streams: r.streams || 0,
           history: r.history || [],
           createdAt: r.created_at,
@@ -205,7 +208,7 @@ export const useDataStore = create<DataState>((set, get) => ({
         label: releaseData.label || '',
         description: releaseData.description || '',
         explicit: releaseData.explicit || false,
-        is_single: releaseData.isSingle !== undefined ? releaseData.isSingle : true,
+        is_single: releaseData.is_single !== undefined ? releaseData.is_single : true,
         isrc: releaseData.isrc || '',
         tracks: releaseData.tracks || [],
       };
@@ -229,6 +232,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           coverUrl: data.cover_url || '',
           releaseUrl: data.release_url || '',
           status: data.status,
+          deletion_status: data.deletion_status,
           streams: data.streams || 0,
           history: data.history || [],
           createdAt: data.created_at,
@@ -288,6 +292,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           coverUrl: data.cover_url || '',
           releaseUrl: data.release_url || '',
           status: data.status,
+          deletion_status: data.deletion_status,
           streams: data.streams || 0,
           history: data.history || [],
           createdAt: data.created_at,
@@ -350,6 +355,36 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       await supabase.from('releases').delete().eq('id', id);
       set((state) => ({ releases: state.releases.filter(r => r.id !== id) }));
+    } catch (e) { console.error(e); }
+  },
+
+  requestReleaseDeletion: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('releases')
+        .update({ deletion_status: 'pending' })
+        .eq('id', id);
+      
+      if (!error) {
+        set((state) => ({ 
+          releases: state.releases.map(r => r.id === id ? { ...r, deletion_status: 'pending' } : r) 
+        }));
+      }
+    } catch (e) { console.error(e); }
+  },
+
+  rejectReleaseDeletion: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('releases')
+        .update({ deletion_status: null })
+        .eq('id', id);
+      
+      if (!error) {
+        set((state) => ({ 
+          releases: state.releases.map(r => r.id === id ? { ...r, deletion_status: null } : r) 
+        }));
+      }
     } catch (e) { console.error(e); }
   },
 
@@ -832,6 +867,13 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       await supabase.from('app_config').update({ settings }).eq('id', 1);
       set({ settings });
+    } catch (e) { console.error(e); }
+  },
+
+  updateHomeConfig: async (homePageConfig) => {
+    try {
+      await supabase.from('app_config').update({ home_page: homePageConfig }).eq('id', 1);
+      set({ homePageConfig });
     } catch (e) { console.error(e); }
   },
 
