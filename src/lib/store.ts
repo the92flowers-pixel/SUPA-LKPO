@@ -1,26 +1,304 @@
 import { create } from 'zustand';
-import { supabase } from './supabase';
+import { persist } from 'zustand/middleware';
+import { initialStatuses, initialFields, initialLoginPageContent } from './mockData';
+
+interface Transaction {
+  id: string;
+  userId: string;
+  amount: number;
+  type: 'deposit' | 'withdrawal' | 'admin_adjust';
+  status: 'pending' | 'completed' | 'cancelled';
+  description: string;
+  createdAt: string;
+}
+
+interface WithdrawalRequest {
+  id: string;
+  userId: string;
+  amount: number;
+  contactInfo: string;
+  confirmationAgreed: boolean;
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
+  adminComment?: string;
+  createdAt: string;
+}
+
+interface QuarterlyReport {
+  id: string;
+  userId: string;
+  quarter: number;
+  year: number;
+  fileUrl: string;
+  fileName?: string;
+  createdAt: string;
+}
+
+interface User {
+  id: string;
+  login: string;
+  password?: string;
+  role: 'admin' | 'artist';
+  artistName?: string;
+  balance: number;
+  isVerified: boolean;
+  createdAt: string;
+  [key: string]: any;
+}
+
+interface SocialLink {
+  id: string;
+  name: string;
+  url: string;
+}
+
+interface DataState {
+  users: User[];
+  releases: any[];
+  statuses: any[];
+  fields: any[];
+  settings: any;
+  loginPageConfig: any;
+  homePageConfig: any;
+  adminPanelConfig: any;
+  smartLinks: any[];
+  artistWebsites: any[];
+  labelSocials: SocialLink[];
+  transactions: Transaction[];
+  withdrawalRequests: WithdrawalRequest[];
+  quarterlyReports: QuarterlyReport[];
+  
+  addUser: (user: User) => void;
+  updateUser: (id: string, data: Partial<User>) => void;
+  deleteUser: (id: string) => void;
+  addRelease: (release: any) => void;
+  updateRelease: (id: string, data: Partial<any>) => void;
+  updateReleaseStatus: (id: string, status: string) => void;
+  updateReleaseStreams: (id: string, count: number, date: string) => void;
+  updateSettings: (settings: any) => void;
+  updateFields: (fields: any[]) => void;
+  addField: (field: any) => void;
+  deleteField: (id: number) => void;
+  updateStatuses: (statuses: any[]) => void;
+  addStatus: (status: any) => void;
+  deleteStatus: (id: number) => void;
+  updateLoginConfig: (config: any) => void;
+  updateHomeConfig: (config: any) => void;
+  updateAdminConfig: (config: any) => void;
+  addSmartLink: (link: any) => void;
+  updateSmartLink: (id: string, data: Partial<any>) => void;
+  deleteSmartLink: (id: string) => void;
+  addArtistWebsite: (website: any) => void;
+  updateArtistWebsite: (id: string, data: Partial<any>) => void;
+  deleteArtistWebsite: (id: string) => void;
+  updateLabelSocials: (socials: SocialLink[]) => void;
+
+  // Finance Actions
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
+  addWithdrawalRequest: (request: Omit<WithdrawalRequest, 'id' | 'createdAt' | 'status'>) => void;
+  updateWithdrawalStatus: (id: string, status: WithdrawalRequest['status'], comment?: string) => void;
+  
+  // Reports Actions
+  addReport: (report: Omit<QuarterlyReport, 'id' | 'createdAt'>) => void;
+  deleteReport: (id: string) => void;
+}
+
+export const useDataStore = create<DataState>()(
+  persist(
+    (set) => ({
+      users: [
+        { id: '1', login: 'admin', password: 'admin2', role: 'admin', artistName: 'Адмін', balance: 0, isVerified: true, createdAt: new Date().toISOString() },
+        { id: '2', login: 'artist@demo.com', password: 'password', role: 'artist', artistName: 'Demo Artist', balance: 1250, isVerified: false, createdAt: new Date().toISOString() }
+      ],
+      releases: [],
+      statuses: initialStatuses,
+      fields: initialFields,
+      settings: {
+        siteName: 'ЖУРБА MUSIC',
+        contactEmail: 'support@zhurba.music',
+        registrationEnabled: true,
+      },
+      loginPageConfig: initialLoginPageContent,
+      homePageConfig: {
+        heroTitle: "МУЗИКА ТВОЄЇ ДУШІ.",
+        heroSubtitle: "Ми — прихисток для справжнього мистецтва. 150+ платформ, 100% роялті та повна свобода самовираження.",
+        buttonText: "Почати шлях",
+        primaryColor: "#b91c1c",
+      },
+      adminPanelConfig: {
+        sidebarColor: "#000000",
+        accentColor: "#b91c1c",
+        logoText: "ЖУРБА"
+      },
+      smartLinks: [],
+      artistWebsites: [],
+      labelSocials: [
+        { id: '1', name: 'Instagram', url: 'https://instagram.com/zhurba' },
+        { id: '2', name: 'Telegram', url: 'https://t.me/zhurba' }
+      ],
+      transactions: [],
+      withdrawalRequests: [],
+      quarterlyReports: [],
+
+      addUser: (user) => set((state) => ({ users: [...state.users, { ...user, isVerified: false }] })),
+      updateUser: (id, data) => set((state) => ({
+        users: state.users.map(u => u.id === id ? { ...u, ...data } : u)
+      })),
+      deleteUser: (id) => set((state) => ({
+        users: state.users.filter(u => u.id !== id)
+      })),
+      addRelease: (release) => set((state) => ({ 
+        releases: [...state.releases, { ...release, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), streams: 0, history: [] }] 
+      })),
+      updateRelease: (id, data) => set((state) => ({
+        releases: state.releases.map(r => r.id === id ? { ...r, ...data } : r)
+      })),
+      updateReleaseStatus: (id, status) => set((state) => ({
+        releases: state.releases.map(r => r.id === id ? { ...r, status } : r)
+      })),
+      updateReleaseStreams: (id, count, date) => set((state) => ({
+        releases: state.releases.map(r => {
+          if (r.id === id) {
+            const newHistory = [...r.history, { date, count }];
+            return { ...r, streams: r.streams + count, history: newHistory };
+          }
+          return r;
+        })
+      })),
+      updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
+      updateFields: (fields) => set({ fields }),
+      addField: (field) => set((state) => ({ fields: [...state.fields, { ...field, id: Date.now() }] })),
+      deleteField: (id) => set((state) => ({ fields: state.fields.filter(f => f.id !== id) })),
+      updateStatuses: (statuses) => set({ statuses }),
+      addStatus: (status) => set((state) => ({ statuses: [...state.statuses, { ...status, id: Date.now() }] })),
+      deleteStatus: (id) => set((state) => ({ statuses: state.statuses.filter(s => s.id !== id) })),
+      updateLoginConfig: (config) => set({ loginPageConfig: config }),
+      updateHomeConfig: (config) => set({ homePageConfig: config }),
+      updateAdminConfig: (config) => set({ adminPanelConfig: config }),
+      addSmartLink: (link) => set((state) => ({ smartLinks: [...state.smartLinks, link] })),
+      updateSmartLink: (id, data) => set((state) => ({
+        smartLinks: state.smartLinks.map(l => l.id === id ? { ...l, ...data } : l)
+      })),
+      deleteSmartLink: (id) => set((state) => ({
+        smartLinks: state.smartLinks.filter(l => l.id !== id)
+      })),
+      addArtistWebsite: (website) => set((state) => ({ artistWebsites: [...state.artistWebsites, website] })),
+      updateArtistWebsite: (id, data) => set((state) => ({
+        artistWebsites: state.artistWebsites.map(w => w.id === id ? { ...w, ...data } : w)
+      })),
+      deleteArtistWebsite: (id) => set((state) => ({
+        artistWebsites: state.artistWebsites.filter(w => w.id !== id)
+      })),
+      updateLabelSocials: (socials) => set({ labelSocials: socials }),
+
+      // Finance Actions
+      addTransaction: (t) => set((state) => {
+        const newTransaction = { ...t, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() };
+        const updatedUsers = state.users.map(u => {
+          if (u.id === t.userId) {
+            const amount = t.type === 'withdrawal' ? -t.amount : t.amount;
+            return { ...u, balance: u.balance + amount };
+          }
+          return u;
+        });
+        return { 
+          transactions: [newTransaction, ...state.transactions],
+          users: updatedUsers
+        };
+      }),
+
+      addWithdrawalRequest: (req) => set((state) => {
+        const newReq = { 
+          ...req, 
+          id: Math.random().toString(36).substr(2, 9), 
+          status: 'pending' as const, 
+          createdAt: new Date().toISOString() 
+        };
+        
+        const updatedUsers = state.users.map(u => 
+          u.id === req.userId ? { ...u, balance: u.balance - req.amount } : u
+        );
+
+        const newTransaction = {
+          id: Math.random().toString(36).substr(2, 9),
+          userId: req.userId,
+          amount: req.amount,
+          type: 'withdrawal' as const,
+          status: 'pending' as const,
+          description: 'Заявка на вивід коштів',
+          createdAt: new Date().toISOString()
+        };
+
+        return { 
+          withdrawalRequests: [newReq, ...state.withdrawalRequests],
+          users: updatedUsers,
+          transactions: [newTransaction, ...state.transactions]
+        };
+      }),
+
+      updateWithdrawalStatus: (id, status, comment) => set((state) => {
+        const req = state.withdrawalRequests.find(r => r.id === id);
+        if (!req) return state;
+
+        let updatedUsers = [...state.users];
+        let updatedTransactions = [...state.transactions];
+
+        if (status === 'rejected') {
+          updatedUsers = state.users.map(u => 
+            u.id === req.userId ? { ...u, balance: u.balance + req.amount } : u
+          );
+          
+          updatedTransactions = state.transactions.map(t => 
+            (t.userId === req.userId && t.amount === req.amount && t.status === 'pending') 
+            ? { ...t, status: 'cancelled' as const } 
+            : t
+          );
+        } else if (status === 'paid') {
+          updatedTransactions = state.transactions.map(t => 
+            (t.userId === req.userId && t.amount === req.amount && t.status === 'pending') 
+            ? { ...t, status: 'completed' as const } 
+            : t
+          );
+        }
+
+        return {
+          withdrawalRequests: state.withdrawalRequests.map(r => 
+            r.id === id ? { ...r, status, adminComment: comment } : r
+          ),
+          users: updatedUsers,
+          transactions: updatedTransactions
+        };
+      }),
+
+      // Reports Actions
+      addReport: (report) => set((state) => ({
+        quarterlyReports: [...state.quarterlyReports, { ...report, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() }]
+      })),
+      deleteReport: (id) => set((state) => ({
+        quarterlyReports: state.quarterlyReports.filter(r => r.id !== id)
+      })),
+    }),
+    { name: 'zhurba-db-v12' }
+  )
+);
 
 interface AuthState {
-  user: any | null;
-  isLoading: boolean;
-  setAuth: (user: any | null, session: any | null) => void;
+  user: User | null;
+  token: string | null;
+  setAuth: (user: User | null, token: string | null) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isLoading: true,
-  setAuth: (user) => set({ user, isLoading: false }),
-  logout: async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error("Logout error", e);
-    }
-    set({ user: null, isLoading: false });
-  },
-}));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      setAuth: (user, token) => set({ user, token }),
+      logout: () => set({ user: null, token: null }),
+    }),
+    { name: 'zhurba-auth-v12' }
+  )
+);
 
 interface UIState {
   sidebarOpen: boolean;
@@ -28,287 +306,6 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  sidebarOpen: false,
+  sidebarOpen: true,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-}));
-
-interface DataState {
-  releases: any[];
-  smartLinks: any[];
-  fields: any[];
-  users: any[];
-  artistWebsites: any[];
-  transactions: any[];
-  withdrawalRequests: any[];
-  quarterlyReports: any[];
-  statuses: any[];
-  labelSocials: any[];
-  settings: any;
-  homePageConfig: any;
-  adminPanelConfig: any;
-  loginPageConfig: any;
-  
-  fetchInitialData: (userId?: string, role?: string) => Promise<void>;
-  updateReleaseStatus: (id: string, status: string) => Promise<void>;
-  updateRelease: (id: string, data: any) => Promise<void>;
-  updateReleaseStreams: (id: string, count: number, date: string) => Promise<void>;
-  updateUser: (id: string, data: any) => Promise<void>;
-  deleteUser: (id: string) => Promise<void>;
-  addWithdrawalRequest: (data: any) => Promise<void>;
-  updateWithdrawalStatus: (id: string, status: string, comment: string) => Promise<void>;
-  addTransaction: (data: any) => Promise<void>;
-  addSmartLink: (data: any) => Promise<void>;
-  updateSmartLink: (id: string, data: any) => Promise<void>;
-  deleteSmartLink: (id: string) => Promise<void>;
-  addArtistWebsite: (data: any) => Promise<void>;
-  updateArtistWebsite: (id: string, data: any) => Promise<void>;
-  deleteArtistWebsite: (id: string) => Promise<void>;
-  addReport: (data: any) => Promise<void>;
-  deleteReport: (id: string) => Promise<void>;
-  updateStatuses: (statuses: any[]) => Promise<void>;
-  addStatus: (status: any) => Promise<void>;
-  deleteStatus: (id: number) => Promise<void>;
-  updateFields: (fields: any[]) => Promise<void>;
-  addField: (field: any) => Promise<void>;
-  deleteField: (id: number) => Promise<void>;
-  updateLabelSocials: (socials: any[]) => Promise<void>;
-  updateLoginConfig: (config: any) => Promise<void>;
-  updateSettings: (settings: any) => Promise<void>;
-  updateHomeConfig: (config: any) => Promise<void>;
-  updateAdminConfig: (config: any) => Promise<void>;
-}
-
-export const useDataStore = create<DataState>((set, get) => ({
-  releases: [],
-  smartLinks: [],
-  fields: [],
-  users: [],
-  artistWebsites: [],
-  transactions: [],
-  withdrawalRequests: [],
-  quarterlyReports: [],
-  statuses: [],
-  labelSocials: [],
-  settings: { siteName: "ЖУРБА MUSIC", registrationEnabled: true },
-  homePageConfig: { heroTitle: "Твоя музика. Твоя влада.", heroSubtitle: "Дистрибуція нового покоління для незалежних артистів.", buttonText: "Приєднатися", primaryColor: "#ef4444" },
-  adminPanelConfig: { logoText: "ЖУРБА", accentColor: "#ef4444" },
-  loginPageConfig: { socialIcons: ["Spotify", "Apple"] },
-
-  fetchInitialData: async (userId, role) => {
-    try {
-      const isAdmin = role === 'admin';
-      
-      // Публічні дані (завжди намагаємось завантажити)
-      const { data: config } = await supabase.from('app_config').select('*').maybeSingle();
-      
-      if (config) {
-        set({ 
-          settings: config.settings || get().settings,
-          homePageConfig: config.home_page || get().homePageConfig,
-          adminPanelConfig: config.admin_panel || get().adminPanelConfig,
-          loginPageConfig: config.login_page || get().loginPageConfig,
-          fields: config.fields || [],
-          statuses: config.statuses || [],
-          labelSocials: config.label_socials || []
-        });
-      }
-
-      // Дані користувача (тільки якщо авторизований)
-      if (userId) {
-        const { data: releases } = await (isAdmin ? supabase.from('releases').select('*') : supabase.from('releases').select('*').eq('user_id', userId));
-        const { data: smartLinks } = await supabase.from('smart_links').select('*');
-        const { data: transactions } = await (isAdmin ? supabase.from('transactions').select('*') : supabase.from('transactions').select('*').eq('user_id', userId));
-        const { data: websites } = await (isAdmin ? supabase.from('artist_websites').select('*') : supabase.from('artist_websites').select('*').eq('user_id', userId));
-        const { data: withdrawals } = await (isAdmin ? supabase.from('withdrawal_requests').select('*') : supabase.from('withdrawal_requests').select('*').eq('user_id', userId));
-        const { data: reports } = await (isAdmin ? supabase.from('quarterly_reports').select('*') : supabase.from('quarterly_reports').select('*').eq('user_id', userId));
-
-        set({ 
-          releases: releases || [], 
-          smartLinks: smartLinks || [],
-          transactions: transactions || [],
-          artistWebsites: websites || [],
-          withdrawalRequests: withdrawals || [],
-          quarterlyReports: reports || []
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching data from Supabase:", error);
-    }
-  },
-
-  updateReleaseStatus: async (id, status) => {
-    try {
-      await supabase.from('releases').update({ status }).eq('id', id);
-      set((state) => ({ releases: state.releases.map(r => r.id === id ? { ...r, status } : r) }));
-    } catch (e) { console.error(e); }
-  },
-
-  updateRelease: async (id, data) => {
-    try {
-      await supabase.from('releases').update(data).eq('id', id);
-      set((state) => ({ releases: state.releases.map(r => r.id === id ? { ...r, ...data } : r) }));
-    } catch (e) { console.error(e); }
-  },
-
-  updateReleaseStreams: async (id, count, _date) => {
-    set((state) => ({
-      releases: state.releases.map(r => r.id === id ? { ...r, streams: (r.streams || 0) + count } : r)
-    }));
-  },
-
-  updateUser: async (id, data) => {
-    try {
-      set((state) => ({ users: state.users.map(u => u.id === id ? { ...u, ...data } : u) }));
-    } catch (e) { console.error(e); }
-  },
-
-  deleteUser: async (id) => {
-    set((state) => ({ users: state.users.filter(u => u.id !== id) }));
-  },
-
-  addWithdrawalRequest: async (data) => {
-    try {
-      const { data: req } = await supabase.from('withdrawal_requests').insert(data).select().single();
-      if (req) set((state) => ({ withdrawalRequests: [...state.withdrawalRequests, req] }));
-    } catch (e) { console.error(e); }
-  },
-
-  updateWithdrawalStatus: async (id, status, comment) => {
-    try {
-      await supabase.from('withdrawal_requests').update({ status, admin_comment: comment }).eq('id', id);
-      set((state) => ({ withdrawalRequests: state.withdrawalRequests.map(r => r.id === id ? { ...r, status, admin_comment: comment } : r) }));
-    } catch (e) { console.error(e); }
-  },
-
-  addTransaction: async (data) => {
-    try {
-      const { data: tx } = await supabase.from('transactions').insert(data).select().single();
-      if (tx) set((state) => ({ transactions: [...state.transactions, tx] }));
-    } catch (e) { console.error(e); }
-  },
-
-  addSmartLink: async (data) => {
-    try {
-      const { data: link } = await supabase.from('smart_links').insert(data).select().single();
-      if (link) set((state) => ({ smartLinks: [...state.smartLinks, link] }));
-    } catch (e) { console.error(e); }
-  },
-
-  updateSmartLink: async (id, data) => {
-    try {
-      await supabase.from('smart_links').update(data).eq('id', id);
-      set((state) => ({ smartLinks: state.smartLinks.map(l => l.id === id ? { ...l, ...data } : l) }));
-    } catch (e) { console.error(e); }
-  },
-
-  deleteSmartLink: async (id) => {
-    try {
-      await supabase.from('smart_links').delete().eq('id', id);
-      set((state) => ({ smartLinks: state.smartLinks.filter(l => l.id !== id) }));
-    } catch (e) { console.error(e); }
-  },
-
-  addArtistWebsite: async (data) => {
-    try {
-      const { data: site } = await supabase.from('artist_websites').insert(data).select().single();
-      if (site) set((state) => ({ artistWebsites: [...state.artistWebsites, site] }));
-    } catch (e) { console.error(e); }
-  },
-
-  updateArtistWebsite: async (id, data) => {
-    try {
-      await supabase.from('artist_websites').update(data).eq('id', id);
-      set((state) => ({ artistWebsites: state.artistWebsites.map(s => s.id === id ? { ...s, ...data } : s) }));
-    } catch (e) { console.error(e); }
-  },
-
-  deleteArtistWebsite: async (id) => {
-    try {
-      await supabase.from('artist_websites').delete().eq('id', id);
-      set((state) => ({ artistWebsites: state.artistWebsites.filter(s => s.id !== id) }));
-    } catch (e) { console.error(e); }
-  },
-
-  addReport: async (data) => {
-    try {
-      const { data: report } = await supabase.from('quarterly_reports').insert(data).select().single();
-      if (report) set((state) => ({ quarterlyReports: [...state.quarterlyReports, report] }));
-    } catch (e) { console.error(e); }
-  },
-
-  deleteReport: async (id) => {
-    try {
-      await supabase.from('quarterly_reports').delete().eq('id', id);
-      set((state) => ({ quarterlyReports: state.quarterlyReports.filter(r => r.id !== id) }));
-    } catch (e) { console.error(e); }
-  },
-
-  updateStatuses: async (statuses) => {
-    try {
-      await supabase.from('app_config').update({ statuses }).eq('id', 1);
-      set({ statuses });
-    } catch (e) { console.error(e); }
-  },
-
-  addStatus: async (status) => {
-    const newStatuses = [...get().statuses, { ...status, id: Date.now() }];
-    await get().updateStatuses(newStatuses);
-  },
-
-  deleteStatus: async (id) => {
-    const newStatuses = get().statuses.filter(s => s.id !== id);
-    await get().updateStatuses(newStatuses);
-  },
-
-  updateFields: async (fields) => {
-    try {
-      await supabase.from('app_config').update({ fields }).eq('id', 1);
-      set({ fields });
-    } catch (e) { console.error(e); }
-  },
-
-  addField: async (field) => {
-    const newFields = [...get().fields, { ...field, id: Date.now() }];
-    await get().updateFields(newFields);
-  },
-
-  deleteField: async (id) => {
-    const newFields = get().fields.filter(f => f.id !== id);
-    await get().updateFields(newFields);
-  },
-
-  updateLabelSocials: async (labelSocials) => {
-    try {
-      await supabase.from('app_config').update({ label_socials: labelSocials }).eq('id', 1);
-      set({ labelSocials });
-    } catch (e) { console.error(e); }
-  },
-
-  updateLoginConfig: async (loginPageConfig) => {
-    try {
-      await supabase.from('app_config').update({ login_page: loginPageConfig }).eq('id', 1);
-      set({ loginPageConfig });
-    } catch (e) { console.error(e); }
-  },
-
-  updateSettings: async (settings) => {
-    try {
-      await supabase.from('app_config').update({ settings }).eq('id', 1);
-      set({ settings });
-    } catch (e) { console.error(e); }
-  },
-
-  updateHomeConfig: async (homePageConfig) => {
-    try {
-      await supabase.from('app_config').update({ home_page: homePageConfig }).eq('id', 1);
-      set({ homePageConfig });
-    } catch (e) { console.error(e); }
-  },
-
-  updateAdminConfig: async (adminPanelConfig) => {
-    try {
-      await supabase.from('app_config').update({ admin_panel: adminPanelConfig }).eq('id', 1);
-      set({ adminPanelConfig });
-    } catch (e) { console.error(e); }
-  }
 }));

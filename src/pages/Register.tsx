@@ -1,10 +1,8 @@
-"use client";
-
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Music, UserPlus, AlertCircle } from 'lucide-react';
+import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,87 +11,78 @@ import { showSuccess, showError } from '@/utils/toast';
 const Register = () => {
   const { register, handleSubmit } = useForm();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const { addUser, users, settings } = useDataStore();
 
-  const onSubmit = async (data: any) => {
-    setIsLoading(true);
-    try {
-      const { error, data: authData } = await supabase.auth.signUp({
-        email: data.login,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.artistName,
-          }
-        }
-      });
+  if (!settings.registrationEnabled) {
+    return (
+      <div className="min-h-screen flex bg-[#0a0a0a] text-white items-center justify-center p-8">
+        <div className="text-center space-y-4">
+          <AlertCircle className="mx-auto text-amber-500" size={48} />
+          <h1 className="text-2xl font-bold">Реєстрація тимчасово закрита</h1>
+          <p className="text-gray-500">Зверніться до адміністратора для створення акаунту.</p>
+          <Link to="/">
+            <Button variant="outline" className="mt-4 border-white/10">На головну</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-      if (error) throw error;
-
-      if (authData.user) {
-        showSuccess('Акаунт створено! Перевірте пошту для підтвердження або увійдіть.');
-        navigate('/login');
-      }
-    } catch (error: any) {
-      showError(error.message || 'Помилка при реєстрації');
-    } finally {
-      setIsLoading(false);
+  const onSubmit = (data: any) => {
+    if (users.find(u => u.login === data.login)) {
+      showError('Користувач з таким email вже існує');
+      return;
     }
+
+    const newUser = { 
+      ...data,
+      id: Math.random().toString(36).substr(2, 9), 
+      role: 'artist' as const, 
+      isVerified: false,
+      balance: 0,
+      createdAt: new Date().toISOString()
+    };
+    
+    addUser(newUser);
+    setAuth(newUser, 'mock-jwt');
+    showSuccess('Акаунт успішно створено!');
+    navigate('/dashboard');
   };
 
   return (
-    <div className="min-h-screen flex bg-[#050505] text-white items-center justify-center p-8 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#1a0505,transparent_70%)] opacity-30 pointer-events-none" />
-      
-      <div className="w-full max-w-md space-y-10 relative z-10">
-        <div className="text-center space-y-4">
+    <div className="min-h-screen flex bg-[#0a0a0a] text-white items-center justify-center p-8">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
           <div className="flex justify-center mb-6">
-            <img src="https://jurbamusic.iceiy.com/whitemonster.png" alt="Logo" className="h-16 w-auto" />
+            <div className="w-12 h-12 bg-violet-500 rounded-xl flex items-center justify-center">
+              <Music className="text-white" size={28} />
+            </div>
           </div>
-          <h1 className="text-4xl font-black tracking-tight uppercase">Приєднатися</h1>
-          <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">Почни свій шлях у ЖУРБА MUSIC</p>
+          <h1 className="text-3xl font-bold tracking-tight">Створити акаунт</h1>
+          <p className="text-gray-500 mt-2">Приєднуйтесь до {settings.siteName} сьогодні</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-white/5 p-8 border border-white/5">
-          <div className="space-y-3">
-            <Label htmlFor="artistName" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне ім'я</Label>
-            <Input 
-              id="artistName" 
-              {...register('artistName', { required: true })} 
-              className="bg-black/40 border-white/10 focus:border-red-700 h-14 rounded-none text-white text-sm" 
-              placeholder="Твій нікнейм" 
-            />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="artistName">Сценічне ім'я</Label>
+            <Input id="artistName" {...register('artistName', { required: true })} className="bg-[#1a1a1a] border-white/10 focus:border-violet-500 h-12" placeholder="Ваш псевдонім" />
           </div>
-          <div className="space-y-3">
-            <Label htmlFor="login" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Email Адреса</Label>
-            <Input 
-              id="login" 
-              type="email" 
-              {...register('login', { required: true })} 
-              className="bg-black/40 border-white/10 focus:border-red-700 h-14 rounded-none text-white text-sm" 
-              placeholder="name@example.com" 
-            />
+          <div className="space-y-2">
+            <Label htmlFor="login">Email</Label>
+            <Input id="login" type="email" {...register('login', { required: true })} className="bg-[#1a1a1a] border-white/10 focus:border-violet-500 h-12" placeholder="name@example.com" />
           </div>
-          <div className="space-y-3">
-            <Label htmlFor="password" title="Пароль" className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пароль</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              {...register('password', { required: true })} 
-              className="bg-black/40 border-white/10 focus:border-red-700 h-14 rounded-none text-white text-sm" 
-              placeholder="••••••••" 
-            />
+          <div className="space-y-2">
+            <Label htmlFor="password">Пароль</Label>
+            <Input id="password" type="password" {...register('password', { required: true })} className="bg-[#1a1a1a] border-white/10 focus:border-violet-500 h-12" placeholder="••••••••" />
           </div>
-          <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full h-14 bg-red-700 hover:bg-red-800 text-white font-black uppercase tracking-widest rounded-none shadow-[0_0_30px_rgba(185,28,28,0.2)]"
-          >
-            {isLoading ? <Loader2 className="animate-spin" /> : <>Зареєструватися <UserPlus className="ml-3" size={18} /></>}
+          <Button type="submit" className="w-full h-12 bg-violet-600 hover:bg-violet-700 text-white font-bold text-lg">
+            Зареєструватися
+            <UserPlus className="ml-2" size={20} />
           </Button>
         </form>
-        <p className="text-center text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
-          Вже маєте акаунт? <Link to="/login" className="text-red-700 hover:text-red-600 transition-colors ml-2 underline underline-offset-4">Увійти</Link>
+        <p className="text-center text-sm text-gray-500">
+          Вже маєте акаунт? <Link to="/login" className="text-violet-500 hover:underline font-medium">Увійти</Link>
         </p>
       </div>
     </div>
