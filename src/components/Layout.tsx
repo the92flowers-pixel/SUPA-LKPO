@@ -15,6 +15,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   const artistLinks = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
     { to: '/releases', icon: Music, label: 'Мої релізи' },
@@ -42,31 +47,33 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   ];
 
   const links = user?.role === 'admin' ? adminLinks : artistLinks;
+  const accentColor = adminPanelConfig?.accentColor || '#ef4444';
+  const logoText = adminPanelConfig?.logoText || 'ЖУРБА';
 
   return (
     <div className="min-h-screen bg-transparent text-[#e5e5e5] flex">
       <aside className={cn("fixed inset-y-0 left-0 z-50 w-64 bg-black/40 backdrop-blur-2xl border-r border-white/5 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0", !sidebarOpen && "-translate-x-full")}>
         <div className="p-8 flex items-center justify-between">
-          <h1 className="text-lg font-black tracking-[0.3em] uppercase" style={{ color: adminPanelConfig.accentColor }}>{adminPanelConfig.logoText}</h1>
+          <h1 className="text-lg font-black tracking-[0.3em] uppercase" style={{ color: accentColor }}>{logoText}</h1>
           <Button variant="ghost" size="icon" className="lg:hidden text-zinc-500" onClick={toggleSidebar}><X size={20} /></Button>
         </div>
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
           {links.map((link) => (
-            <Link key={link.to} to={link.to} className={cn("flex items-center gap-3 px-4 py-3 rounded-none transition-all duration-300 group border-l-2", location.pathname === link.to ? "bg-white/5 text-white" : "hover:bg-white/5 text-zinc-500 hover:text-zinc-200 border-transparent")} style={{ borderLeftColor: location.pathname === link.to ? adminPanelConfig.accentColor : 'transparent' }}>
-              <link.icon size={18} style={{ color: location.pathname === link.to ? adminPanelConfig.accentColor : undefined }} />
+            <Link key={link.to} to={link.to} className={cn("flex items-center gap-3 px-4 py-3 rounded-none transition-all duration-300 group border-l-2", location.pathname === link.to ? "bg-white/5 text-white" : "hover:bg-white/5 text-zinc-500 hover:text-zinc-200 border-transparent")} style={{ borderLeftColor: location.pathname === link.to ? accentColor : 'transparent' }}>
+              <link.icon size={18} style={{ color: location.pathname === link.to ? accentColor : undefined }} />
               <span className="text-xs font-bold uppercase tracking-widest">{link.label}</span>
             </Link>
           ))}
         </nav>
         <div className="p-6 border-t border-white/5">
           <Link to="/profile" className="flex items-center gap-3 px-4 py-3 mb-4 bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-            <div className="w-8 h-8 rounded-none flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: adminPanelConfig.accentColor }}>{user?.login[0].toUpperCase()}</div>
+            <div className="w-8 h-8 rounded-none flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: accentColor }}>{user?.artist_name?.[0]?.toUpperCase() || user?.login?.[0]?.toUpperCase() || 'U'}</div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-[10px] font-bold uppercase tracking-wider truncate group-hover:text-white transition-colors">{user?.artistName || user?.login}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider truncate group-hover:text-white transition-colors">{user?.artist_name || user?.login}</p>
               <p className="text-[9px] text-zinc-600 uppercase tracking-widest">{user?.role}</p>
             </div>
           </Link>
-          <Button variant="ghost" className="w-full justify-start text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-none" onClick={() => { logout(); navigate('/login'); }}>
+          <Button variant="ghost" className="w-full justify-start text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-none" onClick={handleLogout}>
             <LogOut size={16} className="mr-3" /> Вийти
           </Button>
         </div>
