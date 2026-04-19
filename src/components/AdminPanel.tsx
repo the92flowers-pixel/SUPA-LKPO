@@ -1,32 +1,28 @@
 "use client";
 
 import React from 'react';
-import { supabaseClient } from '../supabase';
+import { GetReleaseData } from '../api';
 
 const AdminPanel = () => {
-  const [releases, setReleases] = React.useState([]);
+  const [releases, setReleases] = useState([]);
 
-  React.useEffect(() => {
-    // Get all releases
-    supabaseClient.from('releases')
-      .select('title, description, image, streams')
-      .then((data) => setReleases(data));
+  useEffect(() => {
+    GetReleaseData().then((data) => setReleases(data));
   }, []);
+
+  if (!releases) return <div>Loading...</div>;
 
   return (
     <div>
-      <h1>My Releases</h1>
-      <ul>
-        {releases.map((release) => (
-          <li key={release.id}>
-            <h2>{release.title}</h2>
-            <p>{release.description}</p>
-            <img src={release.image} alt="Release Image" />
-            <p>Streams: {release.streams.join(', ')}</p>
-            <button>Edit Release</button>
-          </li>
-        ))}
-      </ul>
+      {/* ... */}
+      <h2>Releases</h2>
+      {releases.map((release) => (
+        <div key={release.id}>
+          <p>{release.title}</p>
+          <p>{release.description}</p>
+          <p>Release Date: {release.releaseDate}</p>
+        </div>
+      ))}
     </div>
   );
 };
