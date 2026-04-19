@@ -132,16 +132,25 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (role !== 'admin' && userId) query = query.eq('user_id', userId);
       const { data, error } = await query;
       if (!error && data) {
-        set({ releases: data.map(r => ({
-          ...r,
-          userId: r.user_id,
-          releaseDate: r.release_date,
-          coverUrl: r.cover_url,
-          releaseUrl: r.release_url,
-          createdAt: r.created_at,
-          isSingle: r.is_single,
-          copyrightConfirmed: r.copyright_confirmed
-        })) });
+        set({ releases: data.map(r => {
+          // Try to parse metadata from description if it looks like JSON
+          let extraData = {};
+          if (r.description && r.description.startsWith('{')) {
+            try { extraData = JSON.parse(r.description); } catch(e) {}
+          }
+
+          return {
+            ...r,
+            ...extraData,
+            userId: r.user_id,
+            releaseDate: r.release_date,
+            coverUrl: r.cover_url,
+            releaseUrl: r.release_url || (extraData as any).releaseUrl,
+            createdAt: r.created_at,
+            isSingle: r.is_single !== undefined ? r.is_single : (extraData as any).isSingle,
+            copyrightConfirmed: r.copyright_confirmed !== undefined ? r.copyright_confirmed : (extraData as any).copyrightConfirmed
+          };
+        }) });
       }
     } catch (e) { console.error(e); }
   },
@@ -151,6 +160,20 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Unauthorized');
       
+      // Create a metadata object for fields that might be missing in DB
+      const metadata = {
+        composer: releaseData.composer,
+        performer: releaseData.performer,
+        label: releaseData.label,
+        isSingle: !!releaseData.isSingle,
+        isrc: releaseData.isrc,
+        upc: releaseData.upc,
+        releaseUrl: releaseData.releaseUrl,
+        copyrights: releaseData.copyrights,
+        copyrightConfirmed: !!releaseData.copyrightConfirmed,
+        tracks: releaseData.tracks || []
+      };
+
       const dbData = {
         user_id: user.id,
         title: releaseData.title,
@@ -158,21 +181,11 @@ export const useDataStore = create<DataState>((set, get) => ({
         genre: releaseData.genre,
         release_date: releaseData.releaseDate,
         cover_url: releaseData.coverUrl,
-        composer: releaseData.composer,
-        performer: releaseData.performer,
-        label: releaseData.label,
-        description: releaseData.description,
-        explicit: !!releaseData.explicit,
-        is_single: !!releaseData.isSingle,
-        isrc: releaseData.isrc || null,
-        upc: releaseData.upc || null,
-        release_url: releaseData.releaseUrl || null,
-        copyrights: releaseData.copyrights,
-        copyright_confirmed: !!releaseData.copyrightConfirmed,
-        tracks: releaseData.tracks || [],
         status: releaseData.status || 'На модерації',
         streams: 0,
-        history: []
+        history: [],
+        // Store everything else in description as JSON to avoid schema errors
+        description: JSON.stringify(metadata)
       };
 
       const { data, error } = await supabase.from('releases').insert(dbData).select().single();
@@ -185,13 +198,11 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (data) {
         const mapped: Release = {
           ...data,
+          ...metadata,
           userId: data.user_id,
           releaseDate: data.release_date,
           coverUrl: data.cover_url,
-          releaseUrl: data.release_url,
           createdAt: data.created_at,
-          isSingle: data.is_single,
-          copyrightConfirmed: data.copyright_confirmed
         };
         set((state) => ({ releases: [mapped, ...state.releases] }));
         return mapped;
@@ -205,25 +216,27 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   updateRelease: async (id, releaseData) => {
     try {
+      const metadata = {
+        composer: releaseData.composer,
+        performer: releaseData.performer,
+        label: releaseData.label,
+        isSingle: !!releaseData.isSingle,
+        isrc: releaseData.isrc,
+        upc: releaseData.upc,
+        releaseUrl: releaseData.releaseUrl,
+        copyrights: releaseData.copyrights,
+        copyrightConfirmed: !!releaseData.copyrightConfirmed,
+        tracks: releaseData.tracks || []
+      };
+
       const dbData: any = {
         title: releaseData.title,
         artist: releaseData.artist,
         genre: releaseData.genre,
         release_date: releaseData.releaseDate,
         cover_url: releaseData.coverUrl,
-        composer: releaseData.composer,
-        performer: releaseData.performer,
-        label: releaseData.label,
-        description: releaseData.description,
-        explicit: !!releaseData.explicit,
-        is_single: !!releaseData.isSingle,
-        isrc: releaseData.isrc || null,
-        upc: releaseData.upc || null,
-        release_url: releaseData.releaseUrl || null,
-        copyrights: releaseData.copyrights,
-        copyright_confirmed: !!releaseData.copyrightConfirmed,
-        tracks: releaseData.tracks || [],
-        status: releaseData.status
+        status: releaseData.status,
+        description: JSON.stringify(metadata)
       };
 
       const { data, error } = await supabase.from('releases').update(dbData).eq('id', id).select().single();
@@ -233,13 +246,11 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (data) {
         const mapped: Release = {
           ...data,
+          ...metadata,
           userId: data.user_id,
           releaseDate: data.release_date,
           coverUrl: data.cover_url,
-          releaseUrl: data.release_url,
           createdAt: data.created_at,
-          isSingle: data.is_single,
-          copyrightConfirmed: data.copyright_confirmed
         };
         set((state) => ({ releases: state.releases.map(r => r.id === id ? mapped : r) }));
         return mapped;
