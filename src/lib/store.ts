@@ -657,7 +657,10 @@ export const useDataStore = create<DataState>((set, get) => ({
   addField: async (field) => {
     try {
       const { data, error } = await supabase.from('fields').insert({ name: field.name, label: field.label, type: field.type, required: field.required, section: field.section, sort_order: field.order, visible: field.visible, options: field.options }).select().single();
-      if (!error && data) set((state) => ({ fields: [...state.fields, { id: data.id, name: data.name, label: data.label, type: data.type, required: data.required, section: data.section, order: data.sort_order, visible: data.visible, options: data.options }] }));
+      if (!error && data) {
+        const mapped = { id: data.id, name: data.name, label: data.label, type: data.type, required: data.required, section: data.section, order: data.sort_order, visible: data.visible, options: data.options };
+        set((state) => ({ fields: [...state.fields, mapped] }));
+      }
     } catch (e) { console.error(e); }
   },
 
