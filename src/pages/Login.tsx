@@ -13,7 +13,7 @@ const Login = () => {
   const { register, handleSubmit } = useForm();
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
-  const { loginPageConfig: content } = useDataStore();
+  const { loginPageConfig } = useDataStore();
 
   const onSubmit = async (data: any) => {
     try {
@@ -28,7 +28,6 @@ const Login = () => {
       }
 
       if (authData.user) {
-        // First set auth with minimal data, then fetch full profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
@@ -38,8 +37,8 @@ const Login = () => {
         if (profile) {
           setAuth(profile);
           showSuccess('Успішний вхід!');
-          // Navigate first, profile will be synced by App.tsx listener
-          window.location.href = profile.role === 'admin' ? '/admin/moderation' : '/dashboard';
+          // Use navigate for proper routing
+          navigate(profile.role === 'admin' ? '/admin/moderation' : '/dashboard', { replace: true });
         } else {
           showError('Профіль не знайдено. Зверніться до адміністратора.');
         }
@@ -57,15 +56,15 @@ const Login = () => {
             <div className="w-10 h-10 bg-red-700 rounded-xl flex items-center justify-center">
               <Music className="text-white" />
             </div>
-            <span className="text-2xl font-bold tracking-tighter">{content?.logoText || 'ЖУРБА MUSIC'}</span>
+            <span className="text-2xl font-bold tracking-tighter">{loginPageConfig?.logoText || 'ЖУРБА MUSIC'}</span>
           </div>
           <div className="space-y-4">
             <h2 className="text-6xl font-black leading-tight tracking-tighter">
-              {content?.login_page?.leftTitle || 'Твоя музика.'}<br />
-              <span className="text-red-700">{content?.login_page?.leftText1 || 'Скрізь.'}</span>
+              Твоя музика.<br />
+              <span className="text-red-700">Скрізь.</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-md leading-relaxed">
-              {content?.login_page?.leftText2 || 'Дистрибуція на 150+ платформ. Залишай собі 100% роялті.'}
+              Дистрибуція на 150+ платформ. Залишай собі 100% роялті.
             </p>
           </div>
         </div>
@@ -83,8 +82,8 @@ const Login = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center lg:text-left">
-            <h1 className="text-3xl font-bold tracking-tight">{content?.welcomeTitle || 'Ласкаво просимо'}</h1>
-            <p className="text-gray-500 mt-2">{content?.welcomeSubtitle || 'Увійдіть, щоб продовжити'}</p>
+            <h1 className="text-3xl font-bold tracking-tight">{loginPageConfig?.welcomeTitle || 'Ласкаво просимо'}</h1>
+            <p className="text-gray-500 mt-2">{loginPageConfig?.welcomeSubtitle || 'Увійдіть, щоб продовжити'}</p>
           </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
