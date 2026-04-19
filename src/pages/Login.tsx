@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Music, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,10 @@ const Login = () => {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const { loginPageConfig } = useDataStore();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: { login: string; password: string }) => {
+    setIsLoading(true);
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.login,
@@ -23,28 +25,36 @@ const Login = () => {
       });
 
       if (error) {
-        showError(error.message);
+        showError(error.message || 'Помилка входу');
+        setIsLoading(false);
         return;
       }
 
       if (authData.user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authData.user.id)
           .single();
         
-        if (profile) {
-          setAuth(profile);
-          showSuccess('Успішний вхід!');
-          // Use navigate for proper routing
-          navigate(profile.role === 'admin' ? '/admin/moderation' : '/dashboard', { replace: true });
-        } else {
-          showError('Профіль не знайдено. Зверніться до адміністратора.');
+        if (profileError || !profile) {
+          showError('Профіль не знайдено');
+          setIsLoading(false);
+          return;
         }
+
+        setAuth(profile);
+        showSuccess('Успішний вхід!');
+        
+        // Navigate based on role
+        const redirectPath = profile.role === 'admin' ? '/admin/moderation' : '/dashboard';
+        navigate(redirectPath, { replace: true });
       }
-    } catch (err: any) {
-      showError(err.message || 'Помилка входу');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Невідома помилка';
+      showError(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -88,17 +98,41 @@ const Login = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="login">Логін (Email)</Label>
-              <Input id="login" {...register('login')} className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" placeholder="name@example.com" />
+              <Input 
+                id="login" 
+                {...register('login', { required: true })} 
+                className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" 
+                placeholder="name@example.com"
+                disabled={isLoading}
+              />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Пароль</Label>
-              </div>
-              <Input id="password" type="password" {...register('password')} className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" placeholder="••••••••" />
+              <Label htmlFor="password">Пароль</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                {...register('password', { required: true })} 
+                className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" 
+                placeholder="••••••••"
+                disabled={isLoading}
+              />
             </div>
-            <Button type="submit" className="w-full h-12 bg-red-700 hover:bg-red-800 text-white font-bold text-lg">
-              Увійти
-              <ArrowRight className="ml-2" size={20} />
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-red-700 hover:bg-red-800 text-white font-bold text-lg disabled:opacity-50"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Вхід...
+                </>
+              ) : (
+                <>
+                  Увійти
+                  <ArrowRight className="ml-2" size={20} />
+                </>
+              )}
             </Button>
           </form>
           <div className="text-center space-y-4">
