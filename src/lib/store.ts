@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           .select('*')
           .eq('id', session.user.id)
           .single();
-        set({ user: profile, isLoading: false });
+        set({ user: profile || null, isLoading: false });
       } else {
         set({ user: null, isLoading: false });
       }
