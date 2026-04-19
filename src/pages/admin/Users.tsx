@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { showSuccess } from '@/utils/toast';
 
 const Users = () => {
@@ -149,14 +150,51 @@ const Users = () => {
               <div className="border-t border-white/5 pt-4">
                 <h3 className="text-sm font-bold mb-4 text-zinc-400 uppercase tracking-widest">Поля профілю</h3>
                 <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label>Сценічне ім'я</Label>
+                    <Input 
+                      value={editingUser.artistName || ''} 
+                      onChange={(e) => setEditingUser({...editingUser, artistName: e.target.value})} 
+                      className="bg-black/40 border-white/5" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>БІО</Label>
+                    <Textarea 
+                      value={editingUser.bio || ''} 
+                      onChange={(e) => setEditingUser({...editingUser, bio: e.target.value})} 
+                      className="bg-black/40 border-white/5 min-h-[100px]" 
+                    />
+                  </div>
                   {profileFields.map(field => (
                     <div key={field.id} className="space-y-2">
                       <Label>{field.label}</Label>
-                      <Input 
-                        value={editingUser[field.name] || ''} 
-                        onChange={(e) => setEditingUser({...editingUser, [field.name]: e.target.value})} 
-                        className="bg-black/40 border-white/5" 
-                      />
+                      {field.type === 'textarea' ? (
+                        <Textarea 
+                          value={editingUser[field.name] || ''} 
+                          onChange={(e) => setEditingUser({...editingUser, [field.name]: e.target.value})} 
+                          className="bg-black/40 border-white/5 min-h-[100px]" 
+                        />
+                      ) : field.type === 'select' ? (
+                        <Select 
+                          value={editingUser[field.name] || ''} 
+                          onValueChange={(v) => setEditingUser({...editingUser, [field.name]: v})}
+                        >
+                          <SelectTrigger className="bg-black/40 border-white/5"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-[#0a0a0a] border-white/5 text-white">
+                            {field.options?.split(',').map((opt: string) => (
+                              <SelectItem key={opt.trim()} value={opt.trim()}>{opt.trim()}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input 
+                          type={field.type}
+                          value={editingUser[field.name] || ''} 
+                          onChange={(e) => setEditingUser({...editingUser, [field.name]: e.target.value})} 
+                          className="bg-black/40 border-white/5" 
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

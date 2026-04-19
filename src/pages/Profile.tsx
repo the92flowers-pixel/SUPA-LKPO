@@ -58,10 +58,11 @@ const Profile = () => {
     }
   }, [isWebsiteModalOpen, userWebsite, currentUser]);
 
-  const { register, handleSubmit } = useForm<any>({
+  const { register, handleSubmit, setValue, watch } = useForm<any>({
     defaultValues: {
       artistName: currentUser?.artistName || '',
-      bio: currentUser?.bio || 'Український виконавець.'
+      bio: currentUser?.bio || 'Український виконавець.',
+      ...currentUser // Load all dynamic fields
     }
   });
 
@@ -70,7 +71,7 @@ const Profile = () => {
   const onSubmit = async (data: any) => {
     if (currentUser) {
       await updateUser(currentUser.id, data);
-      setAuth({ ...currentUser, artistName: data.artistName }, 'mock-jwt');
+      setAuth({ ...currentUser, ...data }, 'mock-jwt');
       showSuccess('Профіль успішно оновлено!');
     }
   };
@@ -289,6 +290,20 @@ const Profile = () => {
                       {...register(field.name, { required: field.required })} 
                       className="bg-black/40 border-white/5 rounded-none min-h-[150px] focus:border-red-900/50 text-white resize-none"
                     />
+                  ) : field.type === 'select' ? (
+                    <Select 
+                      value={watch(field.name) || ''} 
+                      onValueChange={(val) => setValue(field.name, val)}
+                    >
+                      <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 text-white">
+                        <SelectValue placeholder={`Оберіть ${field.label}`} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                        {field.options?.split(',').map((opt: string) => (
+                          <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs uppercase font-bold">{opt.trim()}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   ) : (
                     <Input 
                       type={field.type}
