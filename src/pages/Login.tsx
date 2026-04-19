@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { Music, CheckCircle2, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
 import { supabase, toAppProfile } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -15,19 +15,20 @@ const Login = () => {
   const { setAuth } = useAuthStore();
   const { loginPageConfig } = useDataStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (data: { login: string; password: string }) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.login,
         password: data.password,
       });
 
-      if (error) {
-        showError(error.message || 'Помилка входу');
-        setIsLoading(false);
-        return;
+      if (authError) {
+        throw authError;
       }
 
       if (authData.user) {
@@ -37,10 +38,29 @@ const Login = () => {
           .eq('id', authData.user.id)
           .single();
         
-        if (profileError || !profile) {
-          showError('Профіль не знайдено');
-          setIsLoading(false);
-          return;
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          // If profile doesn't exist, create a basic one
+          if (profileError.code === 'PGRST116') {
+            showSuccess('Успішний вхід!');
+            setAuth({
+              id: authData.user.id,
+              email: authData.user.email || data.login,
+              login: authData.user.email || data.login,
+              role: 'artist',
+              artistName: null,
+              balance: 0,
+              isVerified: false,
+              createdAt: new Date().toISOString(),
+            });
+            navigate('/dashboard', { replace: true });
+            return;
+          }
+          throw new Error('Не вдалося завантажити профіль');
+        }
+
+        if (!profile) {
+          throw new Error('Профіль не знайдено');
         }
 
         // Convert DB profile to App profile and set auth
@@ -53,8 +73,18 @@ const Login = () => {
         navigate(redirectPath, { replace: true });
       }
     } catch (err: unknown) {
+      console.error('Login error:', err);
       const message = err instanceof Error ? err.message : 'Невідома помилка';
-      showError(message);
+      setError(message);
+      
+      // Show toast for specific errors
+      if (message.includes('Invalid login credentials')) {
+        showError('Неправильний email або пароль');
+      } else if (message.includes('fetch')) {
+        showError('Помилка з\'єднання. Перевірте інтернет-з\'єднання');
+      } else {
+        showError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -93,10 +123,23 @@ const Login = () => {
 
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
-          <div className="text-center lg:text-left">
+          <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight">{loginPageConfig?.welcomeTitle || 'Ласкаво просимо'}</h1>
             <p className="text-gray-500 mt-2">{loginPageConfig?.welcomeSubtitle || 'Увійдіть, щоб продовжити'}</p>
           </div>
+
+          {error && (
+            <div className="p-4 bg-red-900/20 border border-red-900/30 rounded-lg flex items-start gap-3">
+              <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
+              <div>
+                <p className="text-sm font-medium text-red-400">{error}</p>
+                <p className="text-xs text-red-500/60 mt-1">
+                  Перевірте правильність даних або спробуйте пізніше
+                </p>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="login">Логін (Email)</Label>

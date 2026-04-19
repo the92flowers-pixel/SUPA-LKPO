@@ -1,9 +1,18 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://eufiqqflkrpttusrfvru.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1ZmlxcWZsa3JwdHR1c3JmdnJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzI0MjAsImV4cCI6MjA5MTcwODQyMH0.T6zPiFY548f_9pn6gd_i7ZZ2Nfh94XQaL4t3Z_bvU5M';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: (url, options) => {
+      return fetch(url, {
+        ...options,
+        credentials: 'include',
+      });
+    },
+  },
+});
 
 // Database types (snake_case from PostgreSQL)
 export interface Profile {

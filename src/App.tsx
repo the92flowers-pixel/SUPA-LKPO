@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase, toAppProfile } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
@@ -36,15 +36,20 @@ import LoginCustomization from '@/pages/admin/LoginCustomization';
 import Settings from '@/pages/admin/Settings';
 import Export from '@/pages/admin/Export';
 
+const LoadingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+    <div className="flex flex-col items-center gap-4">
+      <div className="animate-spin h-10 w-10 border-2 border-red-700 border-t-transparent rounded-full" />
+      <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Завантаження...</p>
+    </div>
+  </div>
+);
+
 const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: string }) => {
   const { user, isLoading } = useAuthStore();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#050505]">
-        <div className="animate-spin h-8 w-8 border-2 border-red-700 border-t-transparent rounded-full" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) return <Navigate to="/login" replace />;
@@ -55,30 +60,94 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: 
 
 const App = () => {
   const { setAuth } = useAuthStore();
-  const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchWithdrawalRequests, fetchUsers } = useDataStore();
+  const { init } = useDataStore();
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Init public data (config, statuses, fields)
   useEffect(() => {
-    init();
+    const initApp = async () => {
+      try {
+        await init();
+      } catch (error) {
+        console.error('Failed to initialize app:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+    initApp();
   }, [init]);
 
   // Restore session on mount
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const restoreSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        if (profile) {
-          setAuth(toAppProfile(profile));
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (!error && profile) {
+              setAuth(toAppProfile(profile));
+            } else if (error?.code === 'PGRST116') {
+              // Profile doesn't exist - user exists but no profile
+              setAuth({
+                id: session.user.id,
+                email: session.user.email || '',
+                login: session.user.email || '',
+                role: 'artist',
+                artistName: null,
+                balance: 0,
+                isVerified: false,
+                createdAt: session.user.created_at || new Date().toISOString(),
+              });
+            }
+          } catch (err) {
+            console.error('Error fetching profile:', err);
+          }
         }
+      } catch (error) {
+        console.error('Session restoration error:', error);
       }
     };
+    
     restoreSession();
-  }, [setAuth]);
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setAuth(toAppProfile(profile));
+          }
+        } catch (err) {
+          console.error('Auth state change error:', err);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setAuth(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isInitialized, setAuth]);
+
+  // Show loading until initialized
+  if (!isInitialized) {
+    return <LoadingScreen />;
+  }
 
   return (
     <BrowserRouter>
