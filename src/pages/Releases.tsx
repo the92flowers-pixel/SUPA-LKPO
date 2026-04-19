@@ -126,8 +126,8 @@ const Releases = () => {
     const config = statusConfig[status] || statusConfig['На модерації'];
     const Icon = config.icon;
     return (
-      <Badge className={cn("border-none text-[9px] uppercase font-black tracking-widest rounded-none", config.bg, config.text)}>
-        <Icon size={10} className="mr-1" />
+      <Badge className={cn("border-none text-[9px] uppercase font-black tracking-widest rounded-none px-3 py-1", config.bg, config.text)}>
+        <Icon size={10} className="mr-1.5" />
         {status}
       </Badge>
     );
@@ -143,15 +143,18 @@ const Releases = () => {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Input 
-            placeholder="Пошук..." 
-            className="bg-black/40 border-white/5 w-64 h-12 rounded-none" 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={14} />
+            <Input 
+              placeholder="Пошук..." 
+              className="bg-black/40 border-white/5 w-64 h-12 rounded-none pl-10 text-xs font-bold uppercase tracking-widest" 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+            />
+          </div>
           <Button 
             onClick={() => navigate('/new-release')}
-            className="bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12 px-6"
+            className="bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12 px-6 shadow-[0_0_20px_rgba(185,28,28,0.2)]"
           >
             <Plus size={14} className="mr-2" />
             Новий реліз
@@ -160,53 +163,65 @@ const Releases = () => {
       </div>
 
       {userReleases.length === 0 ? (
-        <div className="text-center py-20 border border-dashed border-white/5">
-          <Music className="mx-auto text-zinc-800 mb-4" size={48} />
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">
+        <div className="text-center py-24 border border-dashed border-white/5 bg-white/[0.02]">
+          <Music className="mx-auto text-zinc-800 mb-6" size={56} />
+          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-600">
             {searchQuery ? 'Нічого не знайдено' : 'Релізів ще немає'}
           </p>
           {!searchQuery && user?.role !== 'admin' && (
-            <Button onClick={() => navigate('/new-release')} className="mt-6 bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest">
+            <Button onClick={() => navigate('/new-release')} className="mt-8 bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest px-10 h-12">
               <Plus size={14} className="mr-2" />
               Створити перший реліз
             </Button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
           {userReleases.map((release) => (
-            <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden group hover:border-red-900/30 transition-all duration-500">
+            <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden group hover:border-red-700/40 transition-all duration-500 shadow-2xl">
               <div className="aspect-square relative overflow-hidden">
                 <img 
                   src={release.coverUrl || FALLBACK_IMAGE} 
                   onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                  className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all" 
+                  className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" 
                   alt="" 
                 />
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-4 left-4 z-10">
                   {getStatusBadge(release.status)}
                 </div>
-                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-6">
+                <div className="absolute inset-0 bg-black/90 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-4 p-8 backdrop-blur-sm">
                   <Button onClick={() => handleOpenModal(release)} className="w-full bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
                     <LinkIcon size={14} className="mr-2" /> 
                     {smartLinks.some(l => l.releaseId === release.id) ? 'Редагувати Link' : 'Smart Link'}
                   </Button>
-                  <Button onClick={() => setViewingRelease(release)} variant="outline" className="w-full border-white/10 hover:bg-white/5 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
+                  <Button onClick={() => setViewingRelease(release)} variant="outline" className="w-full border-white/10 hover:bg-white/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
                     <Eye size={14} className="mr-2" /> Деталі
                   </Button>
                   {user?.role !== 'admin' && (
-                    <Button onClick={() => handleDelete(release.id)} variant="outline" className="w-full border-red-900/30 hover:bg-red-900/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12 text-red-500">
+                    <Button onClick={() => handleDelete(release.id)} variant="ghost" className="w-full text-zinc-500 hover:text-red-500 hover:bg-red-900/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
                       <Trash2 size={14} className="mr-2" /> Видалити
                     </Button>
                   )}
                 </div>
               </div>
-              <CardContent className="p-6">
-                <h3 className="font-black text-white text-sm uppercase tracking-wider truncate">{release.title}</h3>
-                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-1">{release.artist}</p>
-                <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
-                  <span className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">{release.genre}</span>
-                  <span className="text-xs font-black text-red-700">{release.streams.toLocaleString()}</span>
+              <CardContent className="p-6 space-y-4">
+                <div>
+                  <h3 className="font-black text-white text-base uppercase tracking-tighter leading-tight truncate group-hover:text-red-500 transition-colors">
+                    {release.title}
+                  </h3>
+                  <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1.5">
+                    {release.artist}
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-white/5 flex justify-between items-end">
+                  <div className="space-y-1">
+                    <p className="text-[8px] text-zinc-700 uppercase font-black tracking-widest">Жанр</p>
+                    <span className="text-[10px] text-zinc-400 uppercase font-black tracking-widest">{release.genre}</span>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <p className="text-[8px] text-zinc-700 uppercase font-black tracking-widest">Стріми</p>
+                    <span className="text-sm font-black text-red-700 tracking-tighter">{release.streams.toLocaleString()}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>

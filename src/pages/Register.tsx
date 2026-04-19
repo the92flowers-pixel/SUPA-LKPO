@@ -16,7 +16,6 @@ const Register = () => {
   const { settings } = useDataStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   if (!settings?.registrationEnabled) {
     return (
@@ -38,7 +37,6 @@ const Register = () => {
     setError(null);
     
     try {
-      // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.login,
         password: data.password,
@@ -58,38 +56,6 @@ const Register = () => {
       }
 
       if (authData.user) {
-        // Try to create profile
-        let profile = null;
-        
-        // Check if profile already exists (from trigger)
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single();
-        
-        if (existingProfile) {
-          profile = existingProfile;
-        } else {
-          // Create profile manually if trigger didn't work
-          const { data: newProfile, error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authData.user.id,
-              email: data.login,
-              full_name: data.artistName,
-              role: 'artist',
-              balance: 0,
-              is_verified: false,
-            })
-            .select()
-            .single();
-          
-          if (!profileError) {
-            profile = newProfile;
-          }
-        }
-
         // Create app user object
         const appUser = {
           id: authData.user.id,
@@ -102,39 +68,19 @@ const Register = () => {
           createdAt: new Date().toISOString(),
         };
         
-        // Set auth state immediately
+        // Set auth state and redirect immediately
         setAuth(appUser);
         showSuccess('Акаунт успішно створено!');
-        setSuccess(true);
-        
-        // Redirect to dashboard after short delay
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 1000);
+        navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
       console.error('Registration error:', err);
       const message = err?.message || 'Невідома помилка';
       setError(message);
       showError(message);
-    } finally {
       setIsLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex bg-[#0a0a0a] text-white items-center justify-center p-8">
-        <div className="text-center space-y-4 max-w-md">
-          <div className="w-16 h-16 bg-green-600/20 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="text-green-500" size={48} />
-          </div>
-          <h1 className="text-2xl font-bold">Реєстрація успішна!</h1>
-          <p className="text-gray-500">Перенаправляємо вас до кабінету...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex bg-[#0a0a0a] text-white items-center justify-center p-8">

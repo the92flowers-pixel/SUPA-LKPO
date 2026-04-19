@@ -183,8 +183,8 @@ const Dashboard = () => {
                         />
                       </div>
                       <div>
-                        <p className="text-xs font-black text-white uppercase tracking-wider">{item.title}</p>
-                        <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">{item.genre}</p>
+                        <p className="text-sm font-black text-white uppercase tracking-wider leading-none mb-1">{item.title}</p>
+                        <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">{item.genre}</p>
                       </div>
                     </div>
                     <div className="text-right">
