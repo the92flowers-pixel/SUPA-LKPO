@@ -1,5 +1,5 @@
 -- =============================================
--- ЖУРБА MUSIC - Database Schema
+-- ЖУРБА MUSIC - Database Schema (Fixed)
 -- =============================================
 
 -- Enable UUID extension
@@ -228,7 +228,7 @@ CREATE TABLE IF NOT EXISTS app_config (
 INSERT INTO app_config (id) VALUES (1) ON CONFLICT DO NOTHING;
 
 -- =============================================
--- ROW LEVEL SECURITY (RLS)
+-- ROW LEVEL SECURITY (RLS) - FIXED (no recursion)
 -- =============================================
 
 -- Enable RLS on all tables
@@ -243,141 +243,146 @@ ALTER TABLE statuses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fields ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;
 
--- Profiles policies
-CREATE POLICY "Users can view own profile" ON profiles
-    FOR SELECT USING (auth.uid() = id);
+-- Helper function to check if user is admin (avoids recursion)
+CREATE OR REPLACE FUNCTION public.is_admin(user_id UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM profiles 
+        WHERE id = user_id AND role = 'admin'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE POLICY "Users can update own profile" ON profiles
-    FOR UPDATE USING (auth.uid() = id);
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
 
-CREATE POLICY "Admins can view all profiles" ON profiles
+-- Profiles policies (using helper function to avoid recursion)
+CREATE POLICY "profiles_select_policy" ON profiles
     FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
+        auth.uid() = id OR public.is_admin(auth.uid()) = TRUE
     );
 
-CREATE POLICY "Admins can update all profiles" ON profiles
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+CREATE POLICY "profiles_update_policy" ON profiles
+    FOR UPDATE USING (auth.uid() = id OR public.is_admin(auth.uid()) = TRUE);
 
 -- Releases policies
-CREATE POLICY "Users can view own releases" ON releases
-    FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own releases" ON releases;
+DROP POLICY IF EXISTS "Users can insert own releases" ON releases;
+DROP POLICY IF EXISTS "Users can update own releases" ON releases;
+DROP POLICY IF EXISTS "Users can delete own releases" ON releases;
+DROP POLICY IF EXISTS "Admins can view all releases" ON releases;
+DROP POLICY IF EXISTS "Admins can update all releases" ON releases;
 
-CREATE POLICY "Users can insert own releases" ON releases
+CREATE POLICY "releases_select_policy" ON releases
+    FOR SELECT USING (
+        auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE
+    );
+
+CREATE POLICY "releases_insert_policy" ON releases
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own releases" ON releases
-    FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "releases_update_policy" ON releases
+    FOR UPDATE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
 
-CREATE POLICY "Users can delete own releases" ON releases
-    FOR DELETE USING (auth.uid() = user_id);
-
-CREATE POLICY "Admins can view all releases" ON releases
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
-
-CREATE POLICY "Admins can update all releases" ON releases
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+CREATE POLICY "releases_delete_policy" ON releases
+    FOR DELETE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
 
 -- Smart links policies
-CREATE POLICY "Users can manage own smart links" ON smart_links
-    FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can manage own smart links" ON smart_links;
+DROP POLICY IF EXISTS "Admins can view all smart links" ON smart_links;
 
-CREATE POLICY "Admins can view all smart links" ON smart_links
+CREATE POLICY "smart_links_select_policy" ON smart_links
     FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
+        auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE
     );
 
--- Artist websites policies
-CREATE POLICY "Users can manage own websites" ON artist_websites
-    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "smart_links_insert_policy" ON smart_links
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Everyone can view artist websites" ON artist_websites
+CREATE POLICY "smart_links_update_policy" ON smart_links
+    FOR UPDATE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+
+CREATE POLICY "smart_links_delete_policy" ON smart_links
+    FOR DELETE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+
+-- Artist websites policies
+DROP POLICY IF EXISTS "Users can manage own websites" ON artist_websites;
+DROP POLICY IF EXISTS "Everyone can view artist websites" ON artist_websites;
+
+CREATE POLICY "artist_websites_all_policy" ON artist_websites
+    FOR ALL USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+
+CREATE POLICY "artist_websites_public_read" ON artist_websites
     FOR SELECT USING (TRUE);
 
 -- Transactions policies
-CREATE POLICY "Users can view own transactions" ON transactions
-    FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
+DROP POLICY IF EXISTS "Users can insert transactions" ON transactions;
+DROP POLICY IF EXISTS "Admins can manage all transactions" ON transactions;
 
-CREATE POLICY "Users can insert transactions" ON transactions
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "transactions_select_policy" ON transactions
+    FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
 
-CREATE POLICY "Admins can manage all transactions" ON transactions
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+CREATE POLICY "transactions_insert_policy" ON transactions
+    FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+
+CREATE POLICY "transactions_update_policy" ON transactions
+    FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
+
+CREATE POLICY "transactions_delete_policy" ON transactions
+    FOR DELETE USING (public.is_admin(auth.uid()) = TRUE);
 
 -- Withdrawal requests policies
-CREATE POLICY "Users can view own withdrawal requests" ON withdrawal_requests
-    FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own withdrawal requests" ON withdrawal_requests;
+DROP POLICY IF EXISTS "Users can insert withdrawal requests" ON withdrawal_requests;
+DROP POLICY IF EXISTS "Admins can manage all withdrawal requests" ON withdrawal_requests;
 
-CREATE POLICY "Users can insert withdrawal requests" ON withdrawal_requests
+CREATE POLICY "withdrawal_requests_select_policy" ON withdrawal_requests
+    FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+
+CREATE POLICY "withdrawal_requests_insert_policy" ON withdrawal_requests
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Admins can manage all withdrawal requests" ON withdrawal_requests
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+CREATE POLICY "withdrawal_requests_update_policy" ON withdrawal_requests
+    FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
 
 -- Quarterly reports policies
-CREATE POLICY "Users can view own reports" ON quarterly_reports
-    FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own reports" ON quarterly_reports;
+DROP POLICY IF EXISTS "Users can insert reports" ON quarterly_reports;
+DROP POLICY IF EXISTS "Admins can manage all reports" ON quarterly_reports;
 
-CREATE POLICY "Users can insert reports" ON quarterly_reports
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "quarterly_reports_select_policy" ON quarterly_reports
+    FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
 
-CREATE POLICY "Admins can manage all reports" ON quarterly_reports
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+CREATE POLICY "quarterly_reports_insert_policy" ON quarterly_reports
+    FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+
+CREATE POLICY "quarterly_reports_delete_policy" ON quarterly_reports
+    FOR DELETE USING (public.is_admin(auth.uid()) = TRUE);
 
 -- Statuses policies (public read)
-CREATE POLICY "Everyone can view statuses" ON statuses
+DROP POLICY IF EXISTS "Everyone can view statuses" ON statuses;
+CREATE POLICY "statuses_read_policy" ON statuses
     FOR SELECT USING (TRUE);
 
 -- Fields policies (public read)
-CREATE POLICY "Everyone can view fields" ON fields
+DROP POLICY IF EXISTS "Everyone can view fields" ON fields;
+CREATE POLICY "fields_read_policy" ON fields
     FOR SELECT USING (TRUE);
 
 -- App config policies (public read, admin write)
-CREATE POLICY "Everyone can view app config" ON app_config
+DROP POLICY IF EXISTS "Everyone can view app config" ON app_config;
+DROP POLICY IF EXISTS "Admins can update app config" ON app_config;
+
+CREATE POLICY "app_config_read_policy" ON app_config
     FOR SELECT USING (TRUE);
 
-CREATE POLICY "Admins can update app config" ON app_config
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+CREATE POLICY "app_config_update_policy" ON app_config
+    FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
 
 -- =============================================
 -- INDEXES
