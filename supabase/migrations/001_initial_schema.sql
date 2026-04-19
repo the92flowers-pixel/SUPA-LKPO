@@ -1,5 +1,5 @@
 -- =============================================
--- ЖУРБА MUSIC - Database Schema (Fixed)
+-- ЖУРБА MUSIC - Database Schema (Fixed v2)
 -- =============================================
 
 -- Enable UUID extension
@@ -94,11 +94,12 @@ INSERT INTO fields (name, label, type, required, section, sort_order, visible) V
 ON CONFLICT DO NOTHING;
 
 -- =============================================
--- RELEASES TABLE
+-- RELEASES TABLE (NO FK CONSTRAINT - avoid timing issues)
 -- =============================================
-CREATE TABLE IF NOT EXISTS releases (
+DROP TABLE IF EXISTS releases CASCADE;
+CREATE TABLE releases (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID,  -- No FK constraint to avoid timing issues
     title TEXT NOT NULL,
     artist TEXT,
     genre TEXT DEFAULT 'Другое',
@@ -124,10 +125,11 @@ CREATE TABLE IF NOT EXISTS releases (
 -- =============================================
 -- SMART LINKS TABLE
 -- =============================================
-CREATE TABLE IF NOT EXISTS smart_links (
+DROP TABLE IF EXISTS smart_links CASCADE;
+CREATE TABLE smart_links (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
-    release_id UUID REFERENCES releases(id) ON DELETE CASCADE,
+    user_id UUID,
+    release_id UUID,
     title TEXT,
     artist TEXT,
     cover_url TEXT,
@@ -141,9 +143,10 @@ CREATE TABLE IF NOT EXISTS smart_links (
 -- =============================================
 -- ARTIST WEBSITES TABLE
 -- =============================================
-CREATE TABLE IF NOT EXISTS artist_websites (
+DROP TABLE IF EXISTS artist_websites CASCADE;
+CREATE TABLE artist_websites (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID,
     title TEXT,
     slug TEXT UNIQUE NOT NULL,
     bio TEXT,
@@ -156,9 +159,10 @@ CREATE TABLE IF NOT EXISTS artist_websites (
 -- =============================================
 -- TRANSACTIONS TABLE
 -- =============================================
-CREATE TABLE IF NOT EXISTS transactions (
+DROP TABLE IF EXISTS transactions CASCADE;
+CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID,
     type TEXT NOT NULL CHECK (type IN ('deposit', 'withdrawal', 'adjustment')),
     amount NUMERIC NOT NULL,
     description TEXT,
@@ -169,9 +173,10 @@ CREATE TABLE IF NOT EXISTS transactions (
 -- =============================================
 -- WITHDRAWAL REQUESTS TABLE
 -- =============================================
-CREATE TABLE IF NOT EXISTS withdrawal_requests (
+DROP TABLE IF EXISTS withdrawal_requests CASCADE;
+CREATE TABLE withdrawal_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID,
     amount NUMERIC NOT NULL,
     status TEXT DEFAULT 'pending',
     contact_info TEXT,
@@ -184,9 +189,10 @@ CREATE TABLE IF NOT EXISTS withdrawal_requests (
 -- =============================================
 -- QUARTERLY REPORTS TABLE
 -- =============================================
-CREATE TABLE IF NOT EXISTS quarterly_reports (
+DROP TABLE IF EXISTS quarterly_reports CASCADE;
+CREATE TABLE quarterly_reports (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id UUID,
     quarter INTEGER NOT NULL,
     year INTEGER NOT NULL,
     file_url TEXT,
@@ -228,7 +234,7 @@ CREATE TABLE IF NOT EXISTS app_config (
 INSERT INTO app_config (id) VALUES (1) ON CONFLICT DO NOTHING;
 
 -- =============================================
--- ROW LEVEL SECURITY (RLS) - FIXED (no recursion)
+-- ROW LEVEL SECURITY (RLS)
 -- =============================================
 
 -- Enable RLS on all tables
@@ -254,144 +260,53 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Drop existing policies first
-DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
-DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
-DROP POLICY IF EXISTS "Admins can view all profiles" ON profiles;
-DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
-
--- Profiles policies (using helper function to avoid recursion)
-CREATE POLICY "profiles_select_policy" ON profiles
-    FOR SELECT USING (
-        auth.uid() = id OR public.is_admin(auth.uid()) = TRUE
-    );
-
-CREATE POLICY "profiles_update_policy" ON profiles
-    FOR UPDATE USING (auth.uid() = id OR public.is_admin(auth.uid()) = TRUE);
+-- Profiles policies
+CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (auth.uid() = id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (auth.uid() = id OR public.is_admin(auth.uid()) = TRUE);
 
 -- Releases policies
-DROP POLICY IF EXISTS "Users can view own releases" ON releases;
-DROP POLICY IF EXISTS "Users can insert own releases" ON releases;
-DROP POLICY IF EXISTS "Users can update own releases" ON releases;
-DROP POLICY IF EXISTS "Users can delete own releases" ON releases;
-DROP POLICY IF EXISTS "Admins can view all releases" ON releases;
-DROP POLICY IF EXISTS "Admins can update all releases" ON releases;
-
-CREATE POLICY "releases_select_policy" ON releases
-    FOR SELECT USING (
-        auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE
-    );
-
-CREATE POLICY "releases_insert_policy" ON releases
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "releases_update_policy" ON releases
-    FOR UPDATE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
-
-CREATE POLICY "releases_delete_policy" ON releases
-    FOR DELETE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "releases_select" ON releases FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "releases_insert" ON releases FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "releases_update" ON releases FOR UPDATE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "releases_delete" ON releases FOR DELETE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
 
 -- Smart links policies
-DROP POLICY IF EXISTS "Users can manage own smart links" ON smart_links;
-DROP POLICY IF EXISTS "Admins can view all smart links" ON smart_links;
-
-CREATE POLICY "smart_links_select_policy" ON smart_links
-    FOR SELECT USING (
-        auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE
-    );
-
-CREATE POLICY "smart_links_insert_policy" ON smart_links
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "smart_links_update_policy" ON smart_links
-    FOR UPDATE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
-
-CREATE POLICY "smart_links_delete_policy" ON smart_links
-    FOR DELETE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "smart_links_select" ON smart_links FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "smart_links_insert" ON smart_links FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "smart_links_update" ON smart_links FOR UPDATE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "smart_links_delete" ON smart_links FOR DELETE USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
 
 -- Artist websites policies
-DROP POLICY IF EXISTS "Users can manage own websites" ON artist_websites;
-DROP POLICY IF EXISTS "Everyone can view artist websites" ON artist_websites;
-
-CREATE POLICY "artist_websites_all_policy" ON artist_websites
-    FOR ALL USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
-
-CREATE POLICY "artist_websites_public_read" ON artist_websites
-    FOR SELECT USING (TRUE);
+CREATE POLICY "artist_websites_all" ON artist_websites FOR ALL USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "artist_websites_public" ON artist_websites FOR SELECT USING (TRUE);
 
 -- Transactions policies
-DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
-DROP POLICY IF EXISTS "Users can insert transactions" ON transactions;
-DROP POLICY IF EXISTS "Admins can manage all transactions" ON transactions;
-
-CREATE POLICY "transactions_select_policy" ON transactions
-    FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
-
-CREATE POLICY "transactions_insert_policy" ON transactions
-    FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
-
-CREATE POLICY "transactions_update_policy" ON transactions
-    FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
-
-CREATE POLICY "transactions_delete_policy" ON transactions
-    FOR DELETE USING (public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "transactions_select" ON transactions FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "transactions_insert" ON transactions FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "transactions_update" ON transactions FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
 
 -- Withdrawal requests policies
-DROP POLICY IF EXISTS "Users can view own withdrawal requests" ON withdrawal_requests;
-DROP POLICY IF EXISTS "Users can insert withdrawal requests" ON withdrawal_requests;
-DROP POLICY IF EXISTS "Admins can manage all withdrawal requests" ON withdrawal_requests;
-
-CREATE POLICY "withdrawal_requests_select_policy" ON withdrawal_requests
-    FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
-
-CREATE POLICY "withdrawal_requests_insert_policy" ON withdrawal_requests
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "withdrawal_requests_update_policy" ON withdrawal_requests
-    FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "withdrawal_requests_select" ON withdrawal_requests FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "withdrawal_requests_insert" ON withdrawal_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "withdrawal_requests_update" ON withdrawal_requests FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
 
 -- Quarterly reports policies
-DROP POLICY IF EXISTS "Users can view own reports" ON quarterly_reports;
-DROP POLICY IF EXISTS "Users can insert reports" ON quarterly_reports;
-DROP POLICY IF EXISTS "Admins can manage all reports" ON quarterly_reports;
+CREATE POLICY "quarterly_reports_select" ON quarterly_reports FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "quarterly_reports_insert" ON quarterly_reports FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+CREATE POLICY "quarterly_reports_delete" ON quarterly_reports FOR DELETE USING (public.is_admin(auth.uid()) = TRUE);
 
-CREATE POLICY "quarterly_reports_select_policy" ON quarterly_reports
-    FOR SELECT USING (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
+-- Statuses and Fields (public read)
+CREATE POLICY "statuses_read" ON statuses FOR SELECT USING (TRUE);
+CREATE POLICY "fields_read" ON fields FOR SELECT USING (TRUE);
 
-CREATE POLICY "quarterly_reports_insert_policy" ON quarterly_reports
-    FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin(auth.uid()) = TRUE);
-
-CREATE POLICY "quarterly_reports_delete_policy" ON quarterly_reports
-    FOR DELETE USING (public.is_admin(auth.uid()) = TRUE);
-
--- Statuses policies (public read)
-DROP POLICY IF EXISTS "Everyone can view statuses" ON statuses;
-CREATE POLICY "statuses_read_policy" ON statuses
-    FOR SELECT USING (TRUE);
-
--- Fields policies (public read)
-DROP POLICY IF EXISTS "Everyone can view fields" ON fields;
-CREATE POLICY "fields_read_policy" ON fields
-    FOR SELECT USING (TRUE);
-
--- App config policies (public read, admin write)
-DROP POLICY IF EXISTS "Everyone can view app config" ON app_config;
-DROP POLICY IF EXISTS "Admins can update app config" ON app_config;
-
-CREATE POLICY "app_config_read_policy" ON app_config
-    FOR SELECT USING (TRUE);
-
-CREATE POLICY "app_config_update_policy" ON app_config
-    FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
+-- App config
+CREATE POLICY "app_config_read" ON app_config FOR SELECT USING (TRUE);
+CREATE POLICY "app_config_update" ON app_config FOR UPDATE USING (public.is_admin(auth.uid()) = TRUE);
 
 -- =============================================
 -- INDEXES
 -- =============================================
 CREATE INDEX IF NOT EXISTS idx_releases_user_id ON releases(user_id);
 CREATE INDEX IF NOT EXISTS idx_releases_status ON releases(status);
-CREATE INDEX IF NOT EXISTS idx_releases_created_at ON releases(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_smart_links_slug ON smart_links(slug);
 CREATE INDEX IF NOT EXISTS idx_artist_websites_slug ON artist_websites(slug);
-CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
-CREATE INDEX IF NOT EXISTS idx_withdrawal_requests_user_id ON withdrawal_requests(user_id);
-CREATE INDEX IF NOT EXISTS idx_quarterly_reports_user_id ON quarterly_reports(user_id);
