@@ -34,7 +34,6 @@ const Profile = () => {
     links: [{ id: '1', name: 'Instagram', url: '' }]
   });
 
-  // Update modal data when it opens or userWebsite changes
   useEffect(() => {
     if (isWebsiteModalOpen) {
       if (userWebsite) {
@@ -61,15 +60,15 @@ const Profile = () => {
 
   const profileFields = fields.filter(f => f.section === 'profile' && f.visible);
 
-  const onSubmit = (data: any) => {
+  const onSubmit = async (data: any) => {
     if (currentUser) {
-      updateUser(currentUser.id, data);
-      setAuth({ ...currentUser, ...data }, 'mock-jwt');
+      await updateUser(currentUser.id, data);
+      setAuth({ ...currentUser, artistName: data.artistName }, 'mock-jwt');
       showSuccess('Профіль успішно оновлено!');
     }
   };
 
-  const handleSaveWebsite = () => {
+  const handleSaveWebsite = async () => {
     if (!websiteData.slug) {
       showError('Вкажіть адресу сайту');
       return;
@@ -82,10 +81,10 @@ const Profile = () => {
     }
 
     if (userWebsite) {
-      updateArtistWebsite(userWebsite.id, websiteData);
+      await updateArtistWebsite(userWebsite.id, websiteData);
       showSuccess('Сайт оновлено!');
     } else {
-      addArtistWebsite({
+      await addArtistWebsite({
         ...websiteData,
         id: Math.random().toString(36).substr(2, 9),
         userId: currentUser?.id || '',
@@ -152,12 +151,12 @@ const Profile = () => {
             <div className="space-y-6 w-full text-left">
               <div>
                 <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">ID Артиста</p>
-                <p className="text-xs font-mono text-red-800">#ZH-{currentUser?.id || '000'}</p>
+                <p className="text-xs font-mono text-red-800">#ZH-{currentUser?.id?.slice(0, 8) || '000'}</p>
               </div>
               <div>
                 <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">Дата реєстрації</p>
                 <p className="text-xs font-bold text-zinc-400">
-                  {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : '15.05.2024'}
+                  {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -242,7 +241,7 @@ const Profile = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне Ім’я</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне Ім'я</Label>
                 <Input 
                   value={websiteData.stageName} 
                   onChange={(e) => setWebsiteData({...websiteData, stageName: e.target.value})}
