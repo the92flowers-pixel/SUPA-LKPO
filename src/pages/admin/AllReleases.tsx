@@ -210,7 +210,7 @@ const AllReleases = () => {
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
                       <Hash size={14} /> ISRC
-                    </Hash>
+                    </Label>
                     <Input value={editingRelease.isrc || ''} onChange={(e) => setEditingRelease({...editingRelease, isrc: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12 font-mono" />
                   </div>
                 </div>
