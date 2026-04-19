@@ -9,13 +9,27 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { showSuccess } from '@/utils/toast';
 
+interface LoginConfigForm {
+  logoText: string;
+  welcomeTitle: string;
+  welcomeSubtitle: string;
+  leftTitle: string;
+  leftText2: string;
+  primaryColor: string;
+  secondaryColor: string;
+  feature1: string;
+  feature2: string;
+  feature3: string;
+  socialIcons: string[];
+}
+
 const LoginCustomization = () => {
   const { loginPageConfig, updateLoginConfig } = useDataStore();
-  const { register, handleSubmit, reset, watch } = useForm({
-    defaultValues: loginPageConfig
+  const { register, handleSubmit, reset } = useForm<LoginConfigForm>({
+    defaultValues: loginPageConfig as LoginConfigForm
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: LoginConfigForm) => {
     updateLoginConfig(data);
     showSuccess('Дизайн сторінки входу оновлено!');
   };

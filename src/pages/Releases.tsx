@@ -24,12 +24,18 @@ const PLATFORMS_LIST = [
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
+interface PlatformItem {
+  id: string;
+  name: string;
+  url: string;
+}
+
 const Releases = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
   const [viewingRelease, setViewingRelease] = useState<any>(null);
   const [customSlug, setCustomSlug] = useState('');
-  const [platforms, setPlatforms] = useState([{ id: '1', name: 'Spotify', url: '' }]);
+  const [platforms, setPlatforms] = useState<PlatformItem[]>([{ id: '1', name: 'Spotify', url: '' }]);
   const [isEditing, setIsEditing] = useState(false);
   const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
 
@@ -48,7 +54,7 @@ const Releases = () => {
       setIsEditing(true);
       setExistingLinkId(existingLink.id);
       setCustomSlug(existingLink.slug);
-      setPlatforms(existingLink.platforms.length > 0 ? existingLink.platforms : [{ id: '1', name: 'Spotify', url: '' }]);
+      setPlatforms(existingLink.platforms.length > 0 ? existingLink.platforms.map(p => ({ id: p.id || Date.now().toString(), name: p.name, url: p.url })) : [{ id: '1', name: 'Spotify', url: '' }]);
     } else {
       setIsEditing(false);
       setExistingLinkId(null);
