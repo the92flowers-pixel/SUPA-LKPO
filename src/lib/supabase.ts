@@ -231,8 +231,23 @@ export const uploadFile = async (bucket: string, path: string, file: File): Prom
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase is not configured');
   }
-  const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
-  if (error) throw error;
+
+  // Sanitize filename: remove non-ascii characters and spaces
+  const fileExt = file.name.split('.').pop();
+  const sanitizedPath = path.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, "-");
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(sanitizedPath, file, { 
+      upsert: true,
+      contentType: file.type 
+    });
+
+  if (error) {
+    console.error('Supabase Storage Error:', error);
+    throw error;
+  }
+
   const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
   return publicUrl;
 };
