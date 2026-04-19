@@ -1,74 +1,80 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://betclysjesjqdvkpbexe.supabase.co';
-const supabaseAnonKey = 'sb_publishable_cnnlIaVWbW-hf38TY15ZeQ_-8KYoWm7';
+const supabaseUrl = 'https://eufiqqflkrpttusrfvru.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1ZmlxcWZsa3JwdHR1c3JmdnJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzI0MjAsImV4cCI6MjA5MTcwODQyMH0.T6zPiFY548f_9pn6gd_i7ZZ2Nfh94XQaL4t3Z_bvU5M';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-// Helper types
+// Database types (snake_case from PostgreSQL)
 export interface Profile {
   id: string;
-  login: string;
-  artist_name: string | null;
+  email: string;
+  full_name: string | null;
   role: 'admin' | 'artist';
   balance: number;
   is_verified: boolean;
-  bio: string | null;
   created_at: string;
   updated_at: string;
 }
+
+// Convert DB profile to app profile
+export const toAppProfile = (dbProfile: Profile) => ({
+  id: dbProfile.id,
+  email: dbProfile.email,
+  login: dbProfile.email,
+  role: dbProfile.role,
+  artistName: dbProfile.full_name,
+  balance: dbProfile.balance,
+  isVerified: dbProfile.is_verified,
+  createdAt: dbProfile.created_at,
+});
 
 export interface Release {
   id: string;
   user_id: string;
+  artist_id: string;
   title: string;
-  artist: string;
-  genre: string | null;
-  release_date: string | null;
-  cover_url: string | null;
-  audio_url: string | null;
+  genre: string;
+  release_date: string;
+  cover_url: string;
   status: string;
   streams: number;
   history: { date: string; count: number }[];
   created_at: string;
-  updated_at: string;
 }
 
 export interface SmartLink {
   id: string;
-  release_id: string | null;
   user_id: string;
+  artist_id: string;
+  release_id: string | null;
+  title: string;
+  artist: string;
+  cover_url: string;
   slug: string;
-  title: string | null;
-  artist: string | null;
-  cover_url: string | null;
-  platforms: { id: string; name: string; url: string }[];
+  platforms: { name: string; url: string; active: boolean }[];
+  clicks: number;
   created_at: string;
 }
 
 export interface ArtistWebsite {
   id: string;
   user_id: string;
+  artist_id: string;
+  title: string;
   slug: string;
-  stage_name: string | null;
-  bio: string | null;
-  photo_url: string | null;
-  links: { id: string; name: string; url: string }[];
+  socials: { name: string; url: string }[];
+  bio: string;
+  photo_url: string;
   created_at: string;
 }
 
 export interface Transaction {
   id: string;
   user_id: string;
+  type: 'deposit' | 'withdrawal';
   amount: number;
-  type: 'deposit' | 'withdrawal' | 'admin_adjust';
-  status: 'pending' | 'completed' | 'cancelled';
-  description: string | null;
+  description: string;
   created_at: string;
 }
 
@@ -76,77 +82,55 @@ export interface WithdrawalRequest {
   id: string;
   user_id: string;
   amount: number;
-  contact_info: string | null;
-  confirmation_agreed: boolean;
-  status: 'pending' | 'approved' | 'rejected' | 'paid';
-  admin_comment: string | null;
+  status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+  admin_comment?: string;
 }
 
 export interface QuarterlyReport {
   id: string;
+  title: string;
+  period: string;
+  streams: number;
+  revenue: number;
   user_id: string;
-  quarter: number;
-  year: number;
-  file_url: string | null;
-  file_name: string | null;
   created_at: string;
 }
 
 export interface Status {
-  id: number;
+  id?: number;
   name: string;
-  color: string;
   sort_order: number;
-  is_default: boolean;
 }
 
 export interface Field {
-  id: number;
+  id?: number;
   name: string;
-  label: string;
   type: string;
   required: boolean;
-  section: string;
-  for_role: string;
   sort_order: number;
-  visible: boolean;
-  options: string[];
-  file_types: string | null;
-  max_size: string | null;
 }
 
 export interface LabelSocial {
-  id: string;
-  name: string;
-  url: string | null;
-  sort_order: number;
+  platform: string;
+  url: string;
 }
 
 export interface AppConfig {
-  id: number;
-  settings: {
-    siteName: string;
-    registrationEnabled: boolean;
-    contactEmail: string;
-  };
-  home_page: {
-    heroTitle: string;
-    heroSubtitle: string;
-    buttonText: string;
-    primaryColor: string;
-  };
-  admin_panel: {
-    logoText: string;
-    accentColor: string;
-  };
-  login_page: {
-    logoText: string;
-    welcomeTitle: string;
-    welcomeSubtitle: string;
-    socialIcons: string[];
-  };
+  id?: number;
+  settings: { siteName: string; registrationEnabled: boolean; contactEmail: string };
+  home_page: { heroTitle: string; heroSubtitle: string; buttonText: string; primaryColor: string };
+  admin_panel: { logoText: string; accentColor: string };
+  login_page: { logoText: string; welcomeTitle: string; welcomeSubtitle: string; socialIcons: string[] };
+  label_socials: LabelSocial[];
   fields: Field[];
   statuses: Status[];
-  label_socials: LabelSocial[];
 }
+
+// Helper functions for uploads
+export const uploadFile = async (bucket: string, path: string, file: File): Promise<string> => {
+  const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
+  return publicUrl;
+};

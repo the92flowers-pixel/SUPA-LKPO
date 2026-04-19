@@ -1,12 +1,21 @@
 import { create } from 'zustand';
-import { supabase, Profile, Release, SmartLink, ArtistWebsite, Transaction, WithdrawalRequest, QuarterlyReport, Status, Field, LabelSocial, AppConfig } from './supabase';
+import { supabase, toAppProfile, Profile, Release, SmartLink, ArtistWebsite, Transaction, WithdrawalRequest, QuarterlyReport, Status, Field, LabelSocial, AppConfig } from './supabase';
+
+interface AppUser {
+  id: string;
+  login: string;
+  role: 'admin' | 'artist';
+  artistName: string | null;
+  balance: number;
+  isVerified: boolean;
+  createdAt: string;
+}
 
 interface AuthState {
-  user: Profile | null;
+  user: AppUser | null;
   isLoading: boolean;
-  setAuth: (user: Profile | null) => void;
+  setAuth: (user: AppUser | null) => void;
   logout: () => Promise<void>;
-  fetchUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -16,25 +25,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await supabase.auth.signOut();
     set({ user: null, isLoading: false });
-  },
-  fetchUser: async () => {
-    set({ isLoading: true });
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        set({ user: profile || null, isLoading: false });
-      } else {
-        set({ user: null, isLoading: false });
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      set({ user: null, isLoading: false });
-    }
   },
 }));
 
@@ -297,7 +287,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   },
 
   updateUser: async (id, data) => {
-    const { data: updated, error } = await supabase
+    const { data: updated, error } => await supabase
       .from('profiles')
       .update(data)
       .eq('id', id)
@@ -331,13 +321,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       .single();
     if (!error && newTx) {
       set((state) => ({ transactions: [newTx, ...state.transactions] }));
-      // Update user balance
-      if (data.type === 'deposit' && data.user_id) {
-        const user = get().users.find(u => u.id === data.user_id);
-        if (user) {
-          await get().updateUser(data.user_id, { balance: user.balance + (data.amount || 0) });
-        }
-      }
     }
   },
 
@@ -359,28 +342,11 @@ export const useDataStore = create<DataState>((set, get) => ({
       .single();
     if (!error && newReq) {
       set((state) => ({ withdrawalRequests: [newReq, ...state.withdrawalRequests] }));
-      // Deduct from balance
-      const profile = get().users.find(u => u.id === user.id);
-      if (profile) {
-        await get().updateUser(user.id, { balance: profile.balance - (data.amount || 0) });
-      }
     }
   },
 
   updateWithdrawalStatus: async (id, status, comment) => {
-    const req = get().withdrawalRequests.find(r => r.id === id);
-    if (!req) return;
-
     await supabase.from('withdrawal_requests').update({ status, admin_comment: comment }).eq('id', id);
-    
-    // If rejected, return money to user
-    if (status === 'rejected') {
-      const user = get().users.find(u => u.id === req.user_id);
-      if (user) {
-        await get().updateUser(req.user_id, { balance: user.balance + req.amount });
-      }
-    }
-
     set((state) => ({ 
       withdrawalRequests: state.withdrawalRequests.map(r => r.id === id ? { ...r, status, admin_comment: comment } : r)
     }));

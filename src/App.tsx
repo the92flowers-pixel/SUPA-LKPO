@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase, toAppProfile } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import Layout from '@/components/Layout';
 import { Toaster } from '@/components/ui/sonner';
@@ -54,17 +54,18 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: 
 };
 
 const App = () => {
-  const { user, setAuth } = useAuthStore();
-  const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchWithdrawalRequests, fetchReports: fetchReportsUser, fetchUsers } = useDataStore();
+  const { setAuth } = useAuthStore();
+  const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchWithdrawalRequests, fetchUsers } = useDataStore();
 
   // Init public data (config, statuses, fields)
   useEffect(() => {
     init();
-  }, []);
+  }, [init]);
 
-  // Single auth state listener
+  // Restore session on mount
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const restoreSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -72,46 +73,12 @@ const App = () => {
           .eq('id', session.user.id)
           .single();
         if (profile) {
-          setAuth(profile);
+          setAuth(toAppProfile(profile));
         }
-      } else {
-        setAuth(null);
       }
-    });
-
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data: profile }) => {
-            if (profile) setAuth(profile);
-          });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Fetch user-specific data when user changes
-  useEffect(() => {
-    if (user) {
-      fetchReleases(user.id, user.role);
-      fetchSmartLinks(user.role === 'admin' ? undefined : user.id);
-      fetchArtistWebsites(user.role === 'admin' ? undefined : user.id);
-      fetchTransactions(user.role === 'admin' ? undefined : user.id);
-      if (user.role === 'admin') {
-        fetchUsers();
-        fetchWithdrawalRequests();
-        fetchReports();
-      } else {
-        fetchReports(user.id);
-      }
-    }
-  }, [user?.id]);
+    };
+    restoreSession();
+  }, [setAuth]);
 
   return (
     <BrowserRouter>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { Music, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, toAppProfile } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,11 +43,13 @@ const Login = () => {
           return;
         }
 
-        setAuth(profile);
+        // Convert DB profile to App profile and set auth
+        const appUser = toAppProfile(profile);
+        setAuth(appUser);
         showSuccess('Успішний вхід!');
         
         // Navigate based on role
-        const redirectPath = profile.role === 'admin' ? '/admin/moderation' : '/dashboard';
+        const redirectPath = appUser.role === 'admin' ? '/admin/moderation' : '/dashboard';
         navigate(redirectPath, { replace: true });
       }
     } catch (err: unknown) {
