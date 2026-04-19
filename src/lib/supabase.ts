@@ -71,6 +71,8 @@ export interface Release {
   releaseDate: string;
   cover_url?: string;
   coverUrl: string;
+  releaseUrl?: string;
+  audio_url?: string;
   status: string;
   streams: number;
   history: { date: string; count: number }[];

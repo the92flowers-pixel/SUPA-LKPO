@@ -203,7 +203,7 @@ const Fields = () => {
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва (ID) *</Label>
                 <Input 
                   value={formData.name} 
-                  onChange={(e) => setFormData({...formData, name: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                  onChange={(e) => setFormData({...formData, name: e.target.value.toLowerCase().replace(/\s+/g, '_')})} 
                   className="bg-black/40 border-white/5 rounded-none h-12"
                   placeholder="field_name"
                 />
