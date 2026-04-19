@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
@@ -49,6 +50,8 @@ const NewRelease = () => {
     isSingle: true,
     isrc: '',
     releaseUrl: '',
+    copyrights: '',
+    copyrightConfirmed: false,
   });
   
   const [releaseType, setReleaseType] = useState<'single' | 'album'>('single');
@@ -89,13 +92,16 @@ const NewRelease = () => {
     switch (currentStep) {
       case 1: return true;
       case 2: {
-        const basicValid = formData.title.trim() !== '' && formData.artist.trim() !== '' && formData.performer.trim() !== '';
+        const basicValid = formData.title.trim() !== '' && 
+                          formData.artist.trim() !== '' && 
+                          formData.performer.trim() !== '' &&
+                          formData.copyrights.trim() !== '';
         const dynamicValid = releaseFields.every(f => !f.required || (formData[f.name] && formData[f.name].toString().trim() !== ''));
         return basicValid && dynamicValid;
       }
       case 3: return formData.coverUrl.trim() !== '';
       case 4: return tracks.every(t => t.title.trim() !== '');
-      case 5: return true;
+      case 5: return formData.copyrightConfirmed === true;
       default: return false;
     }
   };
@@ -219,6 +225,21 @@ const NewRelease = () => {
                 </div>
               </div>
 
+              <div className="space-y-3 pt-4 border-t border-white/5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-red-700 flex items-center gap-2">
+                  <Shield size={14} /> Авторські права *
+                </Label>
+                <Input 
+                  value={formData.copyrights} 
+                  onChange={(e) => updateFormData('copyrights', e.target.value)} 
+                  className="bg-black/40 border-white/5 rounded-none h-12 text-white" 
+                  placeholder="Посилання на докази..." 
+                />
+                <p className="text-[9px] text-zinc-600 font-medium uppercase tracking-widest leading-relaxed">
+                  ⚡ Посилання на договір, відео із секвенсора або скріншоти покупки інструментала
+                </p>
+              </div>
+
               {/* Dynamic Fields */}
               {releaseFields.map((field) => (
                 <div key={field.id} className="space-y-3">
@@ -330,6 +351,18 @@ const NewRelease = () => {
                   <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Дата релізу</h4>
                   <p className="text-white font-bold">{formData.releaseDate}</p>
                 </div>
+                
+                <div className="flex items-start space-x-3 p-6 bg-red-900/5 border border-red-900/10 mt-8">
+                  <Checkbox 
+                    id="copyrightConfirmed" 
+                    checked={formData.copyrightConfirmed} 
+                    onCheckedChange={(checked) => updateFormData('copyrightConfirmed', checked as boolean)}
+                    className="mt-1 border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none"
+                  />
+                  <Label htmlFor="copyrightConfirmed" className="text-xs text-zinc-400 leading-relaxed font-bold uppercase tracking-wider cursor-pointer">
+                    Я підтверджую виключне авторське право на реліз *
+                  </Label>
+                </div>
               </div>
             </div>
           </div>
@@ -361,7 +394,7 @@ const NewRelease = () => {
               Далі <ChevronRight size={16} className="ml-2" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none">
+            <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none">
               {isSubmitting ? <Loader2 className="animate-spin" /> : <><Check size={16} className="mr-2" /> Відправити</>}
             </Button>
           )}
