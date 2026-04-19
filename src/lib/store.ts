@@ -155,7 +155,8 @@ export const useDataStore = create<DataState>((set, get) => ({
         const mappedReleases = data.map(r => ({
           id: r.id,
           userId: r.user_id,
-          artist: r.artist || r.title?.split(' - ')[0] || '',
+          title: r.title || '',
+          artist: r.artist || '',
           genre: r.genre || 'Другое',
           releaseDate: r.release_date || new Date().toISOString().split('T')[0],
           coverUrl: r.cover_url || '',
@@ -182,27 +183,11 @@ export const useDataStore = create<DataState>((set, get) => ({
   },
 
   addRelease: async (releaseData) => {
-    console.log('=== ADD RELEASE STORE ===');
-    console.log('Input data:', releaseData);
-    
     try {
-      // Get current user session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw new Error('Не вдалося отримати сесію користувача');
-      }
-      
-      if (!sessionData?.user) {
-        console.error('No user in session');
-        throw new Error('Користувач не авторизований');
-      }
-      
-      console.log('User ID:', sessionData.user.id);
+      const { data: sessionData } = await supabase.auth.getUser();
+      if (!sessionData?.user) throw new Error('Користувач не авторизований');
       
       const defaultStatus = get().statuses.find(s => s.isDefault)?.name || 'На модерації';
-      console.log('Default status:', defaultStatus);
       
       const insertData = {
         user_id: sessionData.user.id,
@@ -225,20 +210,13 @@ export const useDataStore = create<DataState>((set, get) => ({
         tracks: releaseData.tracks || [],
       };
 
-      console.log('Inserting data:', insertData);
-
       const { data, error } = await supabase
         .from('releases')
         .insert(insertData)
         .select()
         .single();
       
-      if (error) {
-        console.error('Insert error:', error);
-        throw new Error(error.message || 'Помилка при збереженні релізу');
-      }
-      
-      console.log('Insert result:', data);
+      if (error) throw error;
       
       if (data) {
         const mapped: Release = {
@@ -264,24 +242,19 @@ export const useDataStore = create<DataState>((set, get) => ({
           tracks: data.tracks || [],
         };
         
-        console.log('Mapped release:', mapped);
-        
         set((state) => ({ releases: [mapped, ...state.releases] }));
-        console.log('Release added to store');
         return mapped;
       }
-      
       return null;
     } catch (e) {
       console.error('Add release exception:', e);
-      throw e; // Re-throw to let component handle it
+      throw e;
     }
   },
 
   updateRelease: async (id, releaseData) => {
     try {
       const updateData: any = {};
-      
       if (releaseData.title !== undefined) updateData.title = releaseData.title;
       if (releaseData.artist !== undefined) updateData.artist = releaseData.artist;
       if (releaseData.genre !== undefined) updateData.genre = releaseData.genre;
@@ -302,10 +275,7 @@ export const useDataStore = create<DataState>((set, get) => ({
         .select()
         .single();
       
-      if (error) {
-        console.error('Update release error:', error);
-        return null;
-      }
+      if (error) return null;
       
       if (data) {
         const mapped: Release = {
@@ -334,7 +304,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         set((state) => ({ releases: state.releases.map(r => r.id === id ? mapped : r) }));
         return mapped;
       }
-      
       return null;
     } catch (e) {
       console.error('Update release exception:', e);
@@ -349,17 +318,12 @@ export const useDataStore = create<DataState>((set, get) => ({
         .update({ status })
         .eq('id', id);
       
-      if (error) {
-        console.error('Update status error:', error);
-        return;
+      if (!error) {
+        set((state) => ({ 
+          releases: state.releases.map(r => r.id === id ? { ...r, status } : r) 
+        }));
       }
-      
-      set((state) => ({ 
-        releases: state.releases.map(r => r.id === id ? { ...r, status } : r) 
-      }));
-    } catch (e) {
-      console.error('Update status exception:', e);
-    }
+    } catch (e) { console.error(e); }
   },
 
   updateReleaseStreams: async (id, count, date) => {
@@ -379,18 +343,14 @@ export const useDataStore = create<DataState>((set, get) => ({
           releases: state.releases.map(r => r.id === id ? { ...r, streams: r.streams + count, history: newHistory } : r) 
         }));
       }
-    } catch (e) {
-      console.error('Update streams exception:', e);
-    }
+    } catch (e) { console.error(e); }
   },
 
   deleteRelease: async (id) => {
     try {
       await supabase.from('releases').delete().eq('id', id);
       set((state) => ({ releases: state.releases.filter(r => r.id !== id) }));
-    } catch (e) {
-      console.error('Delete release exception:', e);
-    }
+    } catch (e) { console.error(e); }
   },
 
   fetchSmartLinks: async (userId) => {
@@ -806,8 +766,8 @@ export const useDataStore = create<DataState>((set, get) => ({
         sort_order: field.order,
         visible: field.visible,
         options: field.options || '',
-        file_types: field.fileTypes || '',
-        max_size: field.maxSize || '5',
+        file_types: field.file_types || '',
+        max_size: field.max_size || '5',
       }).select().single();
       
       if (!error && data) {
