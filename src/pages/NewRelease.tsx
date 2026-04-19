@@ -31,14 +31,14 @@ const NewRelease = () => {
   };
 
   // Helper to parse options - handles both JSON array string and comma-separated string
-  const parseOptions = (optionsStr: string | undefined): string[] => {
-    if (!optionsStr) return [];
+  const parseOptions = (optionsStr: any): string[] => {
+    if (!optionsStr || typeof optionsStr !== 'string') return [];
     try {
       // First try JSON parse
       return JSON.parse(optionsStr);
     } catch {
       // If that fails, assume it's comma-separated
-      return optionsStr.split(',').map(s => s.trim()).filter(Boolean);
+      return optionsStr.split(',').map((s: string) => s.trim()).filter(Boolean);
     }
   };
 
