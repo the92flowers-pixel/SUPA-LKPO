@@ -30,6 +30,18 @@ const NewRelease = () => {
     navigate('/releases');
   };
 
+  // Helper to parse options - handles both JSON array string and comma-separated string
+  const parseOptions = (optionsStr: string | undefined): string[] => {
+    if (!optionsStr) return [];
+    try {
+      // First try JSON parse
+      return JSON.parse(optionsStr);
+    } catch {
+      // If that fails, assume it's comma-separated
+      return optionsStr.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  };
+
   const renderField = (field: any) => {
     const commonProps = {
       id: field.name,
@@ -41,7 +53,7 @@ const NewRelease = () => {
     if (field.type === 'textarea') return <Textarea {...commonProps} className={cn(commonProps.className, "min-h-[120px] py-4 resize-none")} />;
     
     if (field.type === 'select') {
-      const options = JSON.parse(field.options || '[]');
+      const options = parseOptions(field.options);
       return (
         <Select onValueChange={(val) => setValue(field.name, val)}>
           <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 text-white focus:ring-0 focus:ring-offset-0">
