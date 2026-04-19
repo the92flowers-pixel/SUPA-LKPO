@@ -40,7 +40,7 @@ const Index = () => {
                   className="text-xs font-black tracking-widest uppercase px-8 rounded-none border border-white/10"
                   style={{ backgroundColor: config.primaryColor }}
                 >
-                  Приєднатися
+                  Почати
                 </Button>
               </Link>
             )}
@@ -80,11 +80,6 @@ const Index = () => {
                   </Button>
                 </Link>
               )}
-              <Link to="/login">
-                <Button variant="outline" className="h-16 px-12 border-zinc-800 hover:bg-white/5 text-sm font-black tracking-widest uppercase rounded-none">
-                  Демо кабінету
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
