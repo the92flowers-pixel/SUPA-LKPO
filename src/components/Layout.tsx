@@ -50,6 +50,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const accentColor = adminPanelConfig?.accentColor || '#ef4444';
   const logoText = adminPanelConfig?.logoText || 'ЖУРБА';
 
+  const getUserName = () => user?.artistName || user?.login || 'Користувач';
+  const getUserInitial = () => getUserName()[0]?.toUpperCase() || 'U';
+
   return (
     <div className="min-h-screen bg-transparent text-[#e5e5e5] flex">
       <aside className={cn("fixed inset-y-0 left-0 z-50 w-64 bg-black/40 backdrop-blur-2xl border-r border-white/5 flex flex-col transition-transform duration-300 lg:relative lg:translate-x-0", !sidebarOpen && "-translate-x-full")}>
@@ -67,9 +70,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </nav>
         <div className="p-6 border-t border-white/5">
           <Link to="/profile" className="flex items-center gap-3 px-4 py-3 mb-4 bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-            <div className="w-8 h-8 rounded-none flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: accentColor }}>{user?.artist_name?.[0]?.toUpperCase() || user?.login?.[0]?.toUpperCase() || 'U'}</div>
+            <div className="w-8 h-8 rounded-none flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: accentColor }}>{getUserInitial()}</div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-[10px] font-bold uppercase tracking-wider truncate group-hover:text-white transition-colors">{user?.artist_name || user?.login}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider truncate group-hover:text-white transition-colors">{getUserName()}</p>
               <p className="text-[9px] text-zinc-600 uppercase tracking-widest">{user?.role}</p>
             </div>
           </Link>

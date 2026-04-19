@@ -51,8 +51,8 @@ const SmartLinkPage = () => {
 
         <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-none overflow-hidden shadow-2xl">
           <div className="divide-y divide-white/5">
-            {link.platforms.map((p) => (
-              <div key={p.id} className="flex items-center justify-between p-5 hover:bg-white/5 transition-all group">
+            {link.platforms.map((p, index) => (
+              <div key={p.id || index} className="flex items-center justify-between p-5 hover:bg-white/5 transition-all group">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-white/5 rounded-none flex items-center justify-center border border-white/5">
                     <PlatformIcon name={p.name} />
