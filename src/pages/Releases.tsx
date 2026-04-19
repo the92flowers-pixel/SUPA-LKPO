@@ -311,6 +311,18 @@ const Releases = () => {
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Артист</p>
                   <p className="text-sm font-bold text-white">{viewingRelease.artist}</p>
                 </div>
+                {viewingRelease.performer && (
+                  <div className="space-y-1 border-b border-white/5 pb-3">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Виконавець</p>
+                    <p className="text-sm font-bold text-white">{viewingRelease.performer}</p>
+                  </div>
+                )}
+                {viewingRelease.composer && (
+                  <div className="space-y-1 border-b border-white/5 pb-3">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Композитор</p>
+                    <p className="text-sm font-bold text-white">{viewingRelease.composer}</p>
+                  </div>
+                )}
                 <div className="space-y-1 border-b border-white/5 pb-3">
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Жанр</p>
                   <p className="text-sm font-bold text-white">{viewingRelease.genre || 'Другое'}</p>

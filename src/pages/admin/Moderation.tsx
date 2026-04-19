@@ -18,15 +18,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
+const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
+
 const Moderation = () => {
-  const { releases, updateReleaseStatus, statuses, fetchReleases } = useDataStore();
+  const { releases, updateReleaseStatus, statuses, fetchReleases, users, fetchUsers } = useDataStore();
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
   const [moderatorNote, setModeratorNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchReleases();
-  }, [fetchReleases]);
+    fetchUsers();
+  }, [fetchReleases, fetchUsers]);
 
   // Get default status for "pending" releases
   const defaultStatus = statuses.find(s => s.isDefault)?.name || 'На модерації';
@@ -51,6 +54,11 @@ const Moderation = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getUserName = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user?.artistName || user?.login || 'Невідомий';
   };
 
   return (
@@ -83,9 +91,10 @@ const Moderation = () => {
             <Card key={track.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-amber-500/30 transition-all duration-300">
               <div className="aspect-square relative overflow-hidden">
                 <img 
-                  src={track.coverUrl || 'https://jurbamusic.iceiy.com/releasepreview.png'} 
+                  src={track.coverUrl || FALLBACK_IMAGE} 
                   alt={track.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                 />
                 <div className="absolute top-3 left-3">
                   <Badge className="bg-amber-500/20 text-amber-500 border-none text-[9px] font-black uppercase tracking-widest rounded-none">
@@ -99,15 +108,22 @@ const Moderation = () => {
                   <h3 className="text-lg font-black text-white uppercase tracking-wider truncate">{track.title}</h3>
                   <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">{track.artist}</p>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div className="flex items-center gap-2 text-zinc-500">
+
+                <div className="flex items-center justify-between text-xs text-zinc-500">
+                  <div className="flex items-center gap-2">
+                    <User size={14} /> {getUserName(track.userId)}
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Tag size={14} /> {track.genre || 'Другое'}
                   </div>
-                  <div className="flex items-center gap-2 text-zinc-500">
-                    <Calendar size={14} /> {track.releaseDate || track.release_date || '—'}
-                  </div>
                 </div>
+
+                {track.performer && (
+                  <div className="text-xs text-zinc-600">
+                    <span className="text-[9px] uppercase font-black tracking-widest">Виконавець: </span>
+                    {track.performer}
+                  </div>
+                )}
 
                 {track.streams > 0 && (
                   <div className="p-3 bg-white/5 border border-white/5">
@@ -170,42 +186,38 @@ const Moderation = () => {
               <div className="space-y-6">
                 <div className="aspect-square rounded-none overflow-hidden border border-white/5 shadow-2xl">
                   <img 
-                    src={selectedTrack.coverUrl || 'https://jurbamusic.iceiy.com/releasepreview.png'} 
+                    src={selectedTrack.coverUrl || FALLBACK_IMAGE} 
                     alt={selectedTrack.title} 
                     className="w-full h-full object-cover" 
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                   />
                 </div>
                 
-                {selectedTrack.audioUrl && (
-                  <div className="p-4 bg-white/5 border border-white/5 rounded-none">
-                    <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-3">Аудіофайл</p>
-                    <div className="flex items-center gap-4">
-                      <Button 
-                        size="icon" 
-                        className="rounded-none bg-red-700 hover:bg-red-800" 
-                        onClick={() => window.open(selectedTrack.audioUrl, '_blank')}
-                      >
-                        <Play size={20} />
-                      </Button>
-                      <span className="text-xs text-zinc-500 font-mono truncate flex-1">
-                        {selectedTrack.audioUrl.split('/').pop()}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
                 <div className="p-4 bg-white/5 border border-white/5 rounded-none">
-                  <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-2">Статистика</p>
+                  <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-3">Інформація</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[9px] text-zinc-600 uppercase">Стріми</p>
-                      <p className="text-lg font-black text-white">{selectedTrack.streams?.toLocaleString() || 0}</p>
+                      <p className="text-[9px] text-zinc-600 uppercase">Артист</p>
+                      <p className="text-sm font-bold text-white">{selectedTrack.artist}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-zinc-600 uppercase">Виконавець</p>
+                      <p className="text-sm font-bold text-white">{selectedTrack.performer || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-zinc-600 uppercase">Композитор</p>
+                      <p className="text-sm font-bold text-white">{selectedTrack.composer || '—'}</p>
                     </div>
                     <div>
                       <p className="text-[9px] text-zinc-600 uppercase">Жанр</p>
                       <p className="text-sm font-bold text-white">{selectedTrack.genre || 'Другое'}</p>
                     </div>
                   </div>
+                </div>
+
+                <div className="p-4 bg-white/5 border border-white/5 rounded-none">
+                  <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-2">Користувач</p>
+                  <p className="text-sm font-bold text-white">{getUserName(selectedTrack.userId)}</p>
                 </div>
               </div>
 
@@ -215,15 +227,10 @@ const Moderation = () => {
                   <p className="text-xl font-black text-white uppercase tracking-tight">{selectedTrack.title}</p>
                 </div>
 
-                <div className="space-y-1 border-b border-white/5 pb-4">
-                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Артист</p>
-                  <p className="text-lg font-bold text-white">{selectedTrack.artist}</p>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
                   <div className="space-y-1">
                     <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Дата релізу</p>
-                    <p className="text-sm font-bold text-white">{selectedTrack.releaseDate || selectedTrack.release_date || '—'}</p>
+                    <p className="text-sm font-bold text-white">{selectedTrack.releaseDate || '—'}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Лейбл</p>
