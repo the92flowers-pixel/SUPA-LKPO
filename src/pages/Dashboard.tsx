@@ -1,16 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { 
   TrendingUp, 
   Music, 
   Star, 
   ArrowUpRight, 
-  PlayCircle,
-  Info,
-  Calendar,
-  Tag,
-  User as UserIcon,
-  ExternalLink,
-  Clock,
   AlertCircle
 } from 'lucide-react';
 import { 
@@ -25,7 +18,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useDataStore, useAuthStore } from '@/lib/store';
-import { cn } from '@/lib/utils';
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
@@ -76,58 +68,58 @@ const Dashboard = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <div className="animate-spin h-10 w-10 border-2 border-red-700 border-t-transparent rounded-full mx-auto" />
-          <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Завантаження даних...</p>
+          <p className="text-zinc-500 text-xs font-black uppercase tracking-widest">Завантаження даних...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 sm:space-y-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight uppercase">Дашборд</h1>
-          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Ваша музична імперія</p>
+          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase">Дашборд</h1>
+          <p className="text-zinc-500 mt-1 sm:mt-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">Ваша музична імперія</p>
         </div>
-        <Badge variant="outline" className="px-6 py-2 border-red-900/30 text-red-500 font-black uppercase tracking-widest bg-red-900/5 rounded-none">
+        <Badge variant="outline" className="w-fit px-4 sm:px-6 py-2 border-red-900/30 text-red-500 font-black uppercase tracking-widest bg-red-900/5 rounded-none text-[9px] sm:text-[10px]">
           {new Date().toLocaleString('uk-UA', { month: 'long', year: 'numeric' })}
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
         <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-1 h-full bg-red-700" />
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Всього стрімів</CardTitle>
+            <CardTitle className="text-[9px] sm:text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Всього стрімів</CardTitle>
             <TrendingUp className="h-4 w-4 text-red-700" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black text-white tracking-tighter">{totalStreams.toLocaleString()}</div>
-            <p className="text-[9px] text-red-500 flex items-center mt-4 font-black uppercase tracking-widest">
+            <div className="text-3xl sm:text-4xl font-black text-white tracking-tighter">{totalStreams.toLocaleString()}</div>
+            <p className="text-[8px] sm:text-[9px] text-red-500 flex items-center mt-4 font-black uppercase tracking-widest">
               <ArrowUpRight size={12} className="mr-1" /> Live Data
             </p>
           </CardContent>
         </Card>
         <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Активні релізи</CardTitle>
+            <CardTitle className="text-[9px] sm:text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Активні релізи</CardTitle>
             <Music className="h-4 w-4 text-red-700" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black text-white tracking-tighter">{userReleases.length}</div>
-            <p className="text-[9px] text-zinc-600 mt-4 font-black uppercase tracking-widest">Global Distribution</p>
+            <div className="text-3xl sm:text-4xl font-black text-white tracking-tighter">{userReleases.length}</div>
+            <p className="text-[8px] sm:text-[9px] text-zinc-600 mt-4 font-black uppercase tracking-widest">Global Distribution</p>
           </CardContent>
         </Card>
-        <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
+        <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl sm:col-span-2 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Топ реліз</CardTitle>
+            <CardTitle className="text-[9px] sm:text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Топ реліз</CardTitle>
             <Star className="h-4 w-4 text-red-700" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black text-white tracking-tighter truncate">
+            <div className="text-3xl sm:text-4xl font-black text-white tracking-tighter truncate">
               {topRelease ? topRelease.title : '—'}
             </div>
-            <p className="text-[9px] text-red-500 mt-4 font-black uppercase tracking-widest">
+            <p className="text-[8px] sm:text-[9px] text-red-500 mt-4 font-black uppercase tracking-widest">
               {topRelease ? `${topRelease.streams.toLocaleString()} Streams` : 'No Data'}
             </p>
           </CardContent>
@@ -137,9 +129,9 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
           <CardHeader>
-            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Динаміка прослуховувань</CardTitle>
+            <CardTitle className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Динаміка прослуховувань</CardTitle>
           </CardHeader>
-          <CardContent className="h-[350px] pt-6 flex items-center justify-center">
+          <CardContent className="h-[300px] sm:h-[350px] pt-6 flex items-center justify-center">
             {lineData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lineData}>
@@ -156,7 +148,7 @@ const Dashboard = () => {
             ) : (
               <div className="text-center space-y-4">
                 <AlertCircle className="mx-auto text-zinc-800" size={40} />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 max-w-[200px] leading-relaxed">
+                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 max-w-[200px] leading-relaxed mx-auto">
                   Очікуйте надходження приблизної аналітики протягом 30 днів.
                 </p>
               </div>
@@ -166,15 +158,15 @@ const Dashboard = () => {
 
         <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
           <CardHeader>
-            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Розподіл за релізами</CardTitle>
+            <CardTitle className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Розподіл за релізами</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             {releaseList.length > 0 ? (
               <div className="space-y-6">
                 {releaseList.map((item, i) => (
                   <div key={i} className="flex items-center justify-between group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/5 border border-white/5 overflow-hidden">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/5 border border-white/5 overflow-hidden shrink-0">
                         <img 
                           src={item.coverUrl || FALLBACK_IMAGE} 
                           className="w-full h-full object-cover" 
@@ -182,21 +174,21 @@ const Dashboard = () => {
                           onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                         />
                       </div>
-                      <div>
-                        <p className="text-sm font-black text-white uppercase tracking-wider leading-none mb-1">{item.title}</p>
-                        <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">{item.genre}</p>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-black text-white uppercase tracking-wider leading-none mb-1 truncate">{item.title}</p>
+                        <p className="text-[8px] sm:text-[9px] text-zinc-500 uppercase font-bold tracking-widest truncate">{item.genre}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-black text-red-700 tracking-tighter">{item.streams.toLocaleString()}</p>
-                      <p className="text-[8px] text-zinc-800 uppercase font-black tracking-widest">Streams</p>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs sm:text-sm font-black text-red-700 tracking-tighter">{item.streams.toLocaleString()}</p>
+                      <p className="text-[7px] sm:text-[8px] text-zinc-800 uppercase font-black tracking-widest">Streams</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="h-[300px] flex items-center justify-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-800">No Data Available</p>
+                <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-zinc-800">No Data Available</p>
               </div>
             )}
           </CardContent>
