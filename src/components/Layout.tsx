@@ -39,10 +39,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { to: '/admin/artist-websites', icon: Globe, label: 'Сайти артистів' },
     { to: '/admin/users', icon: UsersIcon, label: 'Користувачі' },
     { to: '/admin/statistics', icon: BarChart3, label: 'Статистика' },
-    { to: '/admin/statuses', icon: ListTodo, label: 'Статуси' },
-    { to: '/admin/fields', icon: Layers, label: 'Поля' },
-    { to: '/admin/label-socials', icon: Share2, label: 'Соцмережі лейбла' },
-    { to: '/admin/login-customization', icon: Palette, label: 'Дизайн входу' },
     { to: '/admin/settings', icon: Settings, label: 'Налаштування' },
   ];
 
