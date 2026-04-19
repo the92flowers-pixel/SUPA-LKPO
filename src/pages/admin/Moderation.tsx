@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink } from 'lucide-react';
+import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2 } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Dialog, 
   DialogContent, 
@@ -19,9 +22,8 @@ import { cn } from '@/lib/utils';
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
 const Moderation = () => {
-  const { releases, updateReleaseStatus, statuses, fetchReleases, users, fetchUsers } = useDataStore();
+  const { releases, updateRelease, statuses, fetchReleases, users, fetchUsers, fields } = useDataStore();
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
-  const [moderatorNote, setModeratorNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -34,19 +36,30 @@ const Moderation = () => {
   const rejectedStatus = statuses.find(s => s.color === 'red')?.name || 'Відхилено';
 
   const pendingReleases = releases.filter(r => r.status === defaultStatus);
+  const releaseFields = fields.filter(f => f.section === 'release');
 
-  const handleAction = async (id: string, action: 'approve' | 'reject') => {
+  const handleAction = async (action: 'approve' | 'reject' | 'save') => {
     if (!selectedTrack) return;
     
     setIsLoading(true);
     try {
-      const newStatus = action === 'approve' ? publishedStatus : rejectedStatus;
-      await updateReleaseStatus(id, newStatus);
-      showSuccess(`Реліз ${action === 'approve' ? 'схвалено та опубліковано' : 'відхилено'}`);
-      setSelectedTrack(null);
-      setModeratorNote('');
+      const newStatus = action === 'approve' ? publishedStatus : action === 'reject' ? rejectedStatus : selectedTrack.status;
+      
+      const updatedData = {
+        ...selectedTrack,
+        status: newStatus
+      };
+
+      await updateRelease(selectedTrack.id, updatedData);
+      
+      if (action !== 'save') {
+        showSuccess(`Реліз ${action === 'approve' ? 'схвалено' : 'відхилено'} та збережено`);
+        setSelectedTrack(null);
+      } else {
+        showSuccess('Зміни збережено');
+      }
     } catch (error) {
-      showError('Помилка при оновленні статусу');
+      showError('Помилка при синхронізації з БД');
     } finally {
       setIsLoading(false);
     }
@@ -57,12 +70,16 @@ const Moderation = () => {
     return user?.artistName || user?.login || 'Невідомий';
   };
 
+  const updateField = (name: string, value: any) => {
+    setSelectedTrack((prev: any) => ({ ...prev, [name]: value }));
+  };
+
   return (
     <div className="space-y-10">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-white uppercase">Модерація</h1>
-          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Перевірка нових релізів ({pendingReleases.length})</p>
+          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Перевірка та редагування ({pendingReleases.length})</p>
         </div>
         <Button 
           onClick={() => fetchReleases()} 
@@ -111,58 +128,26 @@ const Moderation = () => {
                   </div>
                   <div className="text-xs font-black uppercase tracking-widest">{track.genre || 'Другое'}</div>
                 </div>
-
-                {track.performer && (
-                  <div className="text-xs text-zinc-600">
-                    <span className="text-[9px] uppercase font-black tracking-widest">Виконавець: </span>
-                    {track.performer}
-                  </div>
-                )}
-
-                {track.releaseUrl && (
-                  <div className="p-3 bg-white/5 border border-white/5">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">Посилання</p>
-                    <a 
-                      href={track.releaseUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-red-500 hover:text-red-400 underline flex items-center gap-1"
-                    >
-                      <ExternalLink size={10} />
-                      Переглянути
-                    </a>
-                  </div>
-                )}
-
-                {track.streams > 0 && (
-                  <div className="p-3 bg-white/5 border border-white/5">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Стріми</p>
-                    <p className="text-sm font-black text-red-700">{track.streams.toLocaleString()}</p>
-                  </div>
-                )}
               </CardContent>
 
               <CardFooter className="p-6 pt-0 grid grid-cols-2 gap-3">
                 <Button 
                   variant="outline" 
                   className="border-white/10 hover:bg-white/5 text-white rounded-none text-[10px] font-black uppercase tracking-widest"
-                  onClick={() => {
-                    setSelectedTrack(track);
-                    setModeratorNote('');
-                  }}
+                  onClick={() => setSelectedTrack({ ...track })}
                 >
-                  <Info size={14} className="mr-2" /> Деталі
+                  <Info size={14} className="mr-2" /> Деталі та Редагування
                 </Button>
                 <div className="flex gap-2">
                   <Button 
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-none"
-                    onClick={() => handleAction(track.id, 'approve')}
+                    onClick={() => { setSelectedTrack({ ...track }); handleAction('approve'); }}
                   >
                     <Check size={16} />
                   </Button>
                   <Button 
                     className="flex-1 bg-red-900 hover:bg-red-800 text-white rounded-none"
-                    onClick={() => handleAction(track.id, 'reject')}
+                    onClick={() => { setSelectedTrack({ ...track }); handleAction('reject'); }}
                   >
                     <X size={16} />
                   </Button>
@@ -173,27 +158,24 @@ const Moderation = () => {
         </div>
       )}
 
-      {/* Moderation Detail Modal */}
+      {/* Moderation & Edit Modal */}
       <Dialog open={!!selectedTrack} onOpenChange={() => setSelectedTrack(null)}>
-        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-3xl max-h-[90vh] overflow-y-auto rounded-none">
+        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
-                <DialogTitle className="text-xl font-black uppercase tracking-tighter">Перевірка релізу</DialogTitle>
+                <DialogTitle className="text-xl font-black uppercase tracking-tighter">Перевірка та редагування релізу</DialogTitle>
                 <DialogDescription className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">
-                  ID: {selectedTrack?.id?.slice(0, 8)}
+                  ID: {selectedTrack?.id?.slice(0, 8)} | Власник: {selectedTrack ? getUserName(selectedTrack.userId) : ''}
                 </DialogDescription>
               </div>
-              <Badge className="bg-amber-500/20 text-amber-500 border-none text-[10px] font-black uppercase tracking-widest rounded-none">
-                <Clock size={12} className="mr-1" /> На модерації
-              </Badge>
             </div>
           </DialogHeader>
 
           {selectedTrack && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               <div className="space-y-6">
-                <div className="aspect-square rounded-none overflow-hidden border border-white/5 shadow-2xl">
+                <div className="aspect-square rounded-none overflow-hidden border border-white/5 shadow-2xl relative group">
                   <img 
                     src={selectedTrack.coverUrl || FALLBACK_IMAGE} 
                     alt={selectedTrack.title} 
@@ -202,96 +184,121 @@ const Moderation = () => {
                   />
                 </div>
                 
-                <div className="p-4 bg-white/5 border border-white/5 rounded-none">
-                  <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-3">Інформація</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-[9px] text-zinc-600 uppercase">Артист</p>
-                      <p className="text-sm font-bold text-white">{selectedTrack.artist}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-zinc-600 uppercase">Виконавець</p>
-                      <p className="text-sm font-bold text-white">{selectedTrack.performer || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-zinc-600 uppercase">Композитор</p>
-                      <p className="text-sm font-bold text-white">{selectedTrack.composer || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-zinc-600 uppercase">Жанр</p>
-                      <p className="text-sm font-bold text-white">{selectedTrack.genre || 'Другое'}</p>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL Обкладинки</Label>
+                    <Input 
+                      value={selectedTrack.coverUrl} 
+                      onChange={(e) => updateField('coverUrl', e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Посилання на файли</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={selectedTrack.releaseUrl || ''} 
+                        onChange={(e) => updateField('releaseUrl', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                        placeholder="Drive/Dropbox link"
+                      />
+                      {selectedTrack.releaseUrl && (
+                        <Button size="icon" variant="outline" className="shrink-0 border-white/5" onClick={() => window.open(selectedTrack.releaseUrl, '_blank')}>
+                          <ExternalLink size={14} />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                </div>
-
-                {selectedTrack.releaseUrl && (
-                  <div className="p-4 bg-white/5 border border-white/5 rounded-none">
-                    <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-2">Посилання на реліз</p>
-                    <a 
-                      href={selectedTrack.releaseUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-red-500 hover:text-red-400 underline break-all flex items-center gap-2"
-                    >
-                      <ExternalLink size={14} />
-                      {selectedTrack.releaseUrl}
-                    </a>
-                  </div>
-                )}
-
-                <div className="p-4 bg-white/5 border border-white/5 rounded-none">
-                  <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-2">Користувач</p>
-                  <p className="text-sm font-bold text-white">{getUserName(selectedTrack.userId)}</p>
                 </div>
               </div>
 
               <div className="space-y-6">
-                <div className="space-y-1 border-b border-white/5 pb-4">
-                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Назва</p>
-                  <p className="text-xl font-black text-white uppercase tracking-tight">{selectedTrack.title}</p>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва релізу</Label>
+                    <Input 
+                      value={selectedTrack.title} 
+                      onChange={(e) => updateField('title', e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none h-12 text-white font-bold"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист</Label>
+                      <Input 
+                        value={selectedTrack.artist} 
+                        onChange={(e) => updateField('artist', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Жанр</Label>
+                      <Input 
+                        value={selectedTrack.genre} 
+                        onChange={(e) => updateField('genre', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-4">
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Дата релізу</p>
-                    <p className="text-sm font-bold text-white">{selectedTrack.releaseDate || '—'}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Лейбл</p>
-                    <p className="text-sm font-bold text-white">{selectedTrack.label || '—'}</p>
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Додаткові поля</p>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Виконавець (ПІБ)</Label>
+                      <Input 
+                        value={selectedTrack.performer || ''} 
+                        onChange={(e) => updateField('performer', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                      />
+                    </div>
+                    {releaseFields.map(field => (
+                      <div key={field.id} className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{field.label}</Label>
+                        {field.type === 'textarea' ? (
+                          <Textarea 
+                            value={selectedTrack[field.name] || ''} 
+                            onChange={(e) => updateField(field.name, e.target.value)}
+                            className="bg-black/40 border-white/5 rounded-none min-h-[80px] text-xs"
+                          />
+                        ) : field.type === 'select' ? (
+                          <Select value={selectedTrack[field.name] || ''} onValueChange={(v) => updateField(field.name, v)}>
+                            <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-10 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                              {field.options?.split(',').map((opt: string) => (
+                                <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs uppercase font-bold">{opt.trim()}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input 
+                            value={selectedTrack[field.name] || ''} 
+                            onChange={(e) => updateField(field.name, e.target.value)}
+                            className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                          />
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {selectedTrack.isrc && (
-                  <div className="space-y-1 border-b border-white/5 pb-4">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">ISRC</p>
-                    <p className="text-sm font-bold text-white font-mono">{selectedTrack.isrc}</p>
-                  </div>
-                )}
-
-                {selectedTrack.description && (
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Опис</p>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{selectedTrack.description}</p>
-                  </div>
-                )}
 
                 <div className="pt-4 border-t border-white/5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block">
-                    Нотатка модератора
-                  </label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block">
+                    Опис / Нотатки модератора
+                  </Label>
                   <Textarea 
-                    value={moderatorNote}
-                    onChange={(e) => setModeratorNote(e.target.value)}
-                    className="bg-black/40 border-white/5 rounded-none min-h-[80px] text-xs focus:ring-0 focus:border-red-700"
-                    placeholder="Додайте коментар для артиста (опціонально)..."
+                    value={selectedTrack.description || ''}
+                    onChange={(e) => updateField('description', e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none min-h-[100px] text-xs focus:ring-0 focus:border-red-700"
+                    placeholder="Додайте коментар або опис..."
                   />
                 </div>
               </div>
             </div>
           )}
 
-          <DialogFooter className="gap-3">
+          <DialogFooter className="gap-3 border-t border-white/5 pt-6">
             <Button 
               variant="outline" 
               onClick={() => setSelectedTrack(null)} 
@@ -300,20 +307,30 @@ const Moderation = () => {
               Скасувати
             </Button>
             <Button 
-              variant="destructive" 
-              onClick={() => handleAction(selectedTrack?.id, 'reject')}
+              variant="secondary" 
+              onClick={() => handleAction('save')}
               disabled={isLoading}
-              className="bg-red-900 hover:bg-red-800 text-white rounded-none text-[10px] font-black uppercase tracking-widest px-8 h-12"
+              className="bg-white/5 hover:bg-white/10 text-white rounded-none text-[10px] font-black uppercase tracking-widest px-6 h-12"
             >
-              <X size={16} className="mr-2" /> Відхилити
+              {isLoading ? <Loader2 className="animate-spin" /> : <><Save size={16} className="mr-2" /> Зберегти зміни</>}
             </Button>
-            <Button 
-              onClick={() => handleAction(selectedTrack?.id, 'approve')}
-              disabled={isLoading}
-              className="bg-green-600 hover:bg-green-700 text-white rounded-none text-[10px] font-black uppercase tracking-widest px-8 h-12"
-            >
-              <Check size={16} className="mr-2" /> Схвалити
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="destructive" 
+                onClick={() => handleAction('reject')}
+                disabled={isLoading}
+                className="bg-red-900 hover:bg-red-800 text-white rounded-none text-[10px] font-black uppercase tracking-widest px-8 h-12"
+              >
+                <X size={16} className="mr-2" /> Відхилити
+              </Button>
+              <Button 
+                onClick={() => handleAction('approve')}
+                disabled={isLoading}
+                className="bg-green-600 hover:bg-green-700 text-white rounded-none text-[10px] font-black uppercase tracking-widest px-8 h-12"
+              >
+                <Check size={16} className="mr-2" /> Схвалити
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
