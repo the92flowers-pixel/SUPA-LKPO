@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 
 const Dashboard = () => {
   const { user } = useAuthStore();
-  const { releases } = useDataStore();
+  const { releases, isLoading } = useDataStore();
 
   const userReleases = useMemo(() => 
     releases.filter(r => r.userId === user?.id), 
@@ -66,6 +66,17 @@ const Dashboard = () => {
       .sort((a, b) => b.streams - a.streams)
       .slice(0, 5);
   }, [userReleases]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin h-10 w-10 border-2 border-red-700 border-t-transparent rounded-full mx-auto" />
+          <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Завантаження даних...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">

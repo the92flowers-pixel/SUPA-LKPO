@@ -60,7 +60,7 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: 
 
 const App = () => {
   const { setAuth } = useAuthStore();
-  const { init } = useDataStore();
+  const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests } = useDataStore();
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Init public data (config, statuses, fields)
@@ -77,15 +77,17 @@ const App = () => {
     initApp();
   }, [init]);
 
-  // Restore session on mount
+  // Restore session and load user data
   useEffect(() => {
     if (!isInitialized) return;
     
     const restoreSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (session?.user) {
           try {
+            // Fetch profile from database
             const { data: profile, error } = await supabase
               .from('profiles')
               .select('*')
@@ -93,15 +95,61 @@ const App = () => {
               .single();
             
             if (!error && profile) {
+              // Profile exists - use it
               setAuth(toAppProfile(profile));
+              
+              // Load user's data
+              const userId = session.user.id;
+              const userRole = profile.role;
+              
+              // Fetch all user-related data in parallel
+              await Promise.all([
+                fetchReleases(userId, userRole),
+                fetchSmartLinks(userId),
+                fetchArtistWebsites(userId),
+                fetchTransactions(userId),
+                fetchReports(userId),
+                fetchUsers(),
+                fetchWithdrawalRequests(),
+              ]);
             } else if (error?.code === 'PGRST116') {
-              // Profile doesn't exist - user exists but no profile
+              // Profile doesn't exist - create it
+              const { data: newProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.artist_name || '',
+                  role: 'artist',
+                  balance: 0,
+                  is_verified: false,
+                })
+                .select()
+                .single();
+              
+              if (!createError && newProfile) {
+                setAuth(toAppProfile(newProfile));
+              } else {
+                // Fallback - use basic user data
+                setAuth({
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  login: session.user.email || '',
+                  role: 'artist',
+                  artistName: session.user.user_metadata?.full_name || session.user.user_metadata?.artist_name || null,
+                  balance: 0,
+                  isVerified: false,
+                  createdAt: session.user.created_at || new Date().toISOString(),
+                });
+              }
+            } else {
+              // Other error - use basic user
               setAuth({
                 id: session.user.id,
                 email: session.user.email || '',
                 login: session.user.email || '',
                 role: 'artist',
-                artistName: null,
+                artistName: session.user.user_metadata?.full_name || session.user.user_metadata?.artist_name || null,
                 balance: 0,
                 isVerified: false,
                 createdAt: session.user.created_at || new Date().toISOString(),
@@ -109,10 +157,25 @@ const App = () => {
             }
           } catch (err) {
             console.error('Error fetching profile:', err);
+            // On error, use basic auth
+            setAuth({
+              id: session.user.id,
+              email: session.user.email || '',
+              login: session.user.email || '',
+              role: 'artist',
+              artistName: session.user.user_metadata?.full_name || session.user.user_metadata?.artist_name || null,
+              balance: 0,
+              isVerified: false,
+              createdAt: session.user.created_at || new Date().toISOString(),
+            });
           }
+        } else {
+          // No session - set null
+          setAuth(null);
         }
       } catch (error) {
         console.error('Session restoration error:', error);
+        setAuth(null);
       }
     };
     
@@ -130,6 +193,14 @@ const App = () => {
           
           if (profile) {
             setAuth(toAppProfile(profile));
+            // Load data after login
+            await Promise.all([
+              fetchReleases(session.user.id, profile.role),
+              fetchSmartLinks(session.user.id),
+              fetchArtistWebsites(session.user.id),
+              fetchTransactions(session.user.id),
+              fetchReports(session.user.id),
+            ]);
           }
         } catch (err) {
           console.error('Auth state change error:', err);
@@ -142,7 +213,7 @@ const App = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isInitialized, setAuth]);
+  }, [isInitialized, setAuth, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests]);
 
   // Show loading until initialized
   if (!isInitialized) {
