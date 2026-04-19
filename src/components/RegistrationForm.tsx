@@ -1,52 +1,60 @@
 "use client";
 
 import React from 'react';
-import { Form, Field } from '@shadcn/ui';
-import { supabaseClient } from '../supabase';
+import { supabase } from '@/lib/supabase';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 const RegistrationForm = () => {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [username, setUsername] = React.useState('');
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      await supabaseClient.auth.signUp({
+      const { data } = await supabase.auth.signUp({
         email,
         password,
-        options: { username },
+        options: { data: { username } },
       });
-      // After successful registration, automatically log in and open the dashboard
-      const user = await supabaseClient.auth.getUser();
-      window.location.href = `/dashboard/${user.id}`;
+      if (data.user) {
+        window.location.href = `/dashboard`;
+      }
     } catch (error) {
       console.error(error);
     }
   };
 
   return (
-    <Form onSubmit={handleSubmit}>
-      <Field
-        label="Email"
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-      />
-      <Field
-        label="Password"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-      />
-      <Field
-        label="Username"
-        type="text"
-        value={username}
-        onChange={(event) => setUsername(event.target.value)}
-      />
-      <button type="submit">Register</button>
-    </Form>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label>Email</Label>
+        <Input
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Password</Label>
+        <Input
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Username</Label>
+        <Input
+          type="text"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+        />
+      </div>
+      <Button type="submit">Register</Button>
+    </form>
   );
 };
 

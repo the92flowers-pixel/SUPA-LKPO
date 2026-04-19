@@ -1,19 +1,23 @@
 "use client";
 
 import React from 'react';
-import { supabaseClient } from '../supabase';
+import { supabase } from '@/lib/supabase';
 
 const ArtistDashboard = () => {
-  const [releases, setReleases] = React.useState([]);
+  const [releases, setReleases] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    // Get the artist's ID from the user's data
-    const artistId = supabaseClient.from('artists').select('id').eq('username', 'artist');
-    // Get the artist's releases
-    supabaseClient.from('releases')
-      .select('title, description, image, streams')
-      .eq('artist_id', artistId[0].id)
-      .then((data) => setReleases(data));
+    const fetchArtistData = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const { data } = await supabase.from('releases')
+        .select('id, title, description, cover_url, streams')
+        .eq('user_id', userData.user.id);
+      
+      if (data) setReleases(data);
+    };
+    fetchArtistData();
   }, []);
 
   return (
@@ -24,8 +28,8 @@ const ArtistDashboard = () => {
           <li key={release.id}>
             <h2>{release.title}</h2>
             <p>{release.description}</p>
-            <img src={release.image} alt="Release Image" />
-            <p>Streams: {release.streams.join(', ')}</p>
+            <img src={release.cover_url} alt="Release Image" />
+            <p>Streams: {release.streams}</p>
           </li>
         ))}
       </ul>
