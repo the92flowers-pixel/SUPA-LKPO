@@ -3,20 +3,20 @@
 import React from 'react';
 import { GetReleaseData } from '../api';
 
-const AdminPanel = () => {
-  const [releases, setReleases] = useState([]);
+const ArtistCabinet = () => {
+  const [release, setRelease] = useState(null);
 
   useEffect(() => {
-    GetReleaseData().then((data) => setReleases(data));
+    GetReleaseData().then((data) => setRelease(data));
   }, []);
 
-  if (!releases) return <div>Loading...</div>;
+  if (!release) return <div>Loading...</div>;
 
   return (
     <div>
       {/* ... */}
       <h2>Releases</h2>
-      {releases.map((release) => (
+      {release.map((release) => (
         <div key={release.id}>
           <p>{release.title}</p>
           <p>{release.description}</p>
@@ -43,4 +43,4 @@ const AdminPanel = () => {
   );
 };
 
-export default AdminPanel;
+export default ArtistCabinet;
