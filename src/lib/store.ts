@@ -52,11 +52,11 @@ interface DataState {
   updateReleaseStatus: (id: string, status: string) => Promise<void>;
   updateReleaseStreams: (id: string, count: number, date: string) => Promise<void>;
   deleteRelease: (id: string) => Promise<void>;
-  fetchSmartLinks: (userId?: string) => Promise<void>;
+  fetchSmartLinks: (userId?: string, role?: string) => Promise<void>;
   addSmartLink: (linkData: Partial<SmartLink>) => Promise<void>;
   updateSmartLink: (id: string, linkData: Partial<SmartLink>) => Promise<void>;
   deleteSmartLink: (id: string) => Promise<void>;
-  fetchArtistWebsites: (userId?: string) => Promise<void>;
+  fetchArtistWebsites: (userId?: string, role?: string) => Promise<void>;
   addArtistWebsite: (websiteData: Partial<ArtistWebsite>) => Promise<void>;
   updateArtistWebsite: (id: string, websiteData: Partial<ArtistWebsite>) => Promise<void>;
   deleteArtistWebsite: (id: string) => Promise<void>;
@@ -244,10 +244,10 @@ export const useDataStore = create<DataState>((set, get) => ({
     } catch (e) { console.error(e); }
   },
 
-  fetchSmartLinks: async (userId) => {
+  fetchSmartLinks: async (userId, role) => {
     try {
       let query = supabase.from('smart_links').select('*');
-      if (userId) query = query.eq('user_id', userId);
+      if (role !== 'admin' && userId) query = query.eq('user_id', userId);
       const { data, error } = await query;
       if (!error && data) {
         set({ smartLinks: data.map(l => ({
@@ -317,10 +317,10 @@ export const useDataStore = create<DataState>((set, get) => ({
     } catch (e) { console.error(e); }
   },
 
-  fetchArtistWebsites: async (userId) => {
+  fetchArtistWebsites: async (userId, role) => {
     try {
       let query = supabase.from('artist_websites').select('*');
-      if (userId) query = query.eq('user_id', userId);
+      if (role !== 'admin' && userId) query = query.eq('user_id', userId);
       const { data, error } = await query;
       if (!error && data) {
         set({ artistWebsites: data.map(w => ({

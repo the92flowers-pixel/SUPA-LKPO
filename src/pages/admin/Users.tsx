@@ -124,17 +124,10 @@ const Users = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>Логін (Email)</Label>
                   <Input value={editingUser.login} onChange={(e) => setEditingUser({...editingUser, login: e.target.value})} className="bg-black/40 border-white/5" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Пароль</Label>
-                  <div className="relative">
-                    <Input type="text" value={editingUser.password || ''} onChange={(e) => setEditingUser({...editingUser, password: e.target.value})} className="bg-black/40 border-white/5 pl-10" />
-                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
-                  </div>
                 </div>
               </div>
               <div className="space-y-2">

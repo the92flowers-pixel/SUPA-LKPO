@@ -98,8 +98,8 @@ const App = () => {
               
               await Promise.all([
                 fetchReleases(userId, userRole),
-                fetchSmartLinks(userId),
-                fetchArtistWebsites(userId),
+                fetchSmartLinks(userRole === 'admin' ? undefined : userId, userRole),
+                fetchArtistWebsites(userRole === 'admin' ? undefined : userId, userRole),
                 fetchTransactions(userId),
                 fetchReports(userRole === 'admin' ? undefined : userId),
                 fetchUsers(),
@@ -182,8 +182,8 @@ const App = () => {
             setAuth(toAppProfile(profile));
             await Promise.all([
               fetchReleases(session.user.id, profile.role),
-              fetchSmartLinks(session.user.id),
-              fetchArtistWebsites(session.user.id),
+              fetchSmartLinks(profile.role === 'admin' ? undefined : session.user.id, profile.role),
+              fetchArtistWebsites(profile.role === 'admin' ? undefined : session.user.id, profile.role),
               fetchTransactions(session.user.id),
               fetchReports(profile.role === 'admin' ? undefined : session.user.id),
             ]);
