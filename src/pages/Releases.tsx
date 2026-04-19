@@ -44,14 +44,18 @@ const Releases = () => {
   }, [user, fetchReleases]);
 
   const filteredReleases = releases.filter(r => {
+    const title = r.title || '';
+    const artist = r.artist || '';
+    const search = searchQuery.toLowerCase();
+    
+    const matchesSearch = title.toLowerCase().includes(search) || 
+                          artist.toLowerCase().includes(search);
+
     if (user?.role === 'admin') {
-      return r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-             r.artist.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
     }
-    return r.userId === user?.id && (
-      r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      r.artist.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    
+    return r.userId === user?.id && matchesSearch;
   });
 
   const userReleases = filteredReleases;
@@ -68,7 +72,7 @@ const Releases = () => {
     } else {
       setIsEditing(false);
       setExistingLinkId(null);
-      setCustomSlug(release.title.toLowerCase().replace(/\s+/g, '-'));
+      setCustomSlug((release.title || '').toLowerCase().replace(/\s+/g, '-'));
       setPlatforms([{ id: '1', name: 'Spotify', url: '' }]);
     }
   };
@@ -305,7 +309,7 @@ const Releases = () => {
               <div className="space-y-6">
                 <div className="space-y-1 border-b border-white/5 pb-3">
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Назва</p>
-                  <p className="text-lg font-black text-white uppercase tracking-tight">{viewingRelease.title}</p>
+                  <p className="text-xl font-black text-white uppercase tracking-tight">{viewingRelease.title}</p>
                 </div>
                 <div className="space-y-1 border-b border-white/5 pb-3">
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Артист</p>
