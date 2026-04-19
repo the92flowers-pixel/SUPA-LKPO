@@ -126,12 +126,12 @@ const Login = () => {
               <span className="text-red-700">Скрізь.</span>
             </h2>
             <p className="text-xl text-gray-400 max-w-md leading-relaxed">
-              Дистрибуція на 150+ платформ. Залишай собі 100% роялті.
+              Дистрибуція на 150+ платформ. Залишай собі 80% роялті.
             </p>
           </div>
         </div>
         <div className="relative z-10 grid grid-cols-3 gap-6">
-          {['150+ Платформ', '100% Роялті', '24/7 Підтримка'].map((f, i) => (
+          {['150+ Платформ', '80% Роялті', '24/7 Підтримка'].map((f, i) => (
             <div key={i} className="flex items-center gap-2 text-sm font-medium text-gray-300">
               <CheckCircle2 size={16} className="text-red-700" />
               {f}

@@ -108,7 +108,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   settings: { siteName: "ЖУРБА MUSIC", registrationEnabled: true, contactEmail: "support@jurba.music" },
   homePageConfig: { heroTitle: "Твоя музика. Твоя влада.", heroSubtitle: "Дистрибуція нового покоління.", buttonText: "Приєднатися", primaryColor: "#ef4444" },
   adminPanelConfig: { logoText: "ЖУРБА", accentColor: "#ef4444" },
-  loginPageConfig: { logoText: "ЖУРБА MUSIC", welcomeTitle: "Ласкаво просимо", welcomeSubtitle: "Увійдіть", socialIcons: ["Spotify", "Apple Music"] },
+  loginPageConfig: { logoText: "ЖУРБА MUSIC", welcomeTitle: "Ласкаво просимо", welcomeSubtitle: "Увійдіть, щоб продовжити", socialIcons: ["Spotify", "Apple Music"] },
   isLoading: true,
 
   init: async () => {
@@ -679,7 +679,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           settings: data.settings || { siteName: "ЖУРБА MUSIC", registrationEnabled: true, contactEmail: "support@jurba.music" },
           homePageConfig: data.home_page || { heroTitle: "Твоя музика. Твоя влада.", heroSubtitle: "Дистрибуція нового покоління.", buttonText: "Приєднатися", primaryColor: "#ef4444" },
           adminPanelConfig: data.admin_panel || { logoText: "ЖУРБА", accentColor: "#ef4444" },
-          loginPageConfig: data.login_page || { logoText: "ЖУРБА MUSIC", welcomeTitle: "Ласкаво просимо", welcomeSubtitle: "Увійдіть", socialIcons: [] },
+          loginPageConfig: data.login_page || { logoText: "ЖУРБА MUSIC", welcomeTitle: "Ласкаво просимо", welcomeSubtitle: "Увійдіть, щоб продовжити", socialIcons: [] },
           labelSocials: (data.label_socials || []).map((s: any) => ({ id: s.id || Date.now().toString(), name: s.name || s.platform, url: s.url || '' })),
         });
       }
