@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FileText, Plus, Trash2, Search, User, Calendar, Link as LinkIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { showSuccess } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 const AdminReports = () => {
-  const { quarterlyReports, users, addReport, deleteReport } = useDataStore();
+  const { quarterlyReports, users, addReport, deleteReport, fetchReports } = useDataStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [artistOpen, setArtistOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,6 +23,10 @@ const AdminReports = () => {
     fileUrl: '',
     fileName: ''
   });
+
+  useEffect(() => {
+    fetchReports(); // Fetch all reports for admin
+  }, [fetchReports]);
 
   const artists = useMemo(() => users.filter(u => u.role === 'artist'), [users]);
 

@@ -101,7 +101,7 @@ const App = () => {
                 fetchSmartLinks(userId),
                 fetchArtistWebsites(userId),
                 fetchTransactions(userId),
-                fetchReports(userId),
+                fetchReports(userRole === 'admin' ? undefined : userId),
                 fetchUsers(),
                 fetchWithdrawalRequests(),
               ]);
@@ -185,7 +185,7 @@ const App = () => {
               fetchSmartLinks(session.user.id),
               fetchArtistWebsites(session.user.id),
               fetchTransactions(session.user.id),
-              fetchReports(session.user.id),
+              fetchReports(profile.role === 'admin' ? undefined : session.user.id),
             ]);
           }
         } catch (err) {
