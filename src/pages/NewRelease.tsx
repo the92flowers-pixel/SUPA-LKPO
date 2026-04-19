@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 interface Track {
   id: string;
   title: string;
-  audioUrl: string;
   duration: string;
   explicit: boolean;
   lyrics: string;
@@ -27,6 +26,8 @@ interface ReleaseFormData {
   genre: string;
   releaseDate: string;
   coverUrl: string;
+  composer: string;
+  performer: string;
   label: string;
   description: string;
   explicit: boolean;
@@ -40,16 +41,18 @@ const NewRelease = () => {
       releaseDate: new Date().toISOString().split('T')[0],
       explicit: false,
       isSingle: true,
+      composer: '',
+      performer: '',
     }
   });
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { fields, addRelease, statuses } = useDataStore();
+  const { fields, addRelease, statuses, fetchReleases } = useDataStore();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string>('');
   const [tracks, setTracks] = useState<Track[]>([
-    { id: '1', title: '', audioUrl: '', duration: '', explicit: false, lyrics: '', position: 1 }
+    { id: '1', title: '', duration: '', explicit: false, lyrics: '', position: 1 }
   ]);
   const [releaseType, setReleaseType] = useState<'single' | 'album'>('single');
   
@@ -67,7 +70,6 @@ const NewRelease = () => {
     setTracks([...tracks, { 
       id: Date.now().toString(), 
       title: '', 
-      audioUrl: '', 
       duration: '', 
       explicit: false, 
       lyrics: '', 
@@ -87,23 +89,24 @@ const NewRelease = () => {
 
   const onSubmit = async (data: ReleaseFormData) => {
     if (!data.title || !data.artist) {
-      showError('Заповніть обов\'язкові поля');
+      showError('Заполните обязательные поля');
       return;
     }
 
     if (releaseType === 'album' && tracks.length === 0) {
-      showError('Додайте хоча б один трек');
+      showError('Добавьте хотя бы один трек');
       return;
     }
 
     for (const track of tracks) {
       if (!track.title) {
-        showError('Всі треки повинні мати назву');
+        showError('Все треки должны иметь название');
         return;
       }
     }
 
     setIsSubmitting(true);
+    
     try {
       const releaseData: any = {
         title: data.title,
@@ -111,25 +114,32 @@ const NewRelease = () => {
         genre: data.genre,
         releaseDate: data.releaseDate,
         coverUrl: data.coverUrl,
+        composer: data.composer,
+        performer: data.performer,
         label: data.label,
         description: data.description,
         explicit: data.explicit,
         status: defaultStatus,
-        isSingle: data.isSingle,
+        isSingle: releaseType === 'single',
         tracks: releaseType === 'album' ? tracks : undefined,
       };
 
       const result = await addRelease(releaseData);
 
       if (result && result.id) {
-        showSuccess('Реліз успішно відправлено на модерацію!');
+        // Refresh releases list
+        if (user) {
+          await fetchReleases(user.id, user.role);
+        }
+        
+        showSuccess('Релиз успешно отправлен на модерацию!');
         navigate('/releases');
       } else {
-        showError('Помилка при створенні релізу');
+        showError('Ошибка при создании релиза');
       }
     } catch (error) {
       console.error('Error creating release:', error);
-      showError('Сталася помилка. Спробуйте пізніше.');
+      showError('Произошла ошибка. Попробуйте позже.');
     } finally {
       setIsSubmitting(false);
     }
@@ -141,21 +151,21 @@ const NewRelease = () => {
         <div className="inline-flex items-center justify-center w-16 h-16 bg-red-900/10 border border-red-900/20 mb-4">
           <Music className="text-red-700" size={32} />
         </div>
-        <h1 className="text-4xl font-black tracking-tight text-white uppercase">Новий реліз</h1>
-        <p className="text-zinc-500 text-xs font-bold uppercase tracking-[0.3em]">Завантажте вашу музику</p>
+        <h1 className="text-4xl font-black tracking-tight text-white uppercase">Новый релиз</h1>
+        <p className="text-zinc-500 text-xs font-bold uppercase tracking-[0.3em]">Загрузите вашу музыку</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
         {/* Release Type */}
         <div className="bg-black/40 border border-white/5 p-8 space-y-8">
           <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-            <h2 className="text-lg font-black text-white uppercase tracking-widest">Тип релізу</h2>
+            <h2 className="text-lg font-black text-white uppercase tracking-widest">Тип релиза</h2>
           </div>
 
           <div className="flex gap-4">
             <button
               type="button"
-              onClick={() => { setReleaseType('single'); setTracks([{ id: '1', title: '', audioUrl: '', duration: '', explicit: false, lyrics: '', position: 1 }]); }}
+              onClick={() => { setReleaseType('single'); setTracks([{ id: '1', title: '', duration: '', explicit: false, lyrics: '', position: 1 }]); }}
               className={cn(
                 "flex-1 p-6 border transition-all rounded-none",
                 releaseType === 'single' 
@@ -177,7 +187,7 @@ const NewRelease = () => {
               )}
             >
               <div className="text-xs font-black uppercase tracking-widest mb-2">Альбом / EP</div>
-              <div className="text-[10px] text-zinc-600">Кілька треків</div>
+              <div className="text-[10px] text-zinc-600">Несколько треков</div>
             </button>
           </div>
         </div>
@@ -186,18 +196,18 @@ const NewRelease = () => {
         <div className="bg-black/40 border border-white/5 p-8 space-y-8">
           <div className="flex items-center gap-3 pb-4 border-b border-white/5">
             <div className="w-8 h-8 bg-red-700/20 flex items-center justify-center text-red-700 text-xs font-black">01</div>
-            <h2 className="text-lg font-black text-white uppercase tracking-widest">Основна інформація</h2>
+            <h2 className="text-lg font-black text-white uppercase tracking-widest">Основная информация</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                Назва релізу <span className="text-red-800">*</span>
+                Название релиза <span className="text-red-800">*</span>
               </Label>
               <Input 
                 {...register('title', { required: true })}
                 className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
-                placeholder="Введіть назву..."
+                placeholder="Введите название..."
               />
             </div>
 
@@ -208,7 +218,29 @@ const NewRelease = () => {
               <Input 
                 {...register('artist', { required: true })}
                 className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
-                placeholder="Ім'я артиста..."
+                placeholder="Имя артиста..."
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                Исполнитель <span className="text-red-800">*</span>
+              </Label>
+              <Input 
+                {...register('performer', { required: true })}
+                className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
+                placeholder="ФИО исполнителя..."
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                Композитор
+              </Label>
+              <Input 
+                {...register('composer')}
+                className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-900/50 text-white placeholder:text-zinc-800"
+                placeholder="ФИО композитора..."
               />
             </div>
 
@@ -218,7 +250,7 @@ const NewRelease = () => {
               </Label>
               <Select value={selectedGenre || 'Другое'} onValueChange={(val) => setValue('genre', val)}>
                 <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 text-white focus:ring-0">
-                  <SelectValue placeholder="Оберіть жанр" />
+                  <SelectValue placeholder="Выберите жанр" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none max-h-[300px]">
                   {DEFAULT_GENRES.map((genre) => (
@@ -232,7 +264,7 @@ const NewRelease = () => {
 
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                Дата релізу
+                Дата релиза
               </Label>
               <Input 
                 type="date"
@@ -247,12 +279,12 @@ const NewRelease = () => {
         <div className="bg-black/40 border border-white/5 p-8 space-y-8">
           <div className="flex items-center gap-3 pb-4 border-b border-white/5">
             <div className="w-8 h-8 bg-red-700/20 flex items-center justify-center text-red-700 text-xs font-black">02</div>
-            <h2 className="text-lg font-black text-white uppercase tracking-widest">Обкладинка</h2>
+            <h2 className="text-lg font-black text-white uppercase tracking-widest">Обложка</h2>
           </div>
 
           <div className="space-y-3">
             <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-              Посилання на обкладинку (URL)
+              Ссылка на обложку (URL)
             </Label>
             <Input 
               {...register('coverUrl')}
@@ -286,7 +318,7 @@ const NewRelease = () => {
                 onClick={addTrack}
                 className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest h-10 rounded-none"
               >
-                <Plus size={14} className="mr-2" /> Додати трек
+                <Plus size={14} className="mr-2" /> Добавить трек
               </Button>
             )}
           </div>
@@ -300,7 +332,7 @@ const NewRelease = () => {
                       {index + 1}
                     </div>
                     <span className="text-[10px] text-zinc-600 uppercase font-black tracking-widest">
-                      {releaseType === 'album' ? `Трек ${index + 1}` : 'Інформація'}
+                      {releaseType === 'album' ? `Трек ${index + 1}` : 'Информация'}
                     </span>
                   </div>
                   {tracks.length > 1 && (
@@ -315,40 +347,27 @@ const NewRelease = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                      Назва треку <span className="text-red-800">*</span>
-                    </Label>
-                    <Input 
-                      value={track.title}
-                      onChange={(e) => updateTrack(track.id, 'title', e.target.value)}
-                      className="bg-black/40 border-white/5 rounded-none h-10 focus:border-red-900/50 text-white"
-                      placeholder="Назва треку..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                      Посилання на аудіо (URL)
-                    </Label>
-                    <Input 
-                      value={track.audioUrl}
-                      onChange={(e) => updateTrack(track.id, 'audioUrl', e.target.value)}
-                      className="bg-black/40 border-white/5 rounded-none h-10 focus:border-red-900/50 text-white"
-                      placeholder="https://..."
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                    Название трека <span className="text-red-800">*</span>
+                  </Label>
+                  <Input 
+                    value={track.title}
+                    onChange={(e) => updateTrack(track.id, 'title', e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none h-10 focus:border-red-900/50 text-white"
+                    placeholder="Название трека..."
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                    Текст пісні / Нотатки
+                    Текст песни / Заметки
                   </Label>
                   <Textarea 
                     value={track.lyrics}
                     onChange={(e) => updateTrack(track.id, 'lyrics', e.target.value)}
                     className="bg-black/40 border-white/5 rounded-none min-h-[80px] resize-none text-white"
-                    placeholder="Текст пісні або нотатки..."
+                    placeholder="Текст песни или заметки..."
                   />
                 </div>
               </div>
@@ -360,7 +379,7 @@ const NewRelease = () => {
         {releaseFields.length > 0 && (
           <div className="bg-black/40 border border-white/5 p-8 space-y-8">
             <div className="flex items-center gap-3 pb-4 border-b border-white/5">
-              <h2 className="text-lg font-black text-white uppercase tracking-widest">Додаткові дані</h2>
+              <h2 className="text-lg font-black text-white uppercase tracking-widest">Дополнительные данные</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -409,9 +428,9 @@ const NewRelease = () => {
             <Upload size={28} />
           </div>
           <div className="flex-1 text-center md:text-left">
-            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Готові до публікації?</h3>
+            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Готовы к публикации?</h3>
             <p className="text-xs text-zinc-600 font-medium leading-relaxed">
-              Після відправки реліз потрапить у чергу модерації. Адміністратор перевірить дані та опублікує реліз.
+              После отправки релиз попадет в очередь модерации. Администратор проверит данные и опубликует релиз.
             </p>
           </div>
           <Button 
@@ -420,11 +439,11 @@ const NewRelease = () => {
             className="w-full md:w-auto bg-red-700 hover:bg-red-800 text-xs font-black uppercase tracking-widest px-12 h-14 rounded-none shadow-[0_0_30px_rgba(185,28,28,0.3)] disabled:opacity-50"
           >
             {isSubmitting ? (
-              <>Завантаження...</>
+              <>Отправка...</>
             ) : (
               <>
                 <Check size={18} className="mr-2" />
-                Відправити на модерацію
+                Отправить на модерацию
               </>
             )}
           </Button>

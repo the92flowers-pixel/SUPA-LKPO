@@ -71,7 +71,6 @@ export interface Release {
   userId: string;
   artist_id: string;
   artist: string;
-  title: string;
   genre: string;
   release_date: string;
   releaseDate: string;
@@ -86,6 +85,8 @@ export interface Release {
   createdAt: string;
   // Additional fields
   isrc?: string;
+  composer?: string;
+  performer?: string;
   label?: string;
   description?: string;
   explicit?: boolean;

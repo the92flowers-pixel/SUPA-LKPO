@@ -48,8 +48,8 @@ interface DataState {
   init: () => Promise<void>;
   
   fetchReleases: (userId?: string, role?: string) => Promise<void>;
-  addRelease: (releaseData: Partial<Release>) => Promise<void>;
-  updateRelease: (id: string, releaseData: Partial<Release>) => Promise<void>;
+  addRelease: (releaseData: Partial<Release>) => Promise<Release | null>;
+  updateRelease: (id: string, releaseData: Partial<Release>) => Promise<Release | null>;
   updateReleaseStatus: (id: string, status: string) => Promise<void>;
   updateReleaseStreams: (id: string, count: number, date: string) => Promise<void>;
   deleteRelease: (id: string) => Promise<void>;
@@ -140,9 +140,9 @@ export const useDataStore = create<DataState>((set, get) => ({
   quarterlyReports: [],
   labelSocials: [],
   settings: { siteName: "ЖУРБА MUSIC", registrationEnabled: true, contactEmail: "support@jurba.music" },
-  homePageConfig: { heroTitle: "Твоя музика. Твоя влада.", heroSubtitle: "Дистрибуція нового покоління.", buttonText: "Приєднатися", primaryColor: "#ef4444" },
+  homePageConfig: { heroTitle: "Твоя музыка. Твоя власть.", heroSubtitle: "Дистрибуция нового поколения.", buttonText: "Присоединиться", primaryColor: "#ef4444" },
   adminPanelConfig: { logoText: "ЖУРБА", accentColor: "#ef4444" },
-  loginPageConfig: { logoText: "ЖУРБА MUSIC", welcomeTitle: "Ласкаво просимо", welcomeSubtitle: "Увійдіть", socialIcons: ["Spotify", "Apple Music"] },
+  loginPageConfig: { logoText: "ЖУРБА MUSIC", welcomeTitle: "Добро пожаловать", welcomeSubtitle: "Войдите", socialIcons: ["Spotify", "Apple Music"] },
   isLoading: true,
 
   init: async () => {
@@ -178,27 +178,26 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addRelease: async (releaseData) => {
     const { data: sessionData } = await supabase.auth.getUser();
-    if (!sessionData?.user) return;
+    if (!sessionData?.user) return null;
     
-    // Default status for new releases - "На модерації"
     const defaultStatus = get().statuses.find(s => s.isDefault)?.name || 'На модерації';
     
-    const insertData = {
+    const insertData: any = {
       user_id: sessionData.user.id,
       title: releaseData.title,
       artist: releaseData.artist || '',
       genre: releaseData.genre || 'Другое',
-      cover_url: releaseData.coverUrl || releaseData.cover_url || '',
-      audio_url: releaseData.audioUrl || releaseData.audio_url || '',
-      release_date: releaseData.releaseDate || releaseData.release_date || new Date().toISOString().split('T')[0],
+      cover_url: releaseData.coverUrl || '',
+      release_date: releaseData.releaseDate || new Date().toISOString().split('T')[0],
       status: releaseData.status || defaultStatus,
       streams: 0,
       history: [],
-      // Additional fields
-      isrc: releaseData.isrc || '',
+      composer: releaseData.composer || '',
+      performer: releaseData.performer || '',
       label: releaseData.label || '',
       description: releaseData.description || '',
       explicit: releaseData.explicit || false,
+      is_single: releaseData.isSingle !== undefined ? releaseData.isSingle : true,
     };
 
     const result = await supabase
@@ -208,20 +207,22 @@ export const useDataStore = create<DataState>((set, get) => ({
       .single();
       
     if (!result.error && result.data) {
-      const mapped = {
+      const mapped: Release = {
         ...result.data,
         userId: result.data.user_id,
-        artist: result.data.artist || result.data.title?.split(' - ')[0] || '',
+        artist: result.data.artist || '',
         releaseDate: result.data.release_date,
         coverUrl: result.data.cover_url,
         createdAt: result.data.created_at,
+        composer: result.data.composer || '',
+        performer: result.data.performer || '',
       };
       set((state) => ({ releases: [mapped, ...state.releases] }));
       return mapped;
-    } else if (result.error) {
+    } else {
       console.error('Error creating release:', result.error);
+      return null;
     }
-    return null;
   },
 
   updateRelease: async (id, releaseData) => {
@@ -236,20 +237,23 @@ export const useDataStore = create<DataState>((set, get) => ({
     if (releaseData.audio_url !== undefined) updateData.audio_url = releaseData.audio_url;
     if (releaseData.releaseDate !== undefined) updateData.release_date = releaseData.releaseDate;
     if (releaseData.status !== undefined) updateData.status = releaseData.status;
-    if (releaseData.isrc !== undefined) updateData.isrc = releaseData.isrc;
+    if (releaseData.composer !== undefined) updateData.composer = releaseData.composer;
+    if (releaseData.performer !== undefined) updateData.performer = releaseData.performer;
     if (releaseData.label !== undefined) updateData.label = releaseData.label;
     if (releaseData.description !== undefined) updateData.description = releaseData.description;
     if (releaseData.explicit !== undefined) updateData.explicit = releaseData.explicit;
 
     const result = await supabase.from('releases').update(updateData).eq('id', id).select().single();
     if (!result.error && result.data) {
-      const mapped = {
+      const mapped: Release = {
         ...result.data,
         userId: result.data.user_id,
-        artist: result.data.artist || result.data.title?.split(' - ')[0] || '',
+        artist: result.data.artist || '',
         releaseDate: result.data.release_date,
         coverUrl: result.data.cover_url,
         createdAt: result.data.created_at,
+        composer: result.data.composer || '',
+        performer: result.data.performer || '',
       };
       set((state) => ({ releases: state.releases.map(r => r.id === id ? mapped : r) }));
       return mapped;
@@ -600,7 +604,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           settings: result.data.settings,
           homePageConfig: result.data.home_page,
           adminPanelConfig: result.data.admin_panel,
-          loginPageConfig: result.data.login_page || { logoText: 'ЖУРБА MUSIC', welcomeTitle: 'Ласкаво просимо', welcomeSubtitle: 'Увійдіть', socialIcons: [] },
+          loginPageConfig: result.data.login_page || { logoText: 'ЖУРБА MUSIC', welcomeTitle: 'Добро пожаловать', welcomeSubtitle: 'Войдите', socialIcons: [] },
           labelSocials: (result.data.label_socials || result.data.labelSocials || []).map((s: any) => ({
             id: s.id || Date.now().toString(),
             name: s.name || s.platform,
