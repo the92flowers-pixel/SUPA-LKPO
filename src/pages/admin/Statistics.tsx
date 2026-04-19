@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { BarChart3, Plus, History, Search, Calendar as CalendarIcon, User, Music, Check, ChevronsUpDown, AlertCircle } from 'lucide-react';
+import { BarChart3, Plus, History, Search, Calendar as CalendarIcon, User, Music, Check, ChevronsUpDown, AlertCircle, TrendingUp } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,11 +22,10 @@ const months = [
 const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 const Statistics = () => {
-  const { releases, users, updateReleaseStreams } = useDataStore();
-  const [selectedArtistId, setSelectedArtistId] = useState<string>("");
+  const { releases, updateReleaseStreams } = useDataStore();
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
-  const [artistOpen, setArtistOpen] = useState(false);
   const [trackOpen, setTrackOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const { register, handleSubmit, setValue, reset, watch } = useForm({
     defaultValues: {
@@ -36,17 +35,18 @@ const Statistics = () => {
     }
   });
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const publishedReleases = useMemo(() => 
+    releases.filter(r => r.status === 'Опубліковано'),
+    [releases]
+  );
 
-  const artists = useMemo(() => {
-    const artistIds = new Set(releases.map(r => r.userId));
-    return users.filter(u => artistIds.has(u.id));
-  }, [users, releases]);
-
-  const artistTracks = useMemo(() => {
-    if (!selectedArtistId) return [];
-    return releases.filter(r => r.userId === selectedArtistId && r.status === 'Опубліковано');
-  }, [selectedArtistId, releases]);
+  const filteredReleases = useMemo(() => 
+    publishedReleases.filter(r => 
+      (r.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (r.artist || '').toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [publishedReleases, searchQuery]
+  );
 
   const onSubmit = (data: any) => {
     if (!selectedTrackId) {
@@ -55,7 +55,7 @@ const Statistics = () => {
     }
     
     const count = parseInt(data.count);
-    if (isNaN(count)) {
+    if (isNaN(count) || count <= 0) {
       showError('Введіть коректну кількість стрімів');
       return;
     }
@@ -73,12 +73,11 @@ const Statistics = () => {
     setSelectedTrackId("");
   };
 
-  const filteredReleases = releases.filter(r => 
-    r.status === 'Опубліковано' && (
-      (r.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (r.artist || '').toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
+  const handleQuickAdd = (id: string) => {
+    setSelectedTrackId(id);
+    // Scroll to form if on mobile
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="space-y-10">
@@ -101,77 +100,30 @@ const Statistics = () => {
           <CardContent className="pt-8">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист</Label>
-                <Popover open={artistOpen} onOpenChange={setArtistOpen}>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Оберіть реліз *</Label>
+                <Popover open={trackOpen} onOpenChange={setTrackOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       role="combobox"
                       className="w-full justify-between bg-black/40 border-white/5 rounded-none h-12 text-white hover:bg-white/5"
                     >
-                      {selectedArtistId
-                        ? artists.find((a) => a.id === selectedArtistId)?.artistName || artists.find((a) => a.id === selectedArtistId)?.login
-                        : "Пошук артиста..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0 bg-[#0a0a0a] border-white/5 rounded-none">
-                    <Command className="bg-transparent text-white">
-                      <CommandInput placeholder="Введіть ім'я..." className="h-12 border-none focus:ring-0" />
-                      <CommandList>
-                        <CommandEmpty className="p-4 text-xs text-zinc-600 uppercase font-bold">Артиста не знайдено</CommandEmpty>
-                        <CommandGroup>
-                          {artists.map((artist) => (
-                            <CommandItem
-                              key={artist.id}
-                              value={artist.artistName || artist.login}
-                              onSelect={() => {
-                                setSelectedArtistId(artist.id);
-                                setSelectedTrackId("");
-                                setArtistOpen(false);
-                              }}
-                              className="flex items-center gap-3 p-3 cursor-pointer hover:bg-red-900/10"
-                            >
-                              <Check className={cn("h-4 w-4 text-red-700", selectedArtistId === artist.id ? "opacity-100" : "opacity-0")} />
-                              <div className="flex flex-col">
-                                <span className="text-xs font-bold uppercase tracking-widest">{artist.artistName || artist.login}</span>
-                                <span className="text-[9px] text-zinc-600 font-mono">{artist.login}</span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Трек</Label>
-                <Popover open={trackOpen} onOpenChange={setTrackOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      disabled={!selectedArtistId}
-                      className="w-full justify-between bg-black/40 border-white/5 rounded-none h-12 text-white hover:bg-white/5 disabled:opacity-30"
-                    >
                       {selectedTrackId
-                        ? artistTracks.find((t) => t.id === selectedTrackId)?.title
-                        : "Оберіть трек..."}
+                        ? publishedReleases.find((t) => t.id === selectedTrackId)?.title
+                        : "Пошук релізу..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0 bg-[#0a0a0a] border-white/5 rounded-none">
                     <Command className="bg-transparent text-white">
-                      <CommandInput placeholder="Назва треку..." className="h-12 border-none focus:ring-0" />
+                      <CommandInput placeholder="Назва треку або артист..." className="h-12 border-none focus:ring-0" />
                       <CommandList>
-                        <CommandEmpty className="p-4 text-xs text-zinc-600 uppercase font-bold">Треків не знайдено</CommandEmpty>
+                        <CommandEmpty className="p-4 text-xs text-zinc-600 uppercase font-bold">Релізів не знайдено</CommandEmpty>
                         <CommandGroup>
-                          {artistTracks.map((track) => (
+                          {publishedReleases.map((track) => (
                             <CommandItem
                               key={track.id}
-                              value={track.title}
+                              value={`${track.title} ${track.artist}`}
                               onSelect={() => {
                                 setSelectedTrackId(track.id);
                                 setTrackOpen(false);
@@ -181,7 +133,10 @@ const Statistics = () => {
                               <Check className={cn("h-4 w-4 text-red-700", selectedTrackId === track.id ? "opacity-100" : "opacity-0")} />
                               <div className="flex items-center gap-3">
                                 <img src={track.coverUrl || FALLBACK_IMAGE} className="w-8 h-8 object-cover" alt="" />
-                                <span className="text-xs font-bold uppercase tracking-widest">{track.title}</span>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-bold uppercase tracking-widest">{track.title}</span>
+                                  <span className="text-[9px] text-zinc-600 uppercase">{track.artist}</span>
+                                </div>
                               </div>
                             </CommandItem>
                           ))}
@@ -228,7 +183,7 @@ const Statistics = () => {
                   type="number" 
                   {...register('count', { required: true })} 
                   className="bg-black/40 border-white/5 rounded-none h-12 text-white"
-                  placeholder="0"
+                  placeholder="Наприклад: 5000"
                 />
               </div>
 
@@ -261,8 +216,8 @@ const Statistics = () => {
                 <tr>
                   <th className="px-8 py-5">Трек</th>
                   <th className="px-8 py-5">Артист</th>
-                  <th className="px-8 py-5">Останнє оновлення</th>
                   <th className="px-8 py-5 text-right">Всього стрімів</th>
+                  <th className="px-8 py-5 text-right">Дія</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
@@ -281,11 +236,18 @@ const Statistics = () => {
                         </div>
                       </td>
                       <td className="px-8 py-6 text-[10px] font-black text-red-800 uppercase tracking-widest">{r.artist}</td>
-                      <td className="px-8 py-6 text-[10px] text-zinc-600 font-mono">
-                        {r.history && r.history.length > 0 ? r.history[r.history.length - 1].date : '—'}
-                      </td>
                       <td className="px-8 py-6 text-right">
                         <span className="text-white font-black text-sm tracking-tighter">{r.streams.toLocaleString()}</span>
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleQuickAdd(r.id)}
+                          className="text-red-700 hover:text-red-500 hover:bg-red-900/10 rounded-none uppercase text-[9px] font-black tracking-widest"
+                        >
+                          <TrendingUp size={14} className="mr-2" /> Додати
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -307,8 +269,7 @@ const Statistics = () => {
         <div className="space-y-1">
           <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Важлива примітка</p>
           <p className="text-xs text-zinc-500 leading-relaxed font-medium">
-            Дана статистика не є остаточною та відображає лише проміжну інформацію про прослуховування. 
-            Повна та детальна фінансова звітність буде доступна у вашому квартальному звіті.
+            Нарахування стрімів відбувається миттєво. Ці дані будуть відображені в кабінеті артиста на головному дашборді та в розділі аналітики.
           </p>
         </div>
       </div>
