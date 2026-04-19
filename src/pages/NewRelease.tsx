@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, Users, FileText, AlertCircle, X, GripVertical, CheckCircle2 } from 'lucide-react';
+import { Upload, Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, Users, FileText, AlertCircle, X, GripVertical, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ interface ReleaseFormData {
   explicit: boolean;
   isSingle: boolean;
   isrc: string;
+  releaseUrl: string;
 }
 
 const STEPS = [
@@ -66,6 +67,7 @@ const NewRelease = () => {
     explicit: false,
     isSingle: true,
     isrc: '',
+    releaseUrl: '',
   });
   
   const [releaseType, setReleaseType] = useState<'single' | 'album'>('single');
@@ -181,6 +183,7 @@ const NewRelease = () => {
         isSingle: releaseType === 'single',
         tracks: releaseType === 'album' ? tracks : undefined,
         isrc: formData.isrc,
+        releaseUrl: formData.releaseUrl,
       };
 
       const result = await addRelease(releaseData);
@@ -371,16 +374,33 @@ const NewRelease = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                  ISRC (необов'язково)
-                </Label>
-                <Input 
-                  value={formData.isrc}
-                  onChange={(e) => updateFormData('isrc', e.target.value)}
-                  className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-700 text-white font-mono"
-                  placeholder="XX-XXX-YY-NNNNN"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    ISRC (необов'язково)
+                  </Label>
+                  <Input 
+                    value={formData.isrc}
+                    onChange={(e) => updateFormData('isrc', e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-700 text-white font-mono"
+                    placeholder="XX-XXX-YY-NNNNN"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    Посилання на реліз
+                  </Label>
+                  <Input 
+                    value={formData.releaseUrl}
+                    onChange={(e) => updateFormData('releaseUrl', e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-700 text-white"
+                    placeholder="https://..."
+                  />
+                  <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">
+                    Посилання на Google Drive, DropBox, etc.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -589,6 +609,20 @@ const NewRelease = () => {
                     {formData.releaseDate ? new Date(formData.releaseDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Не вказано'}
                   </p>
                 </div>
+
+                {formData.releaseUrl && (
+                  <div className="p-4 bg-white/5 border border-white/5">
+                    <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-3">Посилання на реліз</h4>
+                    <a 
+                      href={formData.releaseUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-red-500 hover:text-red-400 text-sm font-bold underline break-all"
+                    >
+                      {formData.releaseUrl}
+                    </a>
+                  </div>
+                )}
 
                 <div className="p-4 bg-white/5 border border-white/5">
                   <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-3">Треклист</h4>

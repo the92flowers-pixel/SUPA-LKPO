@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -335,6 +335,20 @@ const Releases = () => {
                   <div className="space-y-1 border-b border-white/5 pb-3">
                     <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">ISRC</p>
                     <p className="text-sm font-bold text-white font-mono">{viewingRelease.isrc}</p>
+                  </div>
+                )}
+                {viewingRelease.releaseUrl && (
+                  <div className="space-y-1 border-b border-white/5 pb-3">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Посилання на реліз</p>
+                    <a 
+                      href={viewingRelease.releaseUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm font-bold text-red-500 hover:text-red-400 underline break-all flex items-center gap-2"
+                    >
+                      <ExternalLink size={14} />
+                      {viewingRelease.releaseUrl}
+                    </a>
                   </div>
                 )}
                 {viewingRelease.label && (

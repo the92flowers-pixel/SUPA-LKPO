@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Play, Music, Info, Calendar, Tag, User, Clock, RefreshCw, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,6 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
@@ -31,12 +29,10 @@ const Moderation = () => {
     fetchUsers();
   }, [fetchReleases, fetchUsers]);
 
-  // Get default status for "pending" releases
   const defaultStatus = statuses.find(s => s.isDefault)?.name || 'На модерації';
   const publishedStatus = statuses.find(s => s.color === 'green')?.name || 'Опубліковано';
   const rejectedStatus = statuses.find(s => s.color === 'red')?.name || 'Відхилено';
 
-  // Filter releases that need moderation
   const pendingReleases = releases.filter(r => r.status === defaultStatus);
 
   const handleAction = async (id: string, action: 'approve' | 'reject') => {
@@ -113,15 +109,28 @@ const Moderation = () => {
                   <div className="flex items-center gap-2">
                     <User size={14} /> {getUserName(track.userId)}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Tag size={14} /> {track.genre || 'Другое'}
-                  </div>
+                  <div className="text-xs font-black uppercase tracking-widest">{track.genre || 'Другое'}</div>
                 </div>
 
                 {track.performer && (
                   <div className="text-xs text-zinc-600">
                     <span className="text-[9px] uppercase font-black tracking-widest">Виконавець: </span>
                     {track.performer}
+                  </div>
+                )}
+
+                {track.releaseUrl && (
+                  <div className="p-3 bg-white/5 border border-white/5">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest mb-1">Посилання</p>
+                    <a 
+                      href={track.releaseUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-red-500 hover:text-red-400 underline flex items-center gap-1"
+                    >
+                      <ExternalLink size={10} />
+                      Переглянути
+                    </a>
                   </div>
                 )}
 
@@ -215,6 +224,21 @@ const Moderation = () => {
                   </div>
                 </div>
 
+                {selectedTrack.releaseUrl && (
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-none">
+                    <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-2">Посилання на реліз</p>
+                    <a 
+                      href={selectedTrack.releaseUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-red-500 hover:text-red-400 underline break-all flex items-center gap-2"
+                    >
+                      <ExternalLink size={14} />
+                      {selectedTrack.releaseUrl}
+                    </a>
+                  </div>
+                )}
+
                 <div className="p-4 bg-white/5 border border-white/5 rounded-none">
                   <p className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-2">Користувач</p>
                   <p className="text-sm font-bold text-white">{getUserName(selectedTrack.userId)}</p>
@@ -253,9 +277,9 @@ const Moderation = () => {
                 )}
 
                 <div className="pt-4 border-t border-white/5">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block">
                     Нотатка модератора
-                  </Label>
+                  </label>
                   <Textarea 
                     value={moderatorNote}
                     onChange={(e) => setModeratorNote(e.target.value)}

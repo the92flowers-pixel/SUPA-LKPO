@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS releases (
   release_date TEXT DEFAULT CURRENT_DATE,
   cover_url TEXT DEFAULT '',
   audio_url TEXT DEFAULT '',
+  release_url TEXT DEFAULT '',
   status TEXT DEFAULT 'На модерації',
   streams INTEGER DEFAULT 0,
   history JSONB DEFAULT '[]',
