@@ -184,7 +184,7 @@ const Releases = () => {
                   src={release.coverUrl || FALLBACK_IMAGE} 
                   onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                   className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" 
-                  alt="" 
+                  alt={release.title} 
                 />
                 <div className="absolute top-4 left-4 z-10">
                   {getStatusBadge(release.status)}
@@ -304,7 +304,12 @@ const Releases = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               <div className="space-y-6">
                 <div className="aspect-square border border-white/5 shadow-2xl">
-                  <img src={viewingRelease.coverUrl || FALLBACK_IMAGE} onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }} className="w-full h-full object-cover" alt="" />
+                  <img 
+                    src={viewingRelease.coverUrl || FALLBACK_IMAGE} 
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }} 
+                    className="w-full h-full object-cover" 
+                    alt={viewingRelease.title} 
+                  />
                 </div>
                 <div className="p-4 bg-white/5 border border-white/5 space-y-3">
                   <div className="space-y-1">
