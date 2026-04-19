@@ -1,78 +1,84 @@
 "use client";
 
 import React from 'react';
-import { supabase } from '@/lib/supabase';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
+import { Form, Field } from '@shadcn/ui';
+import { supabaseClient } from '../supabase';
 
 const ReleaseForm = () => {
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const [image, setImage] = React.useState<File | null>(null);
-  const [streams, setStreams] = React.useState<string[]>([]);
+  const [image, setImage] = React.useState(null);
+  const [streams, setStreams] = React.useState([]);
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
-
-      await supabase.from('releases').insert([
+      await supabaseClient.auth.signUp({
+        email: 'admin@example.com',
+        password: 'password123',
+        options: { username: 'admin' },
+      });
+      // Create a new release
+      const release = await supabaseClient.from('releases').insert([
         {
           title,
           description,
-          user_id: userData.user.id,
-          streams: streams.length,
+          image,
+          streams,
         },
       ]);
-      window.location.href = '/releases';
+      // Get the artist's ID from the user's data
+      const artistId = await supabaseClient.from('artists').select('id').eq('username', 'artist');
+      // Create a new release for the artist
+      const artistRelease = await supabaseClient.from('releases').insert([
+        {
+          title: `${release[0].title} - ${artistId[0].id}`,
+          description,
+          image: release[0].image,
+          streams: [...release[0].streams, ...artistStreams],
+        },
+      ]);
+      // Update the artist's data with the new release
+      await supabaseClient.from('artists').update(artistId[0].id, {
+        releases: [artistRelease[0].id],
+      });
     } catch (error) {
       console.error(error);
     }
   };
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setImage(event.target.files[0]);
-    }
+  const handleImageChange = (event) => {
+    setImage(event.target.files[0]);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label>Title</Label>
-        <Input
-          type="text"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Description</Label>
-        <Textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Image</Label>
-        <Input
-          type="file"
-          onChange={handleImageChange}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Streams (comma separated)</Label>
-        <Input
-          type="text"
-          value={streams.join(', ')}
-          onChange={(event) => setStreams(event.target.value.split(','))}
-        />
-      </div>
-      <Button type="submit">Create Release</Button>
-    </form>
+    <Form onSubmit={handleSubmit}>
+      <Field
+        label="Title"
+        type="text"
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+      />
+      <Field
+        label="Description"
+        type="textarea"
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+      />
+      <Field
+        label="Image"
+        type="file"
+        value={image}
+        onChange={handleImageChange}
+      />
+      <Field
+        label="Streams"
+        type="text"
+        value={streams.join(', ')}
+        onChange={(event) => setStreams(event.target.value.split(','))}
+      />
+      <button type="submit">Create Release</button>
+    </Form>
   );
 };
 

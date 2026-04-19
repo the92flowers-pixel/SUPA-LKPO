@@ -1,17 +1,15 @@
 "use client";
 
 import React from 'react';
-import { supabase } from '@/lib/supabase';
-import { Button } from './ui/button';
 
 const LogoutButton = () => {
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.href = '/';
   };
 
   return (
-    <Button onClick={handleLogout}>Logout</Button>
+    <button onClick={handleLogout}>Logout</button>
   );
 };
 

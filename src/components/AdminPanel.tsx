@@ -1,18 +1,16 @@
 "use client";
 
 import React from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabaseClient } from '../supabase';
 
 const AdminPanel = () => {
-  const [releases, setReleases] = React.useState<any[]>([]);
+  const [releases, setReleases] = React.useState([]);
 
   React.useEffect(() => {
-    const fetchReleases = async () => {
-      const { data } = await supabase.from('releases')
-        .select('id, title, description, cover_url, streams');
-      if (data) setReleases(data);
-    };
-    fetchReleases();
+    // Get all releases
+    supabaseClient.from('releases')
+      .select('title, description, image, streams')
+      .then((data) => setReleases(data));
   }, []);
 
   return (
@@ -23,8 +21,8 @@ const AdminPanel = () => {
           <li key={release.id}>
             <h2>{release.title}</h2>
             <p>{release.description}</p>
-            <img src={release.cover_url} alt="Release Image" />
-            <p>Streams: {release.streams}</p>
+            <img src={release.image} alt="Release Image" />
+            <p>Streams: {release.streams.join(', ')}</p>
             <button>Edit Release</button>
           </li>
         ))}

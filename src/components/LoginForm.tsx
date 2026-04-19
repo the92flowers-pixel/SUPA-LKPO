@@ -1,22 +1,21 @@
 "use client";
 
 import React from 'react';
-import { supabase } from '@/lib/supabase';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
+import { Form, Field } from '@shadcn/ui';
+import { supabaseClient } from '../supabase';
 
 const LoginForm = () => {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      await supabase.auth.signInWithPassword({
+      await supabaseClient.auth.signIn({
         email,
         password,
       });
+      // After successful login, open the dashboard
       window.location.href = '/dashboard';
     } catch (error) {
       console.error(error);
@@ -24,25 +23,21 @@ const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label>Email</Label>
-        <Input
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label>Password</Label>
-        <Input
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-      </div>
-      <Button type="submit">Login</Button>
-    </form>
+    <Form onSubmit={handleSubmit}>
+      <Field
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+      />
+      <Field
+        label="Password"
+        type="password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+      />
+      <button type="submit">Login</button>
+    </Form>
   );
 };
 
