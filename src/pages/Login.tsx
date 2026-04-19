@@ -43,16 +43,17 @@ const Login = () => {
       }
 
       if (authData.user) {
-        // Try to fetch profile, if not exists - create it
-        let profile = null;
+        // Try to fetch profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authData.user.id)
           .single();
         
+        let finalProfile = profileData;
+
+        // If profile doesn't exist (PGRST116), create it automatically
         if (profileError && profileError.code === 'PGRST116') {
-          // Profile doesn't exist - create it
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert({
@@ -66,41 +67,41 @@ const Login = () => {
             .select()
             .single();
           
-          if (!createError && newProfile) {
-            profile = newProfile;
+          if (createError) {
+            console.error('Error creating profile on login:', createError);
+            // Fallback to basic user object if DB insert fails
+            const fallbackUser = {
+              id: authData.user.id,
+              email: authData.user.email || data.login,
+              login: authData.user.email || data.login,
+              role: 'artist' as const,
+              artistName: authData.user.user_metadata?.full_name || authData.user.user_metadata?.artist_name || null,
+              balance: 0,
+              isVerified: false,
+              createdAt: new Date().toISOString(),
+            };
+            setAuth(fallbackUser);
+            showSuccess('Успішний вхід (тимчасовий профіль)');
+            navigate('/dashboard', { replace: true });
+            setIsLoading(false);
+            return;
           }
-        } else if (!profileError && profileData) {
-          profile = profileData;
+          finalProfile = newProfile;
+        } else if (profileError) {
+          throw profileError;
         }
         
-        // Fallback to basic user if profile creation failed
-        if (!profile) {
-          const appUser = {
-            id: authData.user.id,
-            email: authData.user.email || data.login,
-            login: authData.user.email || data.login,
-            role: 'artist' as const,
-            artistName: authData.user.user_metadata?.full_name || authData.user.user_metadata?.artist_name || null,
-            balance: 0,
-            isVerified: false,
-            createdAt: new Date().toISOString(),
-          };
+        if (finalProfile) {
+          const appUser = toAppProfile(finalProfile);
           setAuth(appUser);
           showSuccess('Успішний вхід!');
-          navigate('/dashboard', { replace: true });
-          setIsLoading(false);
-          return;
+          
+          // Redirect based on role
+          const redirectPath = appUser.role === 'admin' ? '/admin/moderation' : '/dashboard';
+          navigate(redirectPath, { replace: true });
         }
-        
-        const appUser = toAppProfile(profile);
-        setAuth(appUser);
-        showSuccess('Успішний вхід!');
-        
-        // Redirect based on role
-        const redirectPath = appUser.role === 'admin' ? '/admin/moderation' : '/dashboard';
-        navigate(redirectPath, { replace: true });
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('Login error:', err);
       setError('Помилка з\'єднання. Спробуйте пізніше.');
       showError('Помилка з\'єднання');
