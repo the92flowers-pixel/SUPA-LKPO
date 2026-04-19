@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
@@ -38,11 +38,6 @@ import Export from '@/pages/admin/Export';
 
 const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: string }) => {
   const { user, isLoading } = useAuthStore();
-  const { fetchUser } = useAuthStore();
-
-  useEffect(() => {
-    fetchUser();
-  }, []);
 
   if (isLoading) {
     return (
@@ -59,25 +54,26 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: 
 };
 
 const App = () => {
-  const { user, setAuth, logout, fetchUser } = useAuthStore();
-  const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchWithdrawalRequests, fetchReports, fetchUsers } = useDataStore();
+  const { user, setAuth } = useAuthStore();
+  const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchWithdrawalRequests, fetchReports: fetchReportsUser, fetchUsers } = useDataStore();
 
   // Init public data (config, statuses, fields)
   useEffect(() => {
     init();
   }, []);
 
-  // Listen for auth changes
+  // Single auth state listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        // Fetch user profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
-        setAuth(profile);
+        if (profile) {
+          setAuth(profile);
+        }
       } else {
         setAuth(null);
       }
@@ -92,7 +88,7 @@ const App = () => {
           .eq('id', session.user.id)
           .single()
           .then(({ data: profile }) => {
-            setAuth(profile);
+            if (profile) setAuth(profile);
           });
       }
     });
@@ -100,20 +96,22 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch user-specific data when logged in
+  // Fetch user-specific data when user changes
   useEffect(() => {
     if (user) {
       fetchReleases(user.id, user.role);
       fetchSmartLinks(user.role === 'admin' ? undefined : user.id);
       fetchArtistWebsites(user.role === 'admin' ? undefined : user.id);
       fetchTransactions(user.role === 'admin' ? undefined : user.id);
-      fetchReports(user.role === 'admin' ? undefined : user.id);
       if (user.role === 'admin') {
         fetchUsers();
         fetchWithdrawalRequests();
+        fetchReports();
+      } else {
+        fetchReports(user.id);
       }
     }
-  }, [user]);
+  }, [user?.id]);
 
   return (
     <BrowserRouter>
