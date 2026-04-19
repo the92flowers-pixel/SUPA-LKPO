@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
 const AllReleases = () => {
-  const { releases, updateRelease, updateReleaseStatus, statuses, fetchReleases, users } = useDataStore();
+  const { releases, updateRelease, updateReleaseStatus, statuses, fetchReleases, users, fields } = useDataStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingRelease, setEditingRelease] = useState<any>(null);
@@ -25,6 +25,8 @@ const AllReleases = () => {
   useEffect(() => {
     fetchReleases();
   }, [fetchReleases]);
+
+  const releaseFields = fields.filter(f => f.section === 'release');
 
   const filteredReleases = releases.filter(r => {
     const matchesSearch = (r.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -162,6 +164,27 @@ const AllReleases = () => {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Жанр</Label>
                   <Input value={editingRelease.genre} onChange={(e) => setEditingRelease({...editingRelease, genre: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
                 </div>
+                
+                {/* Dynamic Fields */}
+                {releaseFields.map(field => (
+                  <div key={field.id} className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{field.label}</Label>
+                    {field.type === 'textarea' ? (
+                      <Textarea value={editingRelease[field.name] || ''} onChange={(e) => setEditingRelease({...editingRelease, [field.name]: e.target.value})} className="bg-black/40 border-white/5 rounded-none min-h-[100px]" />
+                    ) : field.type === 'select' ? (
+                      <Select value={editingRelease[field.name] || ''} onValueChange={(v) => setEditingRelease({...editingRelease, [field.name]: v})}>
+                        <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                          {field.options?.split(',').map((opt: string) => (
+                            <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs font-bold uppercase">{opt.trim()}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input value={editingRelease[field.name] || ''} onChange={(e) => setEditingRelease({...editingRelease, [field.name]: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
+                    )}
+                  </div>
+                ))}
               </div>
               <div className="space-y-6">
                 <div className="space-y-2">

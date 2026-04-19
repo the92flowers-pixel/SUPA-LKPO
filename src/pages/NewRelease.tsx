@@ -19,22 +19,6 @@ interface Track {
   position: number;
 }
 
-interface ReleaseFormData {
-  title: string;
-  artist: string;
-  genre: string;
-  releaseDate: string;
-  coverUrl: string;
-  composer: string;
-  performer: string;
-  label: string;
-  description: string;
-  explicit: boolean;
-  isSingle: boolean;
-  isrc: string;
-  releaseUrl: string;
-}
-
 const STEPS = [
   { id: 1, name: 'Реліз', icon: Disc, title: 'Тип релізу' },
   { id: 2, name: 'Інформація', icon: FileText, title: 'Основна інформація' },
@@ -46,12 +30,12 @@ const STEPS = [
 const NewRelease = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { addRelease, statuses, fetchReleases } = useDataStore();
+  const { addRelease, statuses, fetchReleases, fields } = useDataStore();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [formData, setFormData] = useState<ReleaseFormData>({
+  const [formData, setFormData] = useState<any>({
     title: '',
     artist: user?.artistName || '',
     genre: 'Другое',
@@ -74,9 +58,10 @@ const NewRelease = () => {
   
   const defaultStatus = statuses.find((s: any) => s.isDefault)?.name || 'На модерації';
   const progress = ((currentStep - 1) / (STEPS.length - 1)) * 100;
+  const releaseFields = fields.filter(f => f.section === 'release' && f.visible);
 
-  const updateFormData = (field: keyof ReleaseFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const updateFormData = (field: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
 
   const addTrack = () => {
@@ -103,7 +88,11 @@ const NewRelease = () => {
   const canProceed = () => {
     switch (currentStep) {
       case 1: return true;
-      case 2: return formData.title.trim() !== '' && formData.artist.trim() !== '' && formData.performer.trim() !== '';
+      case 2: {
+        const basicValid = formData.title.trim() !== '' && formData.artist.trim() !== '' && formData.performer.trim() !== '';
+        const dynamicValid = releaseFields.every(f => !f.required || (formData[f.name] && formData[f.name].toString().trim() !== ''));
+        return basicValid && dynamicValid;
+      }
       case 3: return formData.coverUrl.trim() !== '';
       case 4: return tracks.every(t => t.title.trim() !== '');
       case 5: return true;
@@ -229,6 +218,40 @@ const NewRelease = () => {
                   <Input type="date" value={formData.releaseDate} onChange={(e) => updateFormData('releaseDate', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" />
                 </div>
               </div>
+
+              {/* Dynamic Fields */}
+              {releaseFields.map((field) => (
+                <div key={field.id} className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    {field.label} {field.required && '*'}
+                  </Label>
+                  {field.type === 'textarea' ? (
+                    <Textarea 
+                      value={formData[field.name] || ''} 
+                      onChange={(e) => updateFormData(field.name, e.target.value)} 
+                      className="bg-black/40 border-white/5 rounded-none min-h-[100px]" 
+                    />
+                  ) : field.type === 'select' ? (
+                    <Select value={formData[field.name] || ''} onValueChange={(val) => updateFormData(field.name, val)}>
+                      <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                        {field.options?.split(',').map((opt: string) => (
+                          <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs uppercase font-bold">{opt.trim()}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      type={field.type} 
+                      value={formData[field.name] || ''} 
+                      onChange={(e) => updateFormData(field.name, e.target.value)} 
+                      className="bg-black/40 border-white/5 rounded-none h-12" 
+                    />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         );

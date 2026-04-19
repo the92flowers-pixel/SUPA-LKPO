@@ -47,8 +47,8 @@ interface DataState {
 
   init: () => Promise<void>;
   fetchReleases: (userId?: string, role?: string) => Promise<void>;
-  addRelease: (releaseData: Partial<Release>) => Promise<Release | null>;
-  updateRelease: (id: string, releaseData: Partial<Release>) => Promise<Release | null>;
+  addRelease: (releaseData: any) => Promise<Release | null>;
+  updateRelease: (id: string, releaseData: any) => Promise<Release | null>;
   updateReleaseStatus: (id: string, status: string) => Promise<void>;
   updateReleaseStreams: (id: string, count: number, date: string) => Promise<void>;
   deleteRelease: (id: string) => Promise<void>;
@@ -133,26 +133,13 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data, error } = await query;
       if (!error && data) {
         set({ releases: data.map(r => ({
-          id: r.id,
+          ...r,
           userId: r.user_id,
-          title: r.title || '',
-          artist: r.artist || '',
-          genre: r.genre || 'Другое',
-          releaseDate: r.release_date || '',
-          coverUrl: r.cover_url || '',
-          releaseUrl: r.release_url || '',
-          status: r.status || 'На модерації',
-          streams: r.streams || 0,
-          history: r.history || [],
+          releaseDate: r.release_date,
+          coverUrl: r.cover_url,
+          releaseUrl: r.release_url,
           createdAt: r.created_at,
-          composer: r.composer || '',
-          performer: r.performer || '',
-          label: r.label || '',
-          description: r.description || '',
-          explicit: r.explicit || false,
-          isSingle: r.is_single !== false,
-          isrc: r.isrc || '',
-          tracks: r.tracks || [],
+          isSingle: r.is_single,
         })) });
       }
     } catch (e) { console.error(e); }
@@ -162,48 +149,33 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       const { data: sessionData } = await supabase.auth.getUser();
       if (!sessionData?.user) throw new Error('Unauthorized');
+      
       const insertData = {
+        ...releaseData,
         user_id: sessionData.user.id,
-        title: releaseData.title,
-        artist: releaseData.artist,
-        genre: releaseData.genre,
         release_date: releaseData.releaseDate,
         cover_url: releaseData.coverUrl,
         release_url: releaseData.releaseUrl,
-        status: releaseData.status,
-        composer: releaseData.composer,
-        performer: releaseData.performer,
-        label: releaseData.label,
-        description: releaseData.description,
-        explicit: releaseData.explicit,
         is_single: releaseData.isSingle,
-        isrc: releaseData.isrc,
-        tracks: releaseData.tracks,
       };
+      
+      // Remove camelCase versions before insert
+      delete insertData.releaseDate;
+      delete insertData.coverUrl;
+      delete insertData.releaseUrl;
+      delete insertData.isSingle;
+
       const { data, error } = await supabase.from('releases').insert(insertData).select().single();
       if (error) throw error;
       if (data) {
         const mapped: Release = {
-          id: data.id,
+          ...data,
           userId: data.user_id,
-          title: data.title,
-          artist: data.artist,
-          genre: data.genre,
           releaseDate: data.release_date,
           coverUrl: data.cover_url,
           releaseUrl: data.release_url,
-          status: data.status,
-          streams: data.streams || 0,
-          history: data.history || [],
           createdAt: data.created_at,
-          composer: data.composer,
-          performer: data.performer,
-          label: data.label,
-          description: data.description,
-          explicit: data.explicit,
           isSingle: data.is_single,
-          isrc: data.isrc,
-          tracks: data.tracks,
         };
         set((state) => ({ releases: [mapped, ...state.releases] }));
         return mapped;
@@ -215,43 +187,31 @@ export const useDataStore = create<DataState>((set, get) => ({
   updateRelease: async (id, releaseData) => {
     try {
       const updateData: any = {
-        title: releaseData.title,
-        artist: releaseData.artist,
-        genre: releaseData.genre,
+        ...releaseData,
+        release_date: releaseData.releaseDate,
         cover_url: releaseData.coverUrl,
         release_url: releaseData.releaseUrl,
-        release_date: releaseData.releaseDate,
-        status: releaseData.status,
-        composer: releaseData.composer,
-        performer: releaseData.performer,
-        label: releaseData.label,
-        description: releaseData.description,
-        explicit: releaseData.explicit,
-        isrc: releaseData.isrc,
+        is_single: releaseData.isSingle,
       };
+      
+      delete updateData.id;
+      delete updateData.userId;
+      delete updateData.releaseDate;
+      delete updateData.coverUrl;
+      delete updateData.releaseUrl;
+      delete updateData.isSingle;
+      delete updateData.createdAt;
+
       const { data, error } = await supabase.from('releases').update(updateData).eq('id', id).select().single();
       if (!error && data) {
         const mapped: Release = {
-          id: data.id,
+          ...data,
           userId: data.user_id,
-          title: data.title,
-          artist: data.artist,
-          genre: data.genre,
           releaseDate: data.release_date,
           coverUrl: data.cover_url,
           releaseUrl: data.release_url,
-          status: data.status,
-          streams: data.streams || 0,
-          history: data.history || [],
           createdAt: data.created_at,
-          composer: data.composer,
-          performer: data.performer,
-          label: data.label,
-          description: data.description,
-          explicit: data.explicit,
           isSingle: data.is_single,
-          isrc: data.isrc,
-          tracks: data.tracks,
         };
         set((state) => ({ releases: state.releases.map(r => r.id === id ? mapped : r) }));
         return mapped;
@@ -292,15 +252,10 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data, error } = await query;
       if (!error && data) {
         set({ smartLinks: data.map(l => ({
-          id: l.id,
+          ...l,
           userId: l.user_id,
           releaseId: l.release_id,
-          title: l.title || '',
-          artist: l.artist || '',
-          coverUrl: l.cover_url || '',
-          slug: l.slug || '',
-          platforms: l.platforms || [],
-          clicks: l.clicks || 0,
+          coverUrl: l.cover_url,
           createdAt: l.created_at,
         })) });
       }
@@ -311,18 +266,22 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       const { data: sessionData } = await supabase.auth.getUser();
       if (!sessionData?.user) return;
-      const { data, error } = await supabase.from('smart_links').insert({ ...linkData, user_id: sessionData.user.id }).select().single();
+      const insertData = {
+        ...linkData,
+        user_id: sessionData.user.id,
+        release_id: linkData.releaseId,
+        cover_url: linkData.coverUrl,
+      };
+      delete (insertData as any).releaseId;
+      delete (insertData as any).coverUrl;
+
+      const { data, error } = await supabase.from('smart_links').insert(insertData).select().single();
       if (!error && data) {
         set((state) => ({ smartLinks: [...state.smartLinks, {
-          id: data.id,
+          ...data,
           userId: data.user_id,
           releaseId: data.release_id,
-          title: data.title,
-          artist: data.artist,
           coverUrl: data.cover_url,
-          slug: data.slug,
-          platforms: data.platforms,
-          clicks: data.clicks,
           createdAt: data.created_at,
         }] }));
       }
@@ -331,18 +290,21 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   updateSmartLink: async (id, linkData) => {
     try {
-      const { data, error } = await supabase.from('smart_links').update(linkData).eq('id', id).select().single();
+      const updateData = {
+        ...linkData,
+        release_id: linkData.releaseId,
+        cover_url: linkData.coverUrl,
+      };
+      delete (updateData as any).releaseId;
+      delete (updateData as any).coverUrl;
+
+      const { data, error } = await supabase.from('smart_links').update(updateData).eq('id', id).select().single();
       if (!error && data) {
         set((state) => ({ smartLinks: state.smartLinks.map(l => l.id === id ? {
-          id: data.id,
+          ...data,
           userId: data.user_id,
           releaseId: data.release_id,
-          title: data.title,
-          artist: data.artist,
           coverUrl: data.cover_url,
-          slug: data.slug,
-          platforms: data.platforms,
-          clicks: data.clicks,
           createdAt: data.created_at,
         } : l) }));
       }
@@ -363,13 +325,10 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data, error } = await query;
       if (!error && data) {
         set({ artistWebsites: data.map(w => ({
-          id: w.id,
+          ...w,
           userId: w.user_id,
-          slug: w.slug || '',
           stageName: w.title || w.slug || '',
-          bio: w.bio || '',
-          photoUrl: w.photo_url || '',
-          links: w.links || [],
+          photoUrl: w.photo_url,
           createdAt: w.created_at,
         })) });
       }
@@ -380,16 +339,22 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       const { data: sessionData } = await supabase.auth.getUser();
       if (!sessionData?.user) return;
-      const { data, error } = await supabase.from('artist_websites').insert({ ...websiteData, user_id: sessionData.user.id }).select().single();
+      const insertData = {
+        ...websiteData,
+        user_id: sessionData.user.id,
+        title: websiteData.stageName,
+        photo_url: websiteData.photoUrl,
+      };
+      delete (insertData as any).stageName;
+      delete (insertData as any).photoUrl;
+
+      const { data, error } = await supabase.from('artist_websites').insert(insertData).select().single();
       if (!error && data) {
         set((state) => ({ artistWebsites: [...state.artistWebsites, {
-          id: data.id,
+          ...data,
           userId: data.user_id,
-          slug: data.slug,
           stageName: data.title,
-          bio: data.bio,
           photoUrl: data.photo_url,
-          links: data.links,
           createdAt: data.created_at,
         }] }));
       }
@@ -398,16 +363,21 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   updateArtistWebsite: async (id, websiteData) => {
     try {
-      const { data, error } = await supabase.from('artist_websites').update(websiteData).eq('id', id).select().single();
+      const updateData = {
+        ...websiteData,
+        title: websiteData.stageName,
+        photo_url: websiteData.photoUrl,
+      };
+      delete (updateData as any).stageName;
+      delete (updateData as any).photoUrl;
+
+      const { data, error } = await supabase.from('artist_websites').update(updateData).eq('id', id).select().single();
       if (!error && data) {
         set((state) => ({ artistWebsites: state.artistWebsites.map(s => s.id === id ? {
-          id: data.id,
+          ...data,
           userId: data.user_id,
-          slug: data.slug,
           stageName: data.title,
-          bio: data.bio,
           photoUrl: data.photo_url,
-          links: data.links,
           createdAt: data.created_at,
         } : s) }));
       }
@@ -435,6 +405,15 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (userData.role !== undefined) dbData.role = userData.role;
       if (userData.isVerified !== undefined) dbData.is_verified = userData.isVerified;
       if (userData.bio !== undefined) dbData.bio = userData.bio;
+      
+      // Handle dynamic profile fields
+      const profileFields = get().fields.filter(f => f.section === 'profile');
+      profileFields.forEach(f => {
+        if ((userData as any)[f.name] !== undefined) {
+          dbData[f.name] = (userData as any)[f.name];
+        }
+      });
+
       const { data, error } = await supabase.from('profiles').update(dbData).eq('id', id).select().single();
       if (!error && data) {
         const appUser = toAppProfile(data);
@@ -457,12 +436,8 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data, error } = await query;
       if (!error && data) {
         set({ transactions: data.map(t => ({
-          id: t.id,
+          ...t,
           userId: t.user_id,
-          type: t.type,
-          amount: t.amount,
-          description: t.description || '',
-          status: t.status,
           createdAt: t.created_at,
         })) });
       }
@@ -474,12 +449,8 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data, error } = await supabase.from('transactions').insert(txData).select().single();
       if (!error && data) {
         set((state) => ({ transactions: [{
-          id: data.id,
+          ...data,
           userId: data.user_id,
-          type: data.type,
-          amount: data.amount,
-          description: data.description || '',
-          status: data.status,
           createdAt: data.created_at,
         }, ...state.transactions] }));
       }
@@ -491,13 +462,10 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data, error } = await supabase.from('withdrawal_requests').select('*').order('created_at', { ascending: false });
       if (!error && data) {
         set({ withdrawalRequests: data.map(r => ({
-          id: r.id,
+          ...r,
           userId: r.user_id,
-          amount: r.amount,
-          status: r.status,
           contactInfo: r.contact_info,
           confirmationAgreed: r.confirmation_agreed,
-          admin_comment: r.admin_comment,
           createdAt: r.created_at,
         })) });
       }
@@ -508,16 +476,22 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       const { data: sessionData } = await supabase.auth.getUser();
       if (!sessionData?.user) return;
-      const { data, error } = await supabase.from('withdrawal_requests').insert({ ...reqData, user_id: sessionData.user.id, contact_info: reqData.contactInfo, confirmation_agreed: reqData.confirmationAgreed }).select().single();
+      const insertData = {
+        ...reqData,
+        user_id: sessionData.user.id,
+        contact_info: reqData.contactInfo,
+        confirmation_agreed: reqData.confirmationAgreed,
+      };
+      delete (insertData as any).contactInfo;
+      delete (insertData as any).confirmationAgreed;
+
+      const { data, error } = await supabase.from('withdrawal_requests').insert(insertData).select().single();
       if (!error && data) {
         set((state) => ({ withdrawalRequests: [{
-          id: data.id,
+          ...data,
           userId: data.user_id,
-          amount: data.amount,
-          status: data.status,
           contactInfo: data.contact_info,
           confirmationAgreed: data.confirmation_agreed,
-          admin_comment: data.admin_comment,
           createdAt: data.created_at,
         }, ...state.withdrawalRequests] }));
       }
@@ -538,12 +512,10 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data, error } = await query;
       if (!error && data) {
         set({ quarterlyReports: data.map(r => ({
-          id: r.id,
+          ...r,
           userId: r.user_id,
-          quarter: r.quarter,
-          year: r.year,
-          fileUrl: r.file_url || '',
-          fileName: r.file_name || '',
+          fileUrl: r.file_url,
+          fileName: r.file_name,
           createdAt: r.created_at,
         })) });
       }
@@ -552,13 +524,19 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addReport: async (reportData) => {
     try {
-      const { data, error } = await supabase.from('quarterly_reports').insert({ ...reportData, file_url: reportData.fileUrl, file_name: reportData.fileName }).select().single();
+      const insertData = {
+        ...reportData,
+        file_url: reportData.fileUrl,
+        file_name: reportData.fileName,
+      };
+      delete (insertData as any).fileUrl;
+      delete (insertData as any).fileName;
+
+      const { data, error } = await supabase.from('quarterly_reports').insert(insertData).select().single();
       if (!error && data) {
         set((state) => ({ quarterlyReports: [{
-          id: data.id,
+          ...data,
           userId: data.user_id,
-          quarter: data.quarter,
-          year: data.year,
           fileUrl: data.file_url,
           fileName: data.file_name,
           createdAt: data.created_at,
