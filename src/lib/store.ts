@@ -182,15 +182,27 @@ export const useDataStore = create<DataState>((set, get) => ({
   },
 
   addRelease: async (releaseData) => {
+    console.log('=== ADD RELEASE STORE ===');
+    console.log('Input data:', releaseData);
+    
     try {
+      // Get current user session
       const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
       
-      if (sessionError || !sessionData?.user) {
-        console.error('User session error:', sessionError);
-        return null;
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Не вдалося отримати сесію користувача');
       }
       
+      if (!sessionData?.user) {
+        console.error('No user in session');
+        throw new Error('Користувач не авторизований');
+      }
+      
+      console.log('User ID:', sessionData.user.id);
+      
       const defaultStatus = get().statuses.find(s => s.isDefault)?.name || 'На модерації';
+      console.log('Default status:', defaultStatus);
       
       const insertData = {
         user_id: sessionData.user.id,
@@ -213,6 +225,8 @@ export const useDataStore = create<DataState>((set, get) => ({
         tracks: releaseData.tracks || [],
       };
 
+      console.log('Inserting data:', insertData);
+
       const { data, error } = await supabase
         .from('releases')
         .insert(insertData)
@@ -220,9 +234,11 @@ export const useDataStore = create<DataState>((set, get) => ({
         .single();
       
       if (error) {
-        console.error('Insert release error:', error);
-        return null;
+        console.error('Insert error:', error);
+        throw new Error(error.message || 'Помилка при збереженні релізу');
       }
+      
+      console.log('Insert result:', data);
       
       if (data) {
         const mapped: Release = {
@@ -248,14 +264,17 @@ export const useDataStore = create<DataState>((set, get) => ({
           tracks: data.tracks || [],
         };
         
+        console.log('Mapped release:', mapped);
+        
         set((state) => ({ releases: [mapped, ...state.releases] }));
+        console.log('Release added to store');
         return mapped;
       }
       
       return null;
     } catch (e) {
       console.error('Add release exception:', e);
-      return null;
+      throw e; // Re-throw to let component handle it
     }
   },
 

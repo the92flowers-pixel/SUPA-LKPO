@@ -164,16 +164,26 @@ const NewRelease = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validateAll()) return;
+    console.log('=== SUBMIT START ===');
+    
+    if (!validateAll()) {
+      console.log('Validation failed');
+      setIsSubmitting(false);
+      return;
+    }
 
     setIsSubmitting(true);
+    console.log('Creating release...');
+    
     try {
+      const coverUrl = formData.coverUrl || coverPreview;
+      
       const releaseData: any = {
         title: formData.title,
         artist: formData.artist,
         genre: formData.genre,
         releaseDate: formData.releaseDate,
-        coverUrl: formData.coverUrl || coverPreview,
+        coverUrl: coverUrl,
         composer: formData.composer,
         performer: formData.performer,
         label: formData.label,
@@ -186,21 +196,24 @@ const NewRelease = () => {
         releaseUrl: formData.releaseUrl,
       };
 
+      console.log('Release data:', releaseData);
+
       const result = await addRelease(releaseData);
+      console.log('Add release result:', result);
 
       if (result && result.id) {
-        if (user) {
-          await fetchReleases(user.id, user.role);
-        }
+        console.log('Release created successfully:', result.id);
         showSuccess('Реліз успішно відправлено на модерацію!');
+        await fetchReleases(user?.id, user?.role);
         navigate('/releases');
       } else {
-        showError('Помилка при створенні релізу');
+        console.log('Release creation failed - no result');
+        showError('Помилка при створенні релізу. Спробуйте ще раз.');
+        setIsSubmitting(false);
       }
     } catch (error) {
       console.error('Error creating release:', error);
-      showError('Сталася помилка. Спробуйте пізніше.');
-    } finally {
+      showError('Сталася помилка: ' + (error as Error).message);
       setIsSubmitting(false);
     }
   };
@@ -740,7 +753,7 @@ const NewRelease = () => {
           <Button 
             variant="ghost"
             onClick={handleBack}
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || isSubmitting}
             className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest h-12 px-8 rounded-none disabled:opacity-30"
           >
             <ChevronLeft size={16} className="mr-2" /> Назад
