@@ -1,44 +1,32 @@
 "use client";
 
 import React from 'react';
-import { GetReleaseData } from '../api';
+import { supabaseClient } from '../supabase';
 
 const AdminPanel = () => {
-  const [releases, setReleases] = useState([]);
+  const [releases, setReleases] = React.useState([]);
 
-  useEffect(() => {
-    GetReleaseData().then((data) => setReleases(data));
+  React.useEffect(() => {
+    // Get all releases
+    supabaseClient.from('releases')
+      .select('title, description, image, streams')
+      .then((data) => setReleases(data));
   }, []);
-
-  if (!releases) return <div>Loading...</div>;
 
   return (
     <div>
-      {/* ... */}
-      <h2>Releases</h2>
-      {releases.map((release) => (
-        <div key={release.id}>
-          <p>{release.title}</p>
-          <p>{release.description}</p>
-          <p>Release Date: {release.releaseDate}</p>
-          {/* Display release data */}
-          <Field label="Release Data">
-            {({ input }) => (
-              <textarea
-                value={JSON.stringify(release)}
-                onChange={(e) => {
-                  const updatedData = JSON.parse(e.target.value);
-                  supabase
-                    .from('releases')
-                    .update('data', updatedData)
-                    .eq('id', release.id)
-                    .exec();
-                }}
-              />
-            )}
-          </Field>
-        </div>
-      ))}
+      <h1>My Releases</h1>
+      <ul>
+        {releases.map((release) => (
+          <li key={release.id}>
+            <h2>{release.title}</h2>
+            <p>{release.description}</p>
+            <img src={release.image} alt="Release Image" />
+            <p>Streams: {release.streams.join(', ')}</p>
+            <button>Edit Release</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
