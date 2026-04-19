@@ -159,7 +159,7 @@ const Releases = () => {
 
       {userReleases.length === 0 ? (
         <div className="text-center py-16 sm:py-24 border border-dashed border-white/5 bg-white/[0.02]">
-          <Music className="mx-auto text-zinc-800 mb-6" size={48} sm:size={56} />
+          <Music className="mx-auto text-zinc-800 mb-6" size={48} />
           <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-zinc-600">
             {searchQuery ? 'Нічого не знайдено' : 'Релізів ще немає'}
           </p>
