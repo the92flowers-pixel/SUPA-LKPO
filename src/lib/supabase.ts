@@ -91,6 +91,7 @@ export interface Release {
   explicit?: boolean;
   isSingle?: boolean;
   isrc?: string;
+  upc?: string;
   tracks?: Track[];
   copyrights?: string;
   copyrightConfirmed?: boolean;

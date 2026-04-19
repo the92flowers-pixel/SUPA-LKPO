@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar } from 'lucide-react';
+import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar, Hash } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +55,7 @@ const NewRelease = () => {
     explicit: false,
     isSingle: true,
     isrc: '',
+    upc: '',
     releaseUrl: '',
     copyrights: '',
     copyrightConfirmed: false,
@@ -261,6 +262,21 @@ const NewRelease = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                    <Hash size={14} /> UPC (опціонально)
+                  </Label>
+                  <Input value={formData.upc} onChange={(e) => updateFormData('upc', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Введіть UPC код..." />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                    <Hash size={14} /> ISRC (опціонально)
+                  </Label>
+                  <Input value={formData.isrc} onChange={(e) => updateFormData('isrc', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Введіть ISRC код..." />
+                </div>
+              </div>
+
               <div className="space-y-3 pt-4 border-t border-white/5">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-red-700 flex items-center gap-2">
                   <Shield size={14} /> Авторські права *
@@ -393,10 +409,6 @@ const NewRelease = () => {
                 <div className="p-4 bg-white/5 border border-white/5">
                   <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Виконавець</h4>
                   <p className="text-white font-bold">{formData.performer}</p>
-                </div>
-                <div className="p-4 bg-white/5 border border-white/5">
-                  <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Композитор</h4>
-                  <p className="text-white font-bold">{formData.composer}</p>
                 </div>
                 <div className="p-4 bg-white/5 border border-white/5">
                   <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Дата релізу</h4>

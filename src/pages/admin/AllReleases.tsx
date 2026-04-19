@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Edit2, Search, RefreshCw, CheckCircle, XCircle, Loader2, Save, X, Shield } from 'lucide-react';
+import { Music, Edit2, Search, RefreshCw, CheckCircle, XCircle, Loader2, Save, X, Shield, Hash } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -200,15 +200,25 @@ const AllReleases = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                      <Hash size={14} /> UPC
+                    </Label>
+                    <Input value={editingRelease.upc || ''} onChange={(e) => setEditingRelease({...editingRelease, upc: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12 font-mono" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                      <Hash size={14} /> ISRC
+                    </Hash>
+                    <Input value={editingRelease.isrc || ''} onChange={(e) => setEditingRelease({...editingRelease, isrc: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12 font-mono" />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-red-700 flex items-center gap-2">
                     <Shield size={14} /> Авторські права (Докази)
                   </Label>
                   <Input value={editingRelease.copyrights} onChange={(e) => setEditingRelease({...editingRelease, copyrights: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Посилання на докази..." />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">ISRC</Label>
-                  <Input value={editingRelease.isrc} onChange={(e) => setEditingRelease({...editingRelease, isrc: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12 font-mono" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Посилання на файли (Drive/Dropbox)</Label>

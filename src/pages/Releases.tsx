@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw, ExternalLink, AlertTriangle, FileAudio } from 'lucide-react';
+import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw, ExternalLink, AlertTriangle, FileAudio, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -320,6 +320,16 @@ const Releases = () => {
                 <div className="space-y-1 border-b border-white/5 pb-3">
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Артист</p>
                   <p className="text-sm font-bold text-white">{viewingRelease.artist}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 border-b border-white/5 pb-3">
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">UPC</p>
+                    <p className="text-xs font-mono text-zinc-400">{viewingRelease.upc || '—'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">ISRC</p>
+                    <p className="text-xs font-mono text-zinc-400">{viewingRelease.isrc || '—'}</p>
+                  </div>
                 </div>
                 <div className="space-y-1 border-b border-white/5 pb-3">
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Композитор</p>

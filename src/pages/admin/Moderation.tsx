@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio } from 'lucide-react';
+import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio, Hash } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -299,6 +299,29 @@ const Moderation = () => {
                         className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                      <Hash size={14} /> UPC
+                    </Label>
+                    <Input 
+                      value={selectedTrack.upc || ''} 
+                      onChange={(e) => updateField('upc', e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none h-10 text-xs font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                      <Hash size={14} /> ISRC
+                    </Label>
+                    <Input 
+                      value={selectedTrack.isrc || ''} 
+                      onChange={(e) => updateField('isrc', e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none h-10 text-xs font-mono"
+                    />
                   </div>
                 </div>
 
