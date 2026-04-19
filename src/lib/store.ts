@@ -171,7 +171,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           isSingle: r.is_single !== undefined ? r.is_single : true,
           isrc: r.isrc || '',
           tracks: r.tracks || [],
-          title: r.title || '',
+          releaseUrl: r.release_url || '',
         }));
         
         set({ releases: mappedReleases });
@@ -199,6 +199,7 @@ export const useDataStore = create<DataState>((set, get) => ({
         genre: releaseData.genre || 'Другое',
         release_date: releaseData.releaseDate || new Date().toISOString().split('T')[0],
         cover_url: releaseData.coverUrl || '',
+        release_url: releaseData.releaseUrl || '',
         status: releaseData.status || defaultStatus,
         streams: 0,
         history: [],
@@ -232,6 +233,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           genre: data.genre || 'Другое',
           releaseDate: data.release_date,
           coverUrl: data.cover_url || '',
+          releaseUrl: data.release_url || '',
           status: data.status,
           streams: data.streams || 0,
           history: data.history || [],
@@ -265,6 +267,7 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (releaseData.artist !== undefined) updateData.artist = releaseData.artist;
       if (releaseData.genre !== undefined) updateData.genre = releaseData.genre;
       if (releaseData.coverUrl !== undefined) updateData.cover_url = releaseData.coverUrl;
+      if (releaseData.releaseUrl !== undefined) updateData.release_url = releaseData.releaseUrl;
       if (releaseData.releaseDate !== undefined) updateData.release_date = releaseData.releaseDate;
       if (releaseData.status !== undefined) updateData.status = releaseData.status;
       if (releaseData.composer !== undefined) updateData.composer = releaseData.composer;
@@ -294,6 +297,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           genre: data.genre || 'Другое',
           releaseDate: data.release_date,
           coverUrl: data.cover_url || '',
+          releaseUrl: data.release_url || '',
           status: data.status,
           streams: data.streams || 0,
           history: data.history || [],
@@ -545,6 +549,7 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       const dbData: any = {};
       if (userData.artistName !== undefined) dbData.full_name = userData.artistName;
+      if (userData.artistName !== undefined) dbData.artist_name = userData.artistName;
       if (userData.role !== undefined) dbData.role = userData.role;
       if (userData.isVerified !== undefined) dbData.is_verified = userData.isVerified;
       if (userData.bio !== undefined) dbData.bio = userData.bio;
@@ -626,7 +631,12 @@ export const useDataStore = create<DataState>((set, get) => ({
       
       const { data, error } = await supabase
         .from('withdrawal_requests')
-        .insert({ ...reqData, user_id: sessionData.user.id })
+        .insert({ 
+          ...reqData, 
+          user_id: sessionData.user.id,
+          contact_info: reqData.contactInfo,
+          confirmation_agreed: reqData.confirmationAgreed
+        })
         .select()
         .single();
       

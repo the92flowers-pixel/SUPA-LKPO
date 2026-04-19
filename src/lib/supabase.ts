@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
 export const supabase: SupabaseClient = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey, {
@@ -36,7 +36,9 @@ export interface Profile {
   balance: number;
   is_verified: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  artist_name?: string;
+  bio?: string;
 }
 
 export const toAppProfile = (dbProfile: Profile): AppUser => ({
@@ -44,10 +46,11 @@ export const toAppProfile = (dbProfile: Profile): AppUser => ({
   login: dbProfile.email,
   email: dbProfile.email,
   role: dbProfile.role,
-  artistName: dbProfile.full_name,
-  balance: dbProfile.balance,
-  isVerified: dbProfile.is_verified,
+  artistName: dbProfile.full_name || dbProfile.artist_name || null,
+  balance: dbProfile.balance || 0,
+  isVerified: dbProfile.is_verified || false,
   createdAt: dbProfile.created_at,
+  bio: dbProfile.bio,
 });
 
 export interface Track {
@@ -71,6 +74,7 @@ export interface Release {
   releaseDate: string;
   cover_url?: string;
   coverUrl: string;
+  release_url?: string;
   releaseUrl?: string;
   audio_url?: string;
   status: string;
@@ -138,7 +142,7 @@ export interface Transaction {
   id: string;
   user_id?: string;
   userId: string;
-  type: 'deposit' | 'withdrawal';
+  type: 'deposit' | 'withdrawal' | 'adjustment';
   amount: number;
   description: string;
   status?: 'completed' | 'pending' | 'cancelled';
