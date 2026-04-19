@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { BarChart3, Plus, History, Search, Calendar as CalendarIcon, User, Music, Check, ChevronsUpDown, AlertCircle, TrendingUp } from 'lucide-react';
+import { BarChart3, Plus, History, Search, Calendar as CalendarIcon, User, Music, Check, ChevronsUpDown, AlertCircle, TrendingUp, X } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,9 +22,11 @@ const months = [
 const years = Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString());
 
 const Statistics = () => {
-  const { releases, updateReleaseStreams } = useDataStore();
+  const { releases, users, updateReleaseStreams } = useDataStore();
   const [selectedTrackId, setSelectedTrackId] = useState<string>("");
+  const [selectedArtistId, setSelectedArtistId] = useState<string>("all");
   const [trackOpen, setTrackOpen] = useState(false);
+  const [artistOpen, setArtistOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
   const { register, handleSubmit, setValue, reset, watch } = useForm({
@@ -35,10 +37,18 @@ const Statistics = () => {
     }
   });
 
-  const publishedReleases = useMemo(() => 
-    releases.filter(r => r.status === 'Опубліковано'),
-    [releases]
+  const artists = useMemo(() => 
+    users.filter(u => u.role === 'artist'),
+    [users]
   );
+
+  const publishedReleases = useMemo(() => {
+    let filtered = releases.filter(r => r.status === 'Опубліковано');
+    if (selectedArtistId !== 'all') {
+      filtered = filtered.filter(r => r.userId === selectedArtistId);
+    }
+    return filtered;
+  }, [releases, selectedArtistId]);
 
   const filteredReleases = useMemo(() => 
     publishedReleases.filter(r => 
@@ -75,7 +85,6 @@ const Statistics = () => {
 
   const handleQuickAdd = (id: string) => {
     setSelectedTrackId(id);
-    // Scroll to form if on mobile
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -109,7 +118,7 @@ const Statistics = () => {
                       className="w-full justify-between bg-black/40 border-white/5 rounded-none h-12 text-white hover:bg-white/5"
                     >
                       {selectedTrackId
-                        ? publishedReleases.find((t) => t.id === selectedTrackId)?.title
+                        ? releases.find((t) => t.id === selectedTrackId)?.title
                         : "Пошук релізу..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -194,74 +203,137 @@ const Statistics = () => {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2 bg-black/40 border-white/5 rounded-none shadow-2xl">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 pb-6">
-            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
-              <History size={18} className="text-red-700" />
-              Поточні показники
-            </CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={14} />
-              <Input 
-                placeholder="Пошук..." 
-                className="bg-black/40 border-white/5 pl-10 h-10 text-[10px] font-bold uppercase tracking-widest rounded-none"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </CardHeader>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-white/5 text-[10px] uppercase text-zinc-500 font-black tracking-widest">
-                <tr>
-                  <th className="px-8 py-5">Трек</th>
-                  <th className="px-8 py-5">Артист</th>
-                  <th className="px-8 py-5 text-right">Всього стрімів</th>
-                  <th className="px-8 py-5 text-right">Дія</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredReleases.length > 0 ? (
-                  filteredReleases.map((r) => (
-                    <tr key={r.id} className="hover:bg-white/5 transition-colors group">
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-3">
-                          <img 
-                            src={r.coverUrl || FALLBACK_IMAGE} 
-                            className="w-10 h-10 object-cover border border-white/5" 
-                            alt="" 
-                            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                          />
-                          <span className="text-xs font-bold text-white uppercase tracking-wider">{r.title}</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 text-[10px] font-black text-red-800 uppercase tracking-widest">{r.artist}</td>
-                      <td className="px-8 py-6 text-right">
-                        <span className="text-white font-black text-sm tracking-tighter">{r.streams.toLocaleString()}</span>
-                      </td>
-                      <td className="px-8 py-6 text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleQuickAdd(r.id)}
-                          className="text-red-700 hover:text-red-500 hover:bg-red-900/10 rounded-none uppercase text-[9px] font-black tracking-widest"
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block">Фільтр за артистом</Label>
+              <Popover open={artistOpen} onOpenChange={setArtistOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between bg-black/40 border-white/5 rounded-none h-12 text-white hover:bg-white/5"
+                  >
+                    {selectedArtistId !== 'all'
+                      ? artists.find((a) => a.id === selectedArtistId)?.artistName || artists.find((a) => a.id === selectedArtistId)?.login
+                      : "Всі артисти"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0 bg-[#0a0a0a] border-white/5 rounded-none">
+                  <Command className="bg-transparent text-white">
+                    <CommandInput placeholder="Пошук артиста..." className="h-12 border-none focus:ring-0" />
+                    <CommandList>
+                      <CommandEmpty className="p-4 text-xs text-zinc-600 uppercase font-bold">Артиста не знайдено</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setSelectedArtistId('all');
+                            setArtistOpen(false);
+                          }}
+                          className="flex items-center gap-3 p-3 cursor-pointer hover:bg-red-900/10"
                         >
-                          <TrendingUp size={14} className="mr-2" /> Додати
-                        </Button>
+                          <Check className={cn("h-4 w-4 text-red-700", selectedArtistId === 'all' ? "opacity-100" : "opacity-0")} />
+                          <span className="text-xs font-bold uppercase tracking-widest">Всі артисти</span>
+                        </CommandItem>
+                        {artists.map((artist) => (
+                          <CommandItem
+                            key={artist.id}
+                            value={artist.artistName || artist.login}
+                            onSelect={() => {
+                              setSelectedArtistId(artist.id);
+                              setArtistOpen(false);
+                            }}
+                            className="flex items-center gap-3 p-3 cursor-pointer hover:bg-red-900/10"
+                          >
+                            <Check className={cn("h-4 w-4 text-red-700", selectedArtistId === artist.id ? "opacity-100" : "opacity-0")} />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold uppercase tracking-widest">{artist.artistName || artist.login}</span>
+                              <span className="text-[9px] text-zinc-600 font-mono">{artist.login}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex-1">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 block">Пошук за назвою</Label>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={14} />
+                <Input 
+                  placeholder="Назва треку..." 
+                  className="bg-black/40 border-white/5 pl-10 h-12 text-[10px] font-bold uppercase tracking-widest rounded-none"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
+            <CardHeader className="border-b border-white/5 pb-6">
+              <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-3">
+                <History size={18} className="text-red-700" />
+                Поточні показники
+              </CardTitle>
+            </CardHeader>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-white/5 text-[10px] uppercase text-zinc-500 font-black tracking-widest">
+                  <tr>
+                    <th className="px-8 py-5">Трек</th>
+                    <th className="px-8 py-5">Артист</th>
+                    <th className="px-8 py-5 text-right">Всього стрімів</th>
+                    <th className="px-8 py-5 text-right">Дія</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredReleases.length > 0 ? (
+                    filteredReleases.map((r) => (
+                      <tr key={r.id} className="hover:bg-white/5 transition-colors group">
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={r.coverUrl || FALLBACK_IMAGE} 
+                              className="w-10 h-10 object-cover border border-white/5" 
+                              alt="" 
+                              onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                            />
+                            <span className="text-xs font-bold text-white uppercase tracking-wider">{r.title}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 text-[10px] font-black text-red-800 uppercase tracking-widest">{r.artist}</td>
+                        <td className="px-8 py-6 text-right">
+                          <span className="text-white font-black text-sm tracking-tighter">{r.streams.toLocaleString()}</span>
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleQuickAdd(r.id)}
+                            className="text-red-700 hover:text-red-500 hover:bg-red-900/10 rounded-none uppercase text-[9px] font-black tracking-widest"
+                          >
+                            <TrendingUp size={14} className="mr-2" /> Додати
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-20 text-center text-zinc-700 text-[10px] font-black uppercase tracking-widest">
+                        Нічого не знайдено
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-8 py-20 text-center text-zinc-700 text-[10px] font-black uppercase tracking-widest">
-                      Нічого не знайдено
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
       </div>
 
       <div className="p-8 bg-red-900/5 border border-red-900/10 rounded-none flex items-start gap-4">
