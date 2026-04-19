@@ -1,6 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Get credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -16,7 +15,6 @@ export const supabase: SupabaseClient = supabaseUrl && supabaseAnonKey
 
 export const isSupabaseConfigured = () => !!(supabaseUrl && supabaseAnonKey);
 
-// App User type (camelCase)
 export interface AppUser {
   id: string;
   login: string;
@@ -30,7 +28,6 @@ export interface AppUser {
   password?: string;
 }
 
-// Profile type (snake_case from DB)
 export interface Profile {
   id: string;
   email: string;
@@ -53,7 +50,6 @@ export const toAppProfile = (dbProfile: Profile): AppUser => ({
   createdAt: dbProfile.created_at,
 });
 
-// Track type
 export interface Track {
   id?: string;
   title: string;
@@ -64,51 +60,46 @@ export interface Track {
   position?: number;
 }
 
-// Release type (camelCase for app)
 export interface Release {
   id: string;
-  user_id: string;
+  user_id?: string;
   userId: string;
-  artist_id: string;
+  title: string;
   artist: string;
   genre: string;
-  release_date: string;
+  release_date?: string;
   releaseDate: string;
-  cover_url: string;
+  cover_url?: string;
   coverUrl: string;
-  audioUrl?: string;
-  audio_url?: string;
   status: string;
   streams: number;
   history: { date: string; count: number }[];
-  created_at: string;
+  created_at?: string;
   createdAt: string;
-  // Additional fields
-  isrc?: string;
   composer?: string;
   performer?: string;
   label?: string;
   description?: string;
   explicit?: boolean;
   isSingle?: boolean;
+  isrc?: string;
   tracks?: Track[];
 }
 
-// SmartLink type (camelCase for app)
 export interface SmartLink {
   id: string;
-  user_id: string;
+  user_id?: string;
   userId: string;
-  release_id: string | null;
+  release_id?: string;
   releaseId: string | null;
   title: string;
   artist: string;
-  cover_url: string;
+  cover_url?: string;
   coverUrl: string;
   slug: string;
   platforms: SmartLinkPlatform[];
   clicks: number;
-  created_at: string;
+  created_at?: string;
   createdAt: string;
 }
 
@@ -120,20 +111,18 @@ export interface SmartLinkPlatform {
   icon?: string;
 }
 
-// ArtistWebsite type (camelCase for app)
 export interface ArtistWebsite {
   id: string;
-  user_id: string;
+  user_id?: string;
   userId: string;
   title: string;
   slug: string;
   stageName: string;
   bio: string;
-  photo_url: string;
+  photo_url?: string;
   photoUrl: string;
   links: WebsiteLink[];
-  socials?: { name: string; url: string }[];
-  created_at: string;
+  created_at?: string;
   createdAt: string;
 }
 
@@ -143,52 +132,45 @@ export interface WebsiteLink {
   url: string;
 }
 
-// Transaction type (camelCase for app)
 export interface Transaction {
   id: string;
-  user_id: string;
+  user_id?: string;
   userId: string;
   type: 'deposit' | 'withdrawal';
   amount: number;
   description: string;
   status?: 'completed' | 'pending' | 'cancelled';
-  created_at: string;
+  created_at?: string;
   createdAt: string;
 }
 
-// WithdrawalRequest type (camelCase for app)
 export interface WithdrawalRequest {
   id: string;
-  user_id: string;
+  user_id?: string;
   userId: string;
   amount: number;
   status: 'pending' | 'paid' | 'approved' | 'rejected';
   contactInfo?: string;
   confirmationAgreed?: boolean;
   admin_comment?: string;
-  created_at: string;
+  created_at?: string;
   createdAt: string;
 }
 
-// QuarterlyReport type (camelCase for app)
 export interface QuarterlyReport {
   id: string;
-  user_id: string;
+  user_id?: string;
   userId: string;
-  title: string;
+  title?: string;
   quarter: number;
   year: number;
   fileUrl: string;
-  file_url: string;
+  file_url?: string;
   fileName?: string;
-  period?: string;
-  streams?: number;
-  revenue?: number;
-  created_at: string;
+  created_at?: string;
   createdAt: string;
 }
 
-// Status type (camelCase for app)
 export interface Status {
   id?: number;
   name: string;
@@ -199,7 +181,6 @@ export interface Status {
   is_default?: boolean;
 }
 
-// Field type (camelCase for app)
 export interface Field {
   id?: number;
   name: string;
@@ -216,7 +197,6 @@ export interface Field {
   maxSize?: string;
 }
 
-// LabelSocial type (camelCase for app)
 export interface LabelSocial {
   id: string;
   name: string;
@@ -224,7 +204,6 @@ export interface LabelSocial {
   platform?: string;
 }
 
-// AppConfig type (expanded)
 export interface AppConfig {
   id?: number;
   settings: { siteName: string; registrationEnabled: boolean; contactEmail: string };
@@ -235,13 +214,6 @@ export interface AppConfig {
     welcomeTitle: string;
     welcomeSubtitle: string;
     socialIcons: string[];
-    primaryColor?: string;
-    secondaryColor?: string;
-    leftTitle?: string;
-    leftText2?: string;
-    feature1?: string;
-    feature2?: string;
-    feature3?: string;
   };
   label_socials: LabelSocial[];
   labelSocials: LabelSocial[];
