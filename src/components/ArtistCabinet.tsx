@@ -15,30 +15,10 @@ const ArtistCabinet = () => {
   return (
     <div>
       {/* ... */}
-      <h2>Releases</h2>
-      {release.map((release) => (
-        <div key={release.id}>
-          <p>{release.title}</p>
-          <p>{release.description}</p>
-          <p>Release Date: {release.releaseDate}</p>
-          {/* Display release data */}
-          <Field label="Release Data">
-            {({ input }) => (
-              <textarea
-                value={JSON.stringify(release)}
-                onChange={(e) => {
-                  const updatedData = JSON.parse(e.target.value);
-                  supabase
-                    .from('releases')
-                    .update('data', updatedData)
-                    .eq('id', release.id)
-                    .exec();
-                }}
-              />
-            )}
-          </Field>
-        </div>
-      ))}
+      <h2>Release Information</h2>
+      <p>{release.title}</p>
+      <p>{release.description}</p>
+      <p>Release Date: {release.releaseDate}</p>
     </div>
   );
 };
