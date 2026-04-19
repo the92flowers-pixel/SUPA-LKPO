@@ -28,15 +28,21 @@ const Login = () => {
       }
 
       if (authData.user) {
+        // First set auth with minimal data, then fetch full profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authData.user.id)
           .single();
         
-        setAuth(profile);
-        showSuccess('Успішний вхід!');
-        navigate(profile?.role === 'admin' ? '/admin/moderation' : '/dashboard');
+        if (profile) {
+          setAuth(profile);
+          showSuccess('Успішний вхід!');
+          // Navigate first, profile will be synced by App.tsx listener
+          window.location.href = profile.role === 'admin' ? '/admin/moderation' : '/dashboard';
+        } else {
+          showError('Профіль не знайдено. Зверніться до адміністратора.');
+        }
       }
     } catch (err: any) {
       showError(err.message || 'Помилка входу');
