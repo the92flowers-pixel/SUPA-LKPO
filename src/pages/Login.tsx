@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music, CheckCircle2, ArrowRight, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { supabase, toAppProfile, isSupabaseConfigured } from '@/lib/supabase';
+import { Music, CheckCircle2, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
+import { supabase, toAppProfile } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,14 +21,6 @@ const Login = () => {
     setIsLoading(true);
     setError(null);
     
-    // Check if Supabase is configured
-    if (!isSupabaseConfigured()) {
-      setError('Supabase не налаштовано. Зверніться до адміністратора.');
-      showError('Помилка конфігурації');
-      setIsLoading(false);
-      return;
-    }
-    
     try {
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.login,
@@ -36,7 +28,6 @@ const Login = () => {
       });
 
       if (authError) {
-        // Handle specific auth errors
         if (authError.message.includes('Invalid login credentials')) {
           setError('Неправильний email або пароль');
           showError('Неправильний email або пароль');
@@ -59,66 +50,67 @@ const Login = () => {
           .eq('id', authData.user.id)
           .single();
         
-        if (profileError) {
+        if (profileError && profileError.code !== 'PGRST116') {
           console.error('Profile fetch error:', profileError);
+          showError('Помилка завантаження профілю');
+          setIsLoading(false);
+          return;
+        }
+        
+        // If profile doesn't exist, create a basic one
+        if (!profile || profileError?.code === 'PGRST116') {
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              email: authData.user.email || data.login,
+              full_name: authData.user.user_metadata?.full_name || authData.user.user_metadata?.artist_name || null,
+              role: 'artist',
+              balance: 0,
+              is_verified: false,
+            })
+            .select()
+            .single();
           
-          // If profile doesn't exist, create a basic one
-          if (profileError.code === 'PGRST116') {
-            showSuccess('Успішний вхід!');
+          if (createError) {
+            console.error('Profile creation error:', createError);
+            // Continue with basic user data
             setAuth({
               id: authData.user.id,
               email: authData.user.email || data.login,
               login: authData.user.email || data.login,
               role: 'artist',
-              artistName: null,
+              artistName: authData.user.user_metadata?.full_name || authData.user.user_metadata?.artist_name || null,
               balance: 0,
               isVerified: false,
               createdAt: new Date().toISOString(),
             });
+            showSuccess('Успішний вхід!');
             navigate('/dashboard', { replace: true });
+            setIsLoading(false);
             return;
           }
           
-          setError('Не вдалося завантажити профіль');
-          showError('Помилка завантаження профілю');
-          setIsLoading(false);
-          return;
+          if (newProfile) {
+            const appUser = toAppProfile(newProfile);
+            setAuth(appUser);
+            showSuccess('Успішний вхід!');
+            const redirectPath = appUser.role === 'admin' ? '/admin/moderation' : '/dashboard';
+            navigate(redirectPath, { replace: true });
+          }
+        } else {
+          const appUser = toAppProfile(profile);
+          setAuth(appUser);
+          showSuccess('Успішний вхід!');
+          const redirectPath = appUser.role === 'admin' ? '/admin/moderation' : '/dashboard';
+          navigate(redirectPath, { replace: true });
         }
-
-        if (!profile) {
-          setError('Профіль не знайдено');
-          showError('Профіль не знайдено');
-          setIsLoading(false);
-          return;
-        }
-
-        // Convert DB profile to App profile and set auth
-        const appUser = toAppProfile(profile);
-        setAuth(appUser);
-        showSuccess('Успішний вхід!');
-        
-        // Navigate based on role
-        const redirectPath = appUser.role === 'admin' ? '/admin/moderation' : '/dashboard';
-        navigate(redirectPath, { replace: true });
       }
     } catch (err: unknown) {
       console.error('Login error:', err);
-      
-      // Handle network errors
-      if (err && typeof err === 'object' && 'name' in err) {
-        const errorObj = err as { name: string; message?: string; status?: number };
-        
-        if (errorObj.name === 'AuthRetryableFetchError' || errorObj.status === 0) {
-          setError('Помилка мережі. Перевірте інтернет-з\'єднання або спробуйте пізніше.');
-          showError('Помилка мережі');
-          setIsLoading(false);
-          return;
-        }
-      }
-      
       const message = err instanceof Error ? err.message : 'Невідома помилка';
-      setError(message);
-      showError(message);
+      setError('Помилка з\'єднання. Спробуйте пізніше.');
+      showError('Помилка з\'єднання');
     } finally {
       setIsLoading(false);
     }
@@ -165,7 +157,7 @@ const Login = () => {
           {error && (
             <div className="p-4 bg-red-900/20 border border-red-900/30 rounded-lg flex items-start gap-3">
               <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={20} />
-              <div className="flex-1">
+              <div>
                 <p className="text-sm font-medium text-red-400">{error}</p>
                 <p className="text-xs text-red-500/60 mt-1">
                   Перевірте правильність даних або спробуйте пізніше
@@ -201,7 +193,7 @@ const Login = () => {
             <Button 
               type="submit" 
               className="w-full h-12 bg-red-700 hover:bg-red-800 text-white font-bold text-lg disabled:opacity-50"
-              disabled={isLoading || !isSupabaseConfigured()}
+              disabled={isLoading}
             >
               {isLoading ? (
                 <>

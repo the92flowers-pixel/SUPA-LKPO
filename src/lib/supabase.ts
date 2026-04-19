@@ -16,11 +16,6 @@ export const supabase: SupabaseClient = supabaseUrl && supabaseAnonKey
         persistSession: true,
         detectSessionInUrl: true,
       },
-      global: {
-        headers: {
-          'x-client-info': 'zhurba-music',
-        },
-      },
     })
   : ({} as SupabaseClient);
 
@@ -154,7 +149,7 @@ export interface AppConfig {
 // Helper functions for uploads
 export const uploadFile = async (bucket: string, path: string, file: File): Promise<string> => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase is not configured. Please add your Supabase credentials to .env file.');
+    throw new Error('Supabase is not configured');
   }
   const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
   if (error) throw error;

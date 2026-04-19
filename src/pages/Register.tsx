@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
-import { Music, UserPlus, AlertCircle } from 'lucide-react';
+import { Music, UserPlus, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,9 @@ const Register = () => {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const { settings } = useDataStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   if (!settings?.registrationEnabled) {
     return (
@@ -31,32 +34,101 @@ const Register = () => {
   }
 
   const onSubmit = async (data: any) => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      const { data: authData, error } = await supabase.auth.signUp({
+      // Check if email already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', data.login)
+        .single();
+      
+      if (existingUser) {
+        setError('Користувач з таким email вже існує');
+        showError('Користувач з таким email вже існує');
+        setIsLoading(false);
+        return;
+      }
+
+      // Sign up the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.login,
         password: data.password,
         options: {
           data: {
-            role: 'artist',
             artist_name: data.artistName,
             full_name: data.artistName,
           },
         },
       });
 
-      if (error) {
-        showError(error.message);
+      if (authError) {
+        setError(authError.message);
+        showError(authError.message);
+        setIsLoading(false);
         return;
       }
 
       if (authData.user) {
-        showSuccess('Акаунт успішно створено! Перевірте email для підтвердження.');
-        navigate('/login');
+        // Create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            email: data.login,
+            full_name: data.artistName,
+            role: 'artist',
+            balance: 0,
+            is_verified: false,
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          // Profile might already exist from trigger, continue
+        }
+
+        setSuccess(true);
+        showSuccess('Акаунт успішно створено!');
+        
+        // Auto login after registration
+        setAuth({
+          id: authData.user.id,
+          email: data.login,
+          login: data.login,
+          role: 'artist',
+          artistName: data.artistName,
+          balance: 0,
+          isVerified: false,
+          createdAt: new Date().toISOString(),
+        });
+        
+        navigate('/dashboard', { replace: true });
       }
-    } catch (err: any) {
-      showError(err.message || 'Помилка реєстрації');
+    } catch (err: unknown) {
+      console.error('Registration error:', err);
+      const message = err instanceof Error ? err.message : 'Невідома помилка';
+      setError('Помилка реєстрації. Спробуйте пізніше.');
+      showError('Помилка реєстрації');
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex bg-[#0a0a0a] text-white items-center justify-center p-8">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="w-16 h-16 bg-green-600/20 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="text-green-500" size={48} />
+          </div>
+          <h1 className="text-2xl font-bold">Реєстрація успішна!</h1>
+          <p className="text-gray-500">Ласкаво просимо до ЖУРБА MUSIC. Перенаправляємо вас...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-[#0a0a0a] text-white items-center justify-center p-8">
@@ -71,22 +143,64 @@ const Register = () => {
           <p className="text-gray-500 mt-2">Приєднуйтесь до ЖУРБА MUSIC</p>
         </div>
 
+        {error && (
+          <div className="p-4 bg-red-900/20 border border-red-900/30 rounded-lg flex items-start gap-3">
+            <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="text-sm font-medium text-red-400">{error}</p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="artistName">Сценічне ім'я</Label>
-            <Input id="artistName" {...register('artistName', { required: true })} className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" placeholder="Ваш псевдонім" />
+            <Input 
+              id="artistName" 
+              {...register('artistName', { required: true })} 
+              className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" 
+              placeholder="Ваш псевдонім"
+              disabled={isLoading}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="login">Email</Label>
-            <Input id="login" type="email" {...register('login', { required: true })} className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" placeholder="name@example.com" />
+            <Input 
+              id="login" 
+              type="email" 
+              {...register('login', { required: true })} 
+              className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" 
+              placeholder="name@example.com"
+              disabled={isLoading}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Пароль</Label>
-            <Input id="password" type="password" {...register('password', { required: true })} className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" placeholder="••••••••" />
+            <Input 
+              id="password" 
+              type="password" 
+              {...register('password', { required: true, minLength: 6 })} 
+              className="bg-[#1a1a1a] border-white/10 focus:border-red-700 h-12" 
+              placeholder="Мінімум 6 символів"
+              disabled={isLoading}
+            />
           </div>
-          <Button type="submit" className="w-full h-12 bg-red-700 hover:bg-red-800 text-white font-bold text-lg">
-            Зареєструватися
-            <UserPlus className="ml-2" size={20} />
+          <Button 
+            type="submit" 
+            className="w-full h-12 bg-red-700 hover:bg-red-800 text-white font-bold text-lg disabled:opacity-50"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Реєстрація...
+              </>
+            ) : (
+              <>
+                Зареєструватися
+                <UserPlus className="ml-2" size={20} />
+              </>
+            )}
           </Button>
         </form>
         <p className="text-center text-sm text-gray-500">
