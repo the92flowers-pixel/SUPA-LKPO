@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Music, Plus, Trash2, GripVertical, Check, Save, AlertCircle } from 'lucide-react';
+import { Upload, Music, Plus, Trash2, Check } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,8 +53,8 @@ const NewRelease = () => {
   ]);
   const [releaseType, setReleaseType] = useState<'single' | 'album'>('single');
   
-  const releaseFields = fields.filter(f => f.section === 'release' && f.visible);
-  const defaultStatus = statuses.find(s => s.isDefault)?.name || 'На модерації';
+  const releaseFields = fields.filter((f: any) => f.section === 'release' && f.visible);
+  const defaultStatus = statuses.find((s: any) => s.isDefault)?.name || 'На модерації';
   const selectedGenre = watch('genre');
 
   useEffect(() => {
@@ -86,7 +86,6 @@ const NewRelease = () => {
   };
 
   const onSubmit = async (data: ReleaseFormData) => {
-    // Validate
     if (!data.title || !data.artist) {
       showError('Заповніть обов\'язкові поля');
       return;
@@ -106,7 +105,7 @@ const NewRelease = () => {
 
     setIsSubmitting(true);
     try {
-      const result = await addRelease({
+      const releaseData: any = {
         title: data.title,
         artist: data.artist,
         genre: data.genre,
@@ -118,9 +117,11 @@ const NewRelease = () => {
         status: defaultStatus,
         isSingle: data.isSingle,
         tracks: releaseType === 'album' ? tracks : undefined,
-      });
+      };
 
-      if (result) {
+      const result = await addRelease(releaseData);
+
+      if (result && result.id) {
         showSuccess('Реліз успішно відправлено на модерацію!');
         navigate('/releases');
       } else {
@@ -274,7 +275,7 @@ const NewRelease = () => {
         <div className="bg-black/40 border border-white/5 p-8 space-y-8">
           <div className="flex items-center justify-between pb-4 border-b border-white/5">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-red-700/20 flex items-center justify-center text-red-700 text-xs font-black">{releaseType === 'album' ? '03' : '03'}</div>
+              <div className="w-8 h-8 bg-red-700/20 flex items-center justify-center text-red-700 text-xs font-black">03</div>
               <h2 className="text-lg font-black text-white uppercase tracking-widest">
                 {releaseType === 'album' ? 'Треклист' : 'Трек'}
               </h2>
@@ -363,7 +364,7 @@ const NewRelease = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {releaseFields.map((field) => (
+              {releaseFields.map((field: any) => (
                 <div key={field.id} className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                     {field.label} {field.required && <span className="text-red-800">*</span>}
@@ -380,7 +381,7 @@ const NewRelease = () => {
                         <SelectValue placeholder={field.label} />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                        {field.options.split(',').map(opt => (
+                        {field.options.split(',').map((opt: string) => (
                           <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs">
                             {opt.trim()}
                           </SelectItem>

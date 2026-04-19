@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ListTodo, Plus, Trash2, Edit2, GripVertical, Save, X } from 'lucide-react';
+import { ListTodo, Plus, Trash2, Edit2, GripVertical, Save } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 
 const Statuses = () => {
   const { statuses, updateStatuses, addStatus, deleteStatus } = useDataStore();
@@ -45,7 +45,7 @@ const Statuses = () => {
     }
 
     if (editingStatus) {
-      const newStatuses = statuses.map(s => s.id === editingStatus.id ? { ...formData, id: s.id } : s);
+      const newStatuses = statuses.map((s: any) => s.id === editingStatus.id ? { ...formData, id: s.id } : s);
       updateStatuses(newStatuses);
       showSuccess('Статус оновлено');
     } else {
@@ -86,7 +86,7 @@ const Statuses = () => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y divide-white/5">
-            {statuses.sort((a, b) => (a.order || 0) - (b.order || 0)).map((status) => (
+            {statuses.sort((a: any, b: any) => (a.order || 0) - (b.order || 0)).map((status: any) => (
               <div key={status.id} className="flex items-center gap-6 p-6 hover:bg-white/5 transition-colors group">
                 <div className="cursor-grab text-zinc-800 hover:text-zinc-600">
                   <GripVertical size={20} />
@@ -149,7 +149,7 @@ const Statuses = () => {
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Колір</Label>
-                <Select value={formData.color} onValueChange={(v) => setFormData({...formData, color: v})}>
+                <Select value={formData.color} onValueChange={(v: string) => setFormData({...formData, color: v})}>
                   <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
                     <SelectValue />
                   </SelectTrigger>

@@ -53,6 +53,17 @@ export const toAppProfile = (dbProfile: Profile): AppUser => ({
   createdAt: dbProfile.created_at,
 });
 
+// Track type
+export interface Track {
+  id?: string;
+  title: string;
+  audioUrl?: string;
+  duration?: string;
+  explicit?: boolean;
+  lyrics?: string;
+  position?: number;
+}
+
 // Release type (camelCase for app)
 export interface Release {
   id: string;
@@ -73,6 +84,13 @@ export interface Release {
   history: { date: string; count: number }[];
   created_at: string;
   createdAt: string;
+  // Additional fields
+  isrc?: string;
+  label?: string;
+  description?: string;
+  explicit?: boolean;
+  isSingle?: boolean;
+  tracks?: Track[];
 }
 
 // SmartLink type (camelCase for app)

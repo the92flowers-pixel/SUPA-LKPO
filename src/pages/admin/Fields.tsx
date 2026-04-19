@@ -4,12 +4,11 @@ import { useDataStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 
 const Fields = () => {
   const { fields, updateFields, addField, deleteField } = useDataStore();
@@ -64,7 +63,7 @@ const Fields = () => {
     }
 
     if (editingField) {
-      const newFields = fields.map(f => f.id === editingField.id ? { ...formData, id: f.id } : f);
+      const newFields = fields.map((f: any) => f.id === editingField.id ? { ...formData, id: f.id } : f);
       updateFields(newFields);
       showSuccess('Поле оновлено');
     } else {
@@ -75,12 +74,12 @@ const Fields = () => {
   };
 
   const toggleVisibility = (id: number) => {
-    const newFields = fields.map(f => f.id === id ? { ...f, visible: !f.visible } : f);
+    const newFields = fields.map((f: any) => f.id === id ? { ...f, visible: !f.visible } : f);
     updateFields(newFields);
   };
 
   const renderFieldList = (section: string) => {
-    const sectionFields = fields.filter(f => f.section === section).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const sectionFields = fields.filter((f: any) => f.section === section).sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
     
     if (sectionFields.length === 0) {
       return (
@@ -94,7 +93,7 @@ const Fields = () => {
 
     return (
       <div className="divide-y divide-white/5">
-        {sectionFields.map((field) => (
+        {sectionFields.map((field: any) => (
           <div key={field.id} className="flex items-center gap-4 p-6 hover:bg-white/5 transition-colors">
             <div className="cursor-grab text-zinc-700 hover:text-zinc-500">
               <GripVertical size={20} />
@@ -219,7 +218,7 @@ const Fields = () => {
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Тип поля</Label>
-                <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v})}>
+                <Select value={formData.type} onValueChange={(v: string) => setFormData({...formData, type: v})}>
                   <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
                     <SelectValue />
                   </SelectTrigger>
@@ -236,7 +235,7 @@ const Fields = () => {
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Секція</Label>
-                <Select value={formData.section} onValueChange={(v) => setFormData({...formData, section: v})}>
+                <Select value={formData.section} onValueChange={(v: string) => setFormData({...formData, section: v})}>
                   <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
                     <SelectValue />
                   </SelectTrigger>
