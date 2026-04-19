@@ -381,7 +381,7 @@ const NewRelease = () => {
                         <SelectValue placeholder={field.label} />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                        {field.options.split(',').map((opt: string) => (
+                        {String(field.options).split(',').map((opt: string) => (
                           <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs">
                             {opt.trim()}
                           </SelectItem>
