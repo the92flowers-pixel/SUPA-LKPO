@@ -35,7 +35,7 @@ const Releases = () => {
   const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
 
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink, updateSmartLink, fetchReleases, deleteRelease, requestReleaseDeletion } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink, fetchReleases } = useDataStore();
 
   useEffect(() => {
     if (user) {
@@ -108,13 +108,6 @@ const Releases = () => {
     
     setSelectedRelease(null);
     window.open(`/s/${customSlug}`, '_blank');
-  };
-
-  const handleDeleteRequest = async (id: string) => {
-    if (confirm('Ви впевнені, що хочете подати запит на видалення цього релізу? Це незворотна дія після схвалення адміністратором.')) {
-      await requestReleaseDeletion(id);
-      showSuccess('Запит на видалення надіслано адміністратору');
-    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -199,18 +192,6 @@ const Releases = () => {
                   <Button onClick={() => setViewingRelease(release)} variant="outline" className="w-full border-white/10 hover:bg-white/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
                     <Eye size={14} className="mr-2" /> Деталі
                   </Button>
-                  
-                  {/* Hide delete button if deletion is already pending or in progress */}
-                  {user?.role !== 'admin' && !release.deletion_status && release.status !== 'Видаляється' && (
-                    <Button 
-                      onClick={() => handleDeleteRequest(release.id)} 
-                      variant="ghost" 
-                      className="w-full text-zinc-500 hover:text-red-500 hover:bg-red-900/10 rounded-none text-[10px] font-black uppercase tracking-widest h-12"
-                    >
-                      <Trash2 size={14} className="mr-2" /> 
-                      Подати на видалення
-                    </Button>
-                  )}
                 </div>
               </div>
               <CardContent className="p-6 space-y-4">

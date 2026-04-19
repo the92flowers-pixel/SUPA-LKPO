@@ -32,7 +32,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const adminLinks = [
     { to: '/admin/dashboard', icon: LayoutGrid, label: 'Огляд' },
     { to: '/admin/moderation', icon: ShieldCheck, label: 'Модерація' },
-    { to: '/admin/deletion-requests', icon: Trash2, label: 'Запити на видалення' },
     { to: '/admin/releases', icon: Disc, label: 'Всі релізи' },
     { to: '/admin/finance', icon: Wallet, label: 'Фінанси' },
     { to: '/admin/reports', icon: FileText, label: 'Звіти' },

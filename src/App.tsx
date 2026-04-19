@@ -23,7 +23,6 @@ import NotFound from '@/pages/NotFound';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import Moderation from '@/pages/admin/Moderation';
 import AllReleases from '@/pages/admin/AllReleases';
-import DeletionRequests from '@/pages/admin/DeletionRequests';
 import AdminFinance from '@/pages/admin/AdminFinance';
 import AdminReports from '@/pages/admin/AdminReports';
 import SmartLinksManagement from '@/pages/admin/SmartLinksManagement';
@@ -228,7 +227,6 @@ const App = () => {
         <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/moderation" element={<ProtectedRoute role="admin"><Moderation /></ProtectedRoute>} />
         <Route path="/admin/releases" element={<ProtectedRoute role="admin"><AllReleases /></ProtectedRoute>} />
-        <Route path="/admin/deletion-requests" element={<ProtectedRoute role="admin"><DeletionRequests /></ProtectedRoute>} />
         <Route path="/admin/finance" element={<ProtectedRoute role="admin"><AdminFinance /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute role="admin"><AdminReports /></ProtectedRoute>} />
         <Route path="/admin/smart-links" element={<ProtectedRoute role="admin"><SmartLinksManagement /></ProtectedRoute>} />
