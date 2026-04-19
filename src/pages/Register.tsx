@@ -58,42 +58,59 @@ const Register = () => {
       }
 
       if (authData.user) {
-        // Create profile using the user ID
-        const { error: profileError } = await supabase
+        // Try to create profile
+        let profile = null;
+        
+        // Check if profile already exists (from trigger)
+        const { data: existingProfile } = await supabase
           .from('profiles')
-          .insert({
-            id: authData.user.id,
-            email: data.login,
-            full_name: data.artistName,
-            role: 'artist',
-            balance: 0,
-            is_verified: false,
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // Profile might already exist from database trigger
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+        
+        if (existingProfile) {
+          profile = existingProfile;
+        } else {
+          // Create profile manually if trigger didn't work
+          const { data: newProfile, error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              email: data.login,
+              full_name: data.artistName,
+              role: 'artist',
+              balance: 0,
+              is_verified: false,
+            })
+            .select()
+            .single();
+          
+          if (!profileError) {
+            profile = newProfile;
+          }
         }
 
-        setSuccess(true);
-        showSuccess('Акаунт успішно створено!');
-        
-        // Set auth state
-        setAuth({
+        // Create app user object
+        const appUser = {
           id: authData.user.id,
           email: data.login,
           login: data.login,
-          role: 'artist',
+          role: 'artist' as const,
           artistName: data.artistName,
           balance: 0,
           isVerified: false,
           createdAt: new Date().toISOString(),
-        });
+        };
         
-        // Redirect to dashboard
+        // Set auth state immediately
+        setAuth(appUser);
+        showSuccess('Акаунт успішно створено!');
+        setSuccess(true);
+        
+        // Redirect to dashboard after short delay
         setTimeout(() => {
           navigate('/dashboard', { replace: true });
-        }, 1500);
+        }, 1000);
       }
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -113,7 +130,7 @@ const Register = () => {
             <CheckCircle2 className="text-green-500" size={48} />
           </div>
           <h1 className="text-2xl font-bold">Реєстрація успішна!</h1>
-          <p className="text-gray-500">Ласкаво просимо до ЖУРБА MUSIC. Перенаправляємо вас...</p>
+          <p className="text-gray-500">Перенаправляємо вас до кабінету...</p>
         </div>
       </div>
     );
