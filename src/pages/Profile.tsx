@@ -30,6 +30,7 @@ const Profile = () => {
   const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isSavingWebsite, setIsSavingWebsite] = useState(false);
   
   const [newEmail, setNewEmail] = useState(currentUser?.login || '');
   const [newPassword, setNewPassword] = useState('');
@@ -140,19 +141,24 @@ const Profile = () => {
       return;
     }
 
-    if (userWebsite) {
-      await updateArtistWebsite(userWebsite.id, websiteData);
-      showSuccess('Сайт оновлено!');
-    } else {
-      await addArtistWebsite({
-        ...websiteData,
-        id: Math.random().toString(36).substr(2, 9),
-        userId: currentUser?.id || '',
-        createdAt: new Date().toISOString()
-      });
-      showSuccess('Сайт створено!');
+    setIsSavingWebsite(true);
+    try {
+      if (userWebsite) {
+        await updateArtistWebsite(userWebsite.id, websiteData);
+        showSuccess('Сайт оновлено!');
+      } else {
+        await addArtistWebsite({
+          ...websiteData,
+          userId: currentUser?.id || '',
+        });
+        showSuccess('Сайт створено!');
+      }
+      setIsWebsiteModalOpen(false);
+    } catch (error) {
+      showError('Помилка при збереженні сайту');
+    } finally {
+      setIsSavingWebsite(false);
     }
-    setIsWebsiteModalOpen(false);
   };
 
   return (
@@ -445,8 +451,12 @@ const Profile = () => {
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-3">
             <Button variant="ghost" onClick={() => setIsWebsiteModalOpen(false)} className="w-full sm:w-auto rounded-none text-[10px] font-black uppercase tracking-widest">Скасувати</Button>
-            <Button onClick={handleSaveWebsite} className="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none">
-              Зберегти сайт
+            <Button 
+              onClick={handleSaveWebsite} 
+              disabled={isSavingWebsite}
+              className="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none"
+            >
+              {isSavingWebsite ? <Loader2 className="animate-spin" size={16} /> : 'Зберегти сайт'}
             </Button>
           </DialogFooter>
         </DialogContent>

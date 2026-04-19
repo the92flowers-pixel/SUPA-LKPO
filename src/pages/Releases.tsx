@@ -33,6 +33,7 @@ const Releases = () => {
   const [platforms, setPlatforms] = useState<PlatformItem[]>([{ id: '1', name: 'Spotify', url: '' }]);
   const [isEditing, setIsEditing] = useState(false);
   const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
+  const [isSavingLink, setIsSavingLink] = useState(false);
 
   const { user } = useAuthStore();
   const { releases, smartLinks, addSmartLink, updateSmartLink, fetchReleases } = useDataStore();
@@ -77,7 +78,7 @@ const Releases = () => {
     }
   };
 
-  const handleSaveSmartLink = () => {
+  const handleSaveSmartLink = async () => {
     if (!customSlug) {
       showError('Вкажіть URL');
       return;
@@ -89,25 +90,32 @@ const Releases = () => {
       return;
     }
 
-    const linkData = {
-      releaseId: selectedRelease.id,
-      slug: customSlug,
-      title: selectedRelease.title,
-      artist: selectedRelease.artist,
-      coverUrl: selectedRelease.coverUrl,
-      platforms: platforms.filter(p => p.url !== '').map(p => ({ ...p, icon: p.name.toLowerCase().replace(/\s+/g, '-') })),
-    };
+    setIsSavingLink(true);
+    try {
+      const linkData = {
+        releaseId: selectedRelease.id,
+        slug: customSlug,
+        title: selectedRelease.title,
+        artist: selectedRelease.artist,
+        coverUrl: selectedRelease.coverUrl,
+        platforms: platforms.filter(p => p.url !== '').map(p => ({ ...p, icon: p.name.toLowerCase().replace(/\s+/g, '-') })),
+      };
 
-    if (isEditing && existingLinkId) {
-      updateSmartLink(existingLinkId, linkData);
-      showSuccess('Smart Link оновлено!');
-    } else {
-      addSmartLink({ ...linkData, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() });
-      showSuccess('Smart Link створено!');
+      if (isEditing && existingLinkId) {
+        await updateSmartLink(existingLinkId, linkData);
+        showSuccess('Smart Link оновлено!');
+      } else {
+        await addSmartLink(linkData);
+        showSuccess('Smart Link створено!');
+      }
+      
+      setSelectedRelease(null);
+      window.open(`/s/${customSlug}`, '_blank');
+    } catch (error) {
+      showError('Помилка при збереженні посилання');
+    } finally {
+      setIsSavingLink(false);
     }
-    
-    setSelectedRelease(null);
-    window.open(`/s/${customSlug}`, '_blank');
   };
 
   const getStatusBadge = (status: string) => {
@@ -282,8 +290,12 @@ const Releases = () => {
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-3">
             <Button variant="ghost" onClick={() => setSelectedRelease(null)} className="w-full sm:w-auto rounded-none text-[10px] font-black uppercase tracking-widest">Скасувати</Button>
-            <Button onClick={handleSaveSmartLink} className="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">
-              {isEditing ? 'Зберегти зміни' : 'Створити'}
+            <Button 
+              onClick={handleSaveSmartLink} 
+              disabled={isSavingLink}
+              className="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none"
+            >
+              {isSavingLink ? <Loader2 className="animate-spin" size={16} /> : (isEditing ? 'Зберегти зміни' : 'Створити')}
             </Button>
           </DialogFooter>
         </DialogContent>

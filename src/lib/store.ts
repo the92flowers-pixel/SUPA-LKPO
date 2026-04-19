@@ -53,12 +53,12 @@ interface DataState {
   updateReleaseStreams: (id: string, count: number, date: string) => Promise<void>;
   deleteRelease: (id: string) => Promise<void>;
   fetchSmartLinks: (userId?: string, role?: string) => Promise<void>;
-  addSmartLink: (linkData: Partial<SmartLink>) => Promise<void>;
-  updateSmartLink: (id: string, linkData: Partial<SmartLink>) => Promise<void>;
+  addSmartLink: (linkData: Partial<SmartLink>) => Promise<SmartLink | null>;
+  updateSmartLink: (id: string, linkData: Partial<SmartLink>) => Promise<SmartLink | null>;
   deleteSmartLink: (id: string) => Promise<void>;
   fetchArtistWebsites: (userId?: string, role?: string) => Promise<void>;
-  addArtistWebsite: (websiteData: Partial<ArtistWebsite>) => Promise<void>;
-  updateArtistWebsite: (id: string, websiteData: Partial<ArtistWebsite>) => Promise<void>;
+  addArtistWebsite: (websiteData: Partial<ArtistWebsite>) => Promise<ArtistWebsite | null>;
+  updateArtistWebsite: (id: string, websiteData: Partial<ArtistWebsite>) => Promise<ArtistWebsite | null>;
   deleteArtistWebsite: (id: string) => Promise<void>;
   fetchUsers: () => Promise<void>;
   updateUser: (id: string, userData: Partial<AppUser>) => Promise<void>;
@@ -177,10 +177,7 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       const { data, error } = await supabase.from('releases').insert(dbData).select().single();
       
-      if (error) {
-        console.error('Supabase Insert Error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (data) {
         const mapped: Release = {
@@ -296,7 +293,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   addSmartLink: async (linkData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return null;
       const insertData = {
         user_id: user.id,
         release_id: linkData.releaseId,
@@ -310,15 +307,18 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       const { data, error } = await supabase.from('smart_links').insert(insertData).select().single();
       if (!error && data) {
-        set((state) => ({ smartLinks: [...state.smartLinks, {
+        const mapped: SmartLink = {
           ...data,
           userId: data.user_id,
           releaseId: data.release_id,
           coverUrl: data.cover_url,
           createdAt: data.created_at,
-        }] }));
+        };
+        set((state) => ({ smartLinks: [...state.smartLinks, mapped] }));
+        return mapped;
       }
-    } catch (e) { console.error(e); }
+      return null;
+    } catch (e) { console.error(e); return null; }
   },
 
   updateSmartLink: async (id, linkData) => {
@@ -333,15 +333,18 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       const { data, error } = await supabase.from('smart_links').update(updateData).eq('id', id).select().single();
       if (!error && data) {
-        set((state) => ({ smartLinks: state.smartLinks.map(l => l.id === id ? {
+        const mapped: SmartLink = {
           ...data,
           userId: data.user_id,
           releaseId: data.release_id,
           coverUrl: data.cover_url,
           createdAt: data.created_at,
-        } : l) }));
+        };
+        set((state) => ({ smartLinks: state.smartLinks.map(l => l.id === id ? mapped : l) }));
+        return mapped;
       }
-    } catch (e) { console.error(e); }
+      return null;
+    } catch (e) { console.error(e); return null; }
   },
 
   deleteSmartLink: async (id) => {
@@ -371,7 +374,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   addArtistWebsite: async (websiteData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) return null;
       const insertData = {
         user_id: user.id,
         title: websiteData.stageName,
@@ -383,15 +386,18 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       const { data, error } = await supabase.from('artist_websites').insert(insertData).select().single();
       if (!error && data) {
-        set((state) => ({ artistWebsites: [...state.artistWebsites, {
+        const mapped: ArtistWebsite = {
           ...data,
           userId: data.user_id,
           stageName: data.title,
           photoUrl: data.photo_url,
           createdAt: data.created_at,
-        }] }));
+        };
+        set((state) => ({ artistWebsites: [...state.artistWebsites, mapped] }));
+        return mapped;
       }
-    } catch (e) { console.error(e); }
+      return null;
+    } catch (e) { console.error(e); return null; }
   },
 
   updateArtistWebsite: async (id, websiteData) => {
@@ -406,15 +412,18 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       const { data, error } = await supabase.from('artist_websites').update(updateData).eq('id', id).select().single();
       if (!error && data) {
-        set((state) => ({ artistWebsites: state.artistWebsites.map(s => s.id === id ? {
+        const mapped: ArtistWebsite = {
           ...data,
           userId: data.user_id,
           stageName: data.title,
           photoUrl: data.photo_url,
           createdAt: data.created_at,
-        } : s) }));
+        };
+        set((state) => ({ artistWebsites: state.artistWebsites.map(s => s.id === id ? mapped : s) }));
+        return mapped;
       }
-    } catch (e) { console.error(e); }
+      return null;
+    } catch (e) { console.error(e); return null; }
   },
 
   deleteArtistWebsite: async (id) => {
@@ -440,7 +449,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (userData.bio !== undefined) dbData.bio = userData.bio;
       if (userData.balance !== undefined) dbData.balance = userData.balance;
       
-      // Handle dynamic profile fields
       const profileFields = get().fields.filter(f => f.section === 'profile');
       profileFields.forEach(f => {
         if ((userData as any)[f.name] !== undefined) {
@@ -480,7 +488,6 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addTransaction: async (txData) => {
     try {
-      // 1. Insert transaction
       const { data, error } = await supabase.from('transactions').insert({
         user_id: txData.userId,
         amount: txData.amount,
@@ -490,7 +497,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }).select().single();
 
       if (!error && data) {
-        // 2. Update user balance in profiles
         const user = get().users.find(u => u.id === txData.userId);
         const currentBalance = user?.balance || 0;
         const newBalance = txData.type === 'deposit' ? currentBalance + txData.amount : currentBalance - txData.amount;
@@ -528,7 +534,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data: { user: sessionUser } } = await supabase.auth.getUser();
       if (!sessionUser) return;
       
-      // 1. Create request
       const insertData = {
         user_id: sessionUser.id,
         amount: reqData.amount,
@@ -540,12 +545,10 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data, error } = await supabase.from('withdrawal_requests').insert(insertData).select().single();
       
       if (!error && data) {
-        // 2. Deduct balance immediately
         const user = get().users.find(u => u.id === sessionUser.id);
         const newBalance = (user?.balance || 0) - reqData.amount;
         await get().updateUser(sessionUser.id, { balance: newBalance });
 
-        // 3. Add to transactions
         await get().addTransaction({
           userId: sessionUser.id,
           amount: reqData.amount,
@@ -574,7 +577,6 @@ export const useDataStore = create<DataState>((set, get) => ({
 
       await supabase.from('withdrawal_requests').update({ status, admin_comment: comment }).eq('id', id);
       
-      // If rejected, return funds to user
       if (status === 'rejected') {
         const user = get().users.find(u => u.id === req.userId);
         const newBalance = (user?.balance || 0) + req.amount;
