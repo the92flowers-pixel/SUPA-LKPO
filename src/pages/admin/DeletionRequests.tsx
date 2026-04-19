@@ -9,7 +9,7 @@ import { showSuccess, showError } from '@/utils/toast';
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
 const DeletionRequests = () => {
-  const { releases, fetchReleases, deleteRelease, rejectReleaseDeletion, users, fetchUsers } = useDataStore();
+  const { releases, fetchReleases, approveReleaseDeletion, rejectReleaseDeletion, users, fetchUsers } = useDataStore();
 
   useEffect(() => {
     fetchReleases();
@@ -19,9 +19,9 @@ const DeletionRequests = () => {
   const requests = releases.filter(r => r.deletion_status === 'pending');
 
   const handleApprove = async (id: string) => {
-    if (confirm('Ви впевнені, що хочете ОСТАТОЧНО видалити цей реліз?')) {
-      await deleteRelease(id);
-      showSuccess('Реліз видалено назавжди');
+    if (confirm('Ви впевнені, що хочете схвалити видалення цього релізу? Статус зміниться на "Видаляється".')) {
+      await approveReleaseDeletion(id);
+      showSuccess('Запит схвалено. Статус: Видаляється');
     }
   };
 
@@ -105,7 +105,7 @@ const DeletionRequests = () => {
                   className="bg-red-700 hover:bg-red-800 text-white rounded-none text-[10px] font-black uppercase tracking-widest h-12"
                   onClick={() => handleApprove(release.id)}
                 >
-                  <Trash2 size={16} className="mr-2" /> Видалити
+                  <Trash2 size={16} className="mr-2" /> Схвалити
                 </Button>
               </div>
             </Card>

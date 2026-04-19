@@ -54,6 +54,7 @@ interface DataState {
   updateReleaseStreams: (id: string, count: number, date: string) => Promise<void>;
   deleteRelease: (id: string) => Promise<void>;
   requestReleaseDeletion: (id: string) => Promise<void>;
+  approveReleaseDeletion: (id: string) => Promise<void>;
   rejectReleaseDeletion: (id: string) => Promise<void>;
 
   fetchSmartLinks: (userId?: string) => Promise<void>;
@@ -362,12 +363,33 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       const { error } = await supabase
         .from('releases')
-        .update({ deletion_status: 'pending' })
+        .update({ 
+          deletion_status: 'pending',
+          status: 'Очікує видалення'
+        })
         .eq('id', id);
       
       if (!error) {
         set((state) => ({ 
-          releases: state.releases.map(r => r.id === id ? { ...r, deletion_status: 'pending' } : r) 
+          releases: state.releases.map(r => r.id === id ? { ...r, deletion_status: 'pending', status: 'Очікує видалення' } : r) 
+        }));
+      }
+    } catch (e) { console.error(e); }
+  },
+
+  approveReleaseDeletion: async (id) => {
+    try {
+      const { error } = await supabase
+        .from('releases')
+        .update({ 
+          status: 'Видаляється',
+          deletion_status: null 
+        })
+        .eq('id', id);
+      
+      if (!error) {
+        set((state) => ({ 
+          releases: state.releases.map(r => r.id === id ? { ...r, status: 'Видаляється', deletion_status: null } : r) 
         }));
       }
     } catch (e) { console.error(e); }
@@ -377,12 +399,15 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       const { error } = await supabase
         .from('releases')
-        .update({ deletion_status: null })
+        .update({ 
+          deletion_status: null,
+          status: 'Опубліковано'
+        })
         .eq('id', id);
       
       if (!error) {
         set((state) => ({ 
-          releases: state.releases.map(r => r.id === id ? { ...r, deletion_status: null } : r) 
+          releases: state.releases.map(r => r.id === id ? { ...r, deletion_status: null, status: 'Опубліковано' } : r) 
         }));
       }
     } catch (e) { console.error(e); }
