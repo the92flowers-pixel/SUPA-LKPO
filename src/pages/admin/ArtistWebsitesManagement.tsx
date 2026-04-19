@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess, showError } from '@/utils/toast';
+import { cn } from '@/lib/utils';
 
 const PLATFORMS_LIST = [
   "Instagram", "Telegram", "YouTube", "TikTok", "Spotify", "Apple Music", "SoundCloud", "Website"
@@ -74,73 +75,69 @@ const ArtistWebsitesManagement = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Сайти артистів</h1>
-          <p className="text-gray-500">Керування персональними сторінками ({artistWebsites.length})</p>
+          <h1 className="text-4xl font-black tracking-tight text-white uppercase">Сайти артистів</h1>
+          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Керування персональними сторінками ({artistWebsites.length})</p>
         </div>
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
           <Input 
-            placeholder="Пошук за ім'ям або URL..." 
-            className="bg-[#1a1a1a] border-white/10 pl-10" 
+            placeholder="Пошук..." 
+            className="bg-black/40 border-white/5 pl-10 h-12 rounded-none text-[10px] font-bold uppercase tracking-widest" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      <Card className="bg-[#1a1a1a] border-white/5 overflow-hidden">
+      <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-white/5 text-xs uppercase text-gray-500 font-bold">
+            <thead className="bg-white/5 text-[10px] uppercase text-zinc-500 font-black tracking-widest">
               <tr>
-                <th className="px-6 py-4">Артист</th>
-                <th className="px-6 py-4">URL (Slug)</th>
-                <th className="px-6 py-4">Власник (Login)</th>
-                <th className="px-6 py-4">Посилання</th>
-                <th className="px-6 py-4">Дата створення</th>
-                <th className="px-6 py-4 text-right">Дії</th>
+                <th className="px-6 py-5">Артист</th>
+                <th className="px-6 py-5">URL (Slug)</th>
+                <th className="px-6 py-5">Власник</th>
+                <th className="px-6 py-5">Посилання</th>
+                <th className="px-6 py-5 text-right">Дії</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredWebsites.length > 0 ? (
                 filteredWebsites.map((website) => (
                   <tr key={website.id} className="hover:bg-white/5 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <img src={website.photoUrl} className="w-10 h-10 rounded-full object-cover" alt="" />
-                        <span className="font-medium text-sm">{website.stageName}</span>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-4">
+                        <img src={website.photoUrl} className="w-12 h-12 rounded-none object-cover border border-white/5" alt="" />
+                        <span className="font-bold text-xs text-white uppercase tracking-wider">{website.stageName}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-5">
                       <a 
                         href={`/a/${website.slug}`} 
                         target="_blank" 
-                        className="text-red-400 hover:text-red-300 flex items-center gap-1 text-sm font-mono"
+                        className="text-red-700 hover:text-red-500 flex items-center gap-2 text-[10px] font-mono"
                       >
                         /a/{website.slug} <ExternalLink size={12} />
                       </a>
                     </td>
-                    <td className="px-6 py-4 text-gray-400 text-sm">{getCreator(website.userId)}</td>
-                    <td className="px-6 py-4">
-                      <Badge variant="secondary" className="bg-white/5 text-[9px] uppercase font-bold">
+                    <td className="px-6 py-5 text-zinc-500 text-[10px] font-bold uppercase">{getCreator(website.userId)}</td>
+                    <td className="px-6 py-5">
+                      <Badge className="bg-white/5 text-zinc-500 border-none text-[9px] uppercase font-black tracking-widest rounded-none">
                         {website.links.length} Links
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(website.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(website)}>
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(website)} className="text-zinc-500 hover:text-white rounded-none">
                           <Edit2 size={16} />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-red-900 hover:text-red-500 hover:bg-red-900/10"
+                          className="text-red-900 hover:text-red-500 hover:bg-red-900/10 rounded-none"
                           onClick={() => deleteArtistWebsite(website.id)}
                         >
                           <Trash2 size={16} />
@@ -151,7 +148,7 @@ const ArtistWebsitesManagement = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center text-gray-600 uppercase text-xs font-bold tracking-widest">
+                  <td colSpan={5} className="px-6 py-20 text-center text-zinc-800 uppercase text-[10px] font-black tracking-widest">
                     Сайтів не знайдено
                   </td>
                 </tr>
@@ -162,13 +159,13 @@ const ArtistWebsitesManagement = () => {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-2xl max-h-[90vh] overflow-y-auto rounded-none">
+        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-2xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Редагувати сайт артиста</DialogTitle>
           </DialogHeader>
           {editingWebsite && (
-            <div className="space-y-8 py-4">
-              <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-8 py-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Персональне посилання (URL)</Label>
                   <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
@@ -219,7 +216,7 @@ const ArtistWebsitesManagement = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={addLink}
-                    className="border-white/10 text-[9px] font-black uppercase tracking-widest h-8"
+                    className="border-white/10 text-[9px] font-black uppercase tracking-widest h-8 rounded-none"
                   >
                     <Plus size={14} className="mr-2" /> Додати
                   </Button>
@@ -227,7 +224,7 @@ const ArtistWebsitesManagement = () => {
                 
                 <div className="space-y-3">
                   {editingWebsite.links.map((link: any, index: number) => (
-                    <div key={link.id} className="flex gap-3 items-end p-4 bg-white/5 border border-white/5 relative group">
+                    <div key={link.id} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end p-4 bg-white/5 border border-white/5 relative group">
                       <div className="flex-1 space-y-2">
                         <Label className="text-[9px] text-zinc-600 uppercase font-black">Платформа</Label>
                         <Select value={link.name} onValueChange={(val) => updateLink(index, 'name', val)}>
@@ -239,30 +236,32 @@ const ArtistWebsitesManagement = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex-[2] space-y-2">
-                        <Label className="text-[9px] text-zinc-600 uppercase font-black">URL</Label>
-                        <Input 
-                          value={link.url} 
-                          onChange={(e) => updateLink(index, 'url', e.target.value)}
-                          className="bg-black/40 border-white/5 h-10 text-xs rounded-none"
-                        />
+                      <div className="flex-[2] space-y-2 flex gap-2 items-end">
+                        <div className="flex-1 space-y-2">
+                          <Label className="text-[9px] text-zinc-600 uppercase font-black">URL</Label>
+                          <Input 
+                            value={link.url} 
+                            onChange={(e) => updateLink(index, 'url', e.target.value)}
+                            className="bg-black/40 border-white/5 h-10 text-xs rounded-none"
+                          />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-900 hover:text-red-500 hover:bg-red-900/10 h-10 w-10 rounded-none"
+                          onClick={() => removeLink(link.id)}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-red-900 hover:text-red-500 hover:bg-red-900/10 h-10 w-10"
-                        onClick={() => removeLink(link.id)}
-                      >
-                        <Trash2 size={16} />
-                      </Button>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Скасувати</Button>
+          <DialogFooter className="gap-3">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-none text-[10px] font-black uppercase tracking-widest">Скасувати</Button>
             <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none">
               Зберегти зміни
             </Button>
