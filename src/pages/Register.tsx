@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { Music, UserPlus, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
-import { supabase, toAppProfile } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,7 @@ const Register = () => {
     setError(null);
     
     try {
-      // Sign up the user in auth
+      // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.login,
         password: data.password,
@@ -58,55 +58,37 @@ const Register = () => {
       }
 
       if (authData.user) {
-        // Profile will be created automatically by database trigger
-        // But let's also create it manually to be sure
-        const { data: profile, error: profileError } = await supabase
+        // Create profile using the user ID
+        const { error: profileError } = await supabase
           .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single();
+          .insert({
+            id: authData.user.id,
+            email: data.login,
+            full_name: data.artistName,
+            role: 'artist',
+            balance: 0,
+            is_verified: false,
+          });
 
-        // If profile doesn't exist, create it
-        if (profileError?.code === 'PGRST116' || !profile) {
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authData.user.id,
-              email: data.login,
-              full_name: data.artistName,
-              role: 'artist',
-              balance: 0,
-              is_verified: false,
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.error('Profile creation error:', createError);
-          }
-
-          if (newProfile) {
-            const appUser = toAppProfile(newProfile);
-            setAuth(appUser);
-          } else {
-            // Fallback - create minimal auth state
-            setAuth({
-              id: authData.user.id,
-              email: data.login,
-              login: data.login,
-              role: 'artist',
-              artistName: data.artistName,
-              balance: 0,
-              isVerified: false,
-              createdAt: new Date().toISOString(),
-            });
-          }
-        } else if (profile) {
-          setAuth(toAppProfile(profile));
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          // Profile might already exist from database trigger
         }
 
         setSuccess(true);
         showSuccess('Акаунт успішно створено!');
+        
+        // Set auth state
+        setAuth({
+          id: authData.user.id,
+          email: data.login,
+          login: data.login,
+          role: 'artist',
+          artistName: data.artistName,
+          balance: 0,
+          isVerified: false,
+          createdAt: new Date().toISOString(),
+        });
         
         // Redirect to dashboard
         setTimeout(() => {

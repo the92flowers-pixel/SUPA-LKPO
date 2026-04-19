@@ -43,7 +43,7 @@ const Login = () => {
       }
 
       if (authData.user) {
-        // Try to fetch profile, if not exists - create it
+        // Fetch user profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -52,9 +52,12 @@ const Login = () => {
         
         if (profileError && profileError.code !== 'PGRST116') {
           console.error('Profile fetch error:', profileError);
+          showError('Помилка завантаження профілю');
+          setIsLoading(false);
+          return;
         }
         
-        // If profile doesn't exist, create one
+        // If profile doesn't exist, create a basic one
         if (!profile || profileError?.code === 'PGRST116') {
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
