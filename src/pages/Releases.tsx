@@ -218,10 +218,6 @@ const Releases = () => {
                     <p className="text-[8px] text-zinc-700 uppercase font-black tracking-widest">Жанр</p>
                     <span className="text-[10px] text-zinc-400 uppercase font-black tracking-widest">{release.genre}</span>
                   </div>
-                  <div className="text-right space-y-1">
-                    <p className="text-[8px] text-zinc-700 uppercase font-black tracking-widest">Стріми</p>
-                    <span className="text-sm font-black text-red-700 tracking-tighter">{release.streams.toLocaleString()}</span>
-                  </div>
                 </div>
               </CardContent>
             </Card>

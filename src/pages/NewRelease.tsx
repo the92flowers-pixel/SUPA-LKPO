@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, Users, FileText, AlertCircle, X, GripVertical, CheckCircle2, Link as LinkIcon } from 'lucide-react';
+import { Upload, Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, Users, FileText, AlertCircle, X, GripVertical, CheckCircle2, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import { uploadFile } from '@/lib/supabase';
 
 interface Track {
   id: string;
@@ -51,8 +52,8 @@ const NewRelease = () => {
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string>('');
-  const [isDragging, setIsDragging] = useState(false);
   
   const [formData, setFormData] = useState<ReleaseFormData>({
     title: '',
@@ -82,9 +83,41 @@ const NewRelease = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCoverUrlChange = (url: string) => {
-    updateFormData('coverUrl', url);
-    setCoverPreview(url);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validation
+    if (!file.type.includes('jpeg') && !file.type.includes('jpg')) {
+      showError('Будь ласка, завантажте файл у форматі JPG');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Максимальний розмір файлу — 5 МБ');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // Show local preview immediately
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to Supabase
+      const fileName = `${user?.id}/${Date.now()}-${file.name}`;
+      const publicUrl = await uploadFile('covers', fileName, file);
+      updateFormData('coverUrl', publicUrl);
+      showSuccess('Обкладинку завантажено');
+    } catch (error) {
+      console.error('Upload error:', error);
+      showError('Помилка завантаження файлу');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const addTrack = () => {
@@ -115,7 +148,7 @@ const NewRelease = () => {
       case 2:
         return formData.title.trim() !== '' && formData.artist.trim() !== '' && formData.performer.trim() !== '';
       case 3:
-        return formData.coverUrl.trim() !== '' || coverPreview !== '';
+        return formData.coverUrl.trim() !== '' && !isUploading;
       case 4:
         return tracks.every(t => t.title.trim() !== '');
       case 5:
@@ -150,8 +183,8 @@ const NewRelease = () => {
       showError('Вкажіть виконавця');
       return false;
     }
-    if (!formData.coverUrl.trim() && !coverPreview) {
-      showError('Додайте обкладинку релізу');
+    if (!formData.coverUrl.trim()) {
+      showError('Завантажте обкладинку релізу');
       return false;
     }
     for (const track of tracks) {
@@ -164,26 +197,16 @@ const NewRelease = () => {
   };
 
   const handleSubmit = async () => {
-    console.log('=== SUBMIT START ===');
-    
-    if (!validateAll()) {
-      console.log('Validation failed');
-      setIsSubmitting(false);
-      return;
-    }
+    if (!validateAll()) return;
 
     setIsSubmitting(true);
-    console.log('Creating release...');
-    
     try {
-      const coverUrl = formData.coverUrl || coverPreview;
-      
       const releaseData: any = {
         title: formData.title,
         artist: formData.artist,
         genre: formData.genre,
         releaseDate: formData.releaseDate,
-        coverUrl: coverUrl,
+        coverUrl: formData.coverUrl,
         composer: formData.composer,
         performer: formData.performer,
         label: formData.label,
@@ -196,19 +219,14 @@ const NewRelease = () => {
         releaseUrl: formData.releaseUrl,
       };
 
-      console.log('Release data:', releaseData);
-
       const result = await addRelease(releaseData);
-      console.log('Add release result:', result);
 
       if (result && result.id) {
-        console.log('Release created successfully:', result.id);
         showSuccess('Реліз успішно відправлено на модерацію!');
         await fetchReleases(user?.id, user?.role);
         navigate('/releases');
       } else {
-        console.log('Release creation failed - no result');
-        showError('Помилка при створенні релізу. Спробуйте ще раз.');
+        showError('Помилка при створенні релізу');
         setIsSubmitting(false);
       }
     } catch (error) {
@@ -424,55 +442,84 @@ const NewRelease = () => {
           <div className="space-y-8 max-w-2xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-3">Обкладинка</h2>
-              <p className="text-zinc-500 text-sm">Додайте URL обкладинки вашого релізу</p>
+              <p className="text-zinc-500 text-sm">Завантажте обкладинку вашого релізу</p>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                  Посилання на обкладинку (URL) <span className="text-red-800">*</span>
+                  Файл обкладинки (JPG, 1400x1400, до 5 МБ) <span className="text-red-800">*</span>
                 </Label>
-                <Input 
-                  value={formData.coverUrl}
-                  onChange={(e) => handleCoverUrlChange(e.target.value)}
-                  className="bg-black/40 border-white/5 rounded-none h-12 focus:border-red-700 text-white"
-                  placeholder="https://... (пряме посилання на зображення)"
-                />
-                <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">
-                  Використовуйте пряме посилання на зображення (формат JPG, PNG, квадратне, мінімум 3000x3000px)
-                </p>
+                
+                <div className="relative">
+                  <input 
+                    type="file"
+                    accept=".jpg,.jpeg"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="cover-upload"
+                    disabled={isUploading}
+                  />
+                  <label 
+                    htmlFor="cover-upload"
+                    className={cn(
+                      "flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed transition-all cursor-pointer",
+                      isUploading ? "opacity-50 cursor-not-allowed" : "hover:border-red-700/50 hover:bg-red-900/5",
+                      coverPreview ? "border-white/10" : "border-white/20 bg-black/20"
+                    )}
+                  >
+                    {isUploading ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="animate-spin text-red-700" size={40} />
+                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Завантаження...</p>
+                      </div>
+                    ) : coverPreview ? (
+                      <img 
+                        src={coverPreview} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-4 p-8 text-center">
+                        <Upload className="text-zinc-700" size={48} />
+                        <div>
+                          <p className="text-white text-xs font-black uppercase tracking-widest mb-1">Натисніть для завантаження</p>
+                          <p className="text-zinc-600 text-[9px] uppercase font-bold tracking-widest">Тільки JPG, до 5 МБ</p>
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                  
+                  {coverPreview && !isUploading && (
+                    <Button 
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-4 right-4 bg-black/60 hover:bg-black text-white h-10 w-10 rounded-none"
+                      onClick={(e) => { 
+                        e.preventDefault();
+                        setCoverPreview(''); 
+                        updateFormData('coverUrl', '');
+                      }}
+                    >
+                      <X size={18} />
+                    </Button>
+                  )}
+                </div>
               </div>
 
-              {(coverPreview || formData.coverUrl) && (
-                <div className="relative">
-                  <div className="aspect-square max-w-[400px] mx-auto border-2 border-white/10 overflow-hidden shadow-2xl">
-                    <img 
-                      src={coverPreview || formData.coverUrl} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                      onError={() => setCoverPreview('')}
-                    />
-                  </div>
-                  <Button 
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-4 right-4 bg-black/60 hover:bg-black text-white h-10 w-10 rounded-none"
-                    onClick={() => { handleCoverUrlChange(''); setCoverPreview(''); }}
-                  >
-                    <X size={18} />
-                  </Button>
+              <div className="p-4 bg-red-900/5 border border-red-900/10 flex items-start gap-3">
+                <AlertCircle className="text-red-700 shrink-0 mt-0.5" size={18} />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Вимоги до зображення</p>
+                  <ul className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest list-disc pl-4 space-y-1">
+                    <li>Формат: JPG / JPEG</li>
+                    <li>Розмір: 1400x1400 пікселів (квадрат)</li>
+                    <li>Вага: до 5 МБ</li>
+                    <li>Без логотипів соцмереж та зайвого тексту</li>
+                  </ul>
                 </div>
-              )}
-
-              {!coverPreview && !formData.coverUrl && (
-                <div className="aspect-square max-w-[400px] mx-auto border-2 border-dashed border-white/20 flex flex-col items-center justify-center bg-black/20">
-                  <Image className="text-zinc-700 mb-4" size={48} />
-                  <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">
-                    Попередній перегляд з'явиться тут
-                  </p>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         );
@@ -753,7 +800,7 @@ const NewRelease = () => {
           <Button 
             variant="ghost"
             onClick={handleBack}
-            disabled={currentStep === 1 || isSubmitting}
+            disabled={currentStep === 1 || isSubmitting || isUploading}
             className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest h-12 px-8 rounded-none disabled:opacity-30"
           >
             <ChevronLeft size={16} className="mr-2" /> Назад
@@ -762,15 +809,15 @@ const NewRelease = () => {
           {currentStep < STEPS.length ? (
             <Button 
               onClick={handleNext}
-              disabled={!canProceed()}
+              disabled={!canProceed() || isUploading}
               className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none disabled:opacity-30"
             >
-              Далі <ChevronRight size={16} className="ml-2" />
+              {isUploading ? 'Завантаження...' : 'Далі'} <ChevronRight size={16} className="ml-2" />
             </Button>
           ) : (
             <Button 
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
               className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none disabled:opacity-50"
             >
               {isSubmitting ? (
