@@ -1,3 +1,2 @@
 ALTER TABLE releases
-ADD COLUMN copyright_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
 ADD COLUMN copyrights TEXT;
