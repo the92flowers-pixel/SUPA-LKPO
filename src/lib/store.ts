@@ -159,7 +159,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         is_single: releaseData.isSingle,
       };
       
-      // Remove camelCase versions before insert
       delete insertData.releaseDate;
       delete insertData.coverUrl;
       delete insertData.releaseUrl;
@@ -405,6 +404,7 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (userData.role !== undefined) dbData.role = userData.role;
       if (userData.isVerified !== undefined) dbData.is_verified = userData.isVerified;
       if (userData.bio !== undefined) dbData.bio = userData.bio;
+      if (userData.balance !== undefined) dbData.balance = userData.balance;
       
       // Handle dynamic profile fields
       const profileFields = get().fields.filter(f => f.section === 'profile');
@@ -446,13 +446,30 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addTransaction: async (txData) => {
     try {
-      const { data, error } = await supabase.from('transactions').insert(txData).select().single();
+      // 1. Insert transaction
+      const { data, error } = await supabase.from('transactions').insert({
+        user_id: txData.userId,
+        amount: txData.amount,
+        type: txData.type,
+        status: txData.status || 'completed',
+        description: txData.description
+      }).select().single();
+
       if (!error && data) {
-        set((state) => ({ transactions: [{
-          ...data,
-          userId: data.user_id,
-          createdAt: data.created_at,
-        }, ...state.transactions] }));
+        // 2. Update user balance in profiles
+        const user = get().users.find(u => u.id === txData.userId);
+        const currentBalance = user?.balance || 0;
+        const newBalance = txData.type === 'deposit' ? currentBalance + txData.amount : currentBalance - txData.amount;
+        
+        await get().updateUser(txData.userId, { balance: newBalance });
+
+        set((state) => ({ 
+          transactions: [{
+            ...data,
+            userId: data.user_id,
+            createdAt: data.created_at,
+          }, ...state.transactions] 
+        }));
       }
     } catch (e) { console.error(e); }
   },
@@ -476,32 +493,71 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       const { data: sessionData } = await supabase.auth.getUser();
       if (!sessionData?.user) return;
+      
+      // 1. Create request
       const insertData = {
-        ...reqData,
         user_id: sessionData.user.id,
+        amount: reqData.amount,
         contact_info: reqData.contactInfo,
         confirmation_agreed: reqData.confirmationAgreed,
+        status: 'pending'
       };
-      delete (insertData as any).contactInfo;
-      delete (insertData as any).confirmationAgreed;
 
       const { data, error } = await supabase.from('withdrawal_requests').insert(insertData).select().single();
+      
       if (!error && data) {
-        set((state) => ({ withdrawalRequests: [{
-          ...data,
-          userId: data.user_id,
-          contactInfo: data.contact_info,
-          confirmationAgreed: data.confirmation_agreed,
-          createdAt: data.created_at,
-        }, ...state.withdrawalRequests] }));
+        // 2. Deduct balance immediately
+        const user = get().users.find(u => u.id === sessionData.user.id);
+        const newBalance = (user?.balance || 0) - reqData.amount;
+        await get().updateUser(sessionData.user.id, { balance: newBalance });
+
+        // 3. Add to transactions
+        await get().addTransaction({
+          userId: sessionData.user.id,
+          amount: reqData.amount,
+          type: 'withdrawal',
+          status: 'pending',
+          description: 'Запит на вивід коштів'
+        });
+
+        set((state) => ({ 
+          withdrawalRequests: [{
+            ...data,
+            userId: data.user_id,
+            contactInfo: data.contact_info,
+            confirmationAgreed: data.confirmation_agreed,
+            createdAt: data.created_at,
+          }, ...state.withdrawalRequests] 
+        }));
       }
     } catch (e) { console.error(e); }
   },
 
   updateWithdrawalStatus: async (id, status, comment) => {
     try {
+      const req = get().withdrawalRequests.find(r => r.id === id);
+      if (!req) return;
+
       await supabase.from('withdrawal_requests').update({ status, admin_comment: comment }).eq('id', id);
-      set((state) => ({ withdrawalRequests: state.withdrawalRequests.map(r => r.id === id ? { ...r, status, admin_comment: comment } : r) }));
+      
+      // If rejected, return funds to user
+      if (status === 'rejected') {
+        const user = get().users.find(u => u.id === req.userId);
+        const newBalance = (user?.balance || 0) + req.amount;
+        await get().updateUser(req.userId, { balance: newBalance });
+        
+        await get().addTransaction({
+          userId: req.userId,
+          amount: req.amount,
+          type: 'deposit',
+          status: 'completed',
+          description: `Повернення коштів (Відмова по заявці #${id})`
+        });
+      }
+
+      set((state) => ({ 
+        withdrawalRequests: state.withdrawalRequests.map(r => r.id === id ? { ...r, status, admin_comment: comment } : r) 
+      }));
     } catch (e) { console.error(e); }
   },
 
@@ -525,12 +581,12 @@ export const useDataStore = create<DataState>((set, get) => ({
   addReport: async (reportData) => {
     try {
       const insertData = {
-        ...reportData,
+        user_id: reportData.userId,
+        quarter: reportData.quarter,
+        year: reportData.year,
         file_url: reportData.fileUrl,
         file_name: reportData.fileName,
       };
-      delete (insertData as any).fileUrl;
-      delete (insertData as any).fileName;
 
       const { data, error } = await supabase.from('quarterly_reports').insert(insertData).select().single();
       if (!error && data) {

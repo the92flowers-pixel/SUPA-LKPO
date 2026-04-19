@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileText, Plus, Trash2, Search, User, Calendar, Link as LinkIcon } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { FileText, Plus, Trash2, Search, User, Calendar, Link as LinkIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,11 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { showSuccess } from '@/utils/toast';
+import { cn } from '@/lib/utils';
 
 const AdminReports = () => {
   const { quarterlyReports, users, addReport, deleteReport } = useDataStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [artistOpen, setArtistOpen] = useState(false);
   const [formData, setFormData] = useState({
     userId: '',
     quarter: '1',
@@ -20,16 +24,18 @@ const AdminReports = () => {
     fileName: ''
   });
 
-  const handleAddReport = () => {
+  const artists = useMemo(() => users.filter(u => u.role === 'artist'), [users]);
+
+  const handleAddReport = async () => {
     if (!formData.userId || !formData.fileUrl) return;
-    addReport({
+    await addReport({
       userId: formData.userId,
       quarter: parseInt(formData.quarter),
       year: parseInt(formData.year),
       fileUrl: formData.fileUrl,
       fileName: formData.fileName
     });
-    showSuccess('Звіт успішно додано');
+    showSuccess('Звіт успішно додано та синхронізовано');
     setIsModalOpen(false);
     setFormData({ userId: '', quarter: '1', year: '2026', fileUrl: '', fileName: '' });
   };
@@ -74,7 +80,7 @@ const AdminReports = () => {
                   const user = users.find(u => u.id === report.userId);
                   return (
                     <tr key={report.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 text-[10px] font-mono text-zinc-600">#{report.id}</td>
+                      <td className="px-6 py-4 text-[10px] font-mono text-zinc-600">#{report.id.slice(0, 8)}</td>
                       <td className="px-6 py-4">
                         <p className="text-xs font-bold text-white uppercase">{user?.artistName || user?.login}</p>
                         <p className="text-[9px] text-zinc-600 font-mono">{user?.login}</p>
@@ -122,16 +128,47 @@ const AdminReports = () => {
           <div className="space-y-6 py-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Виберіть користувача *</Label>
-              <Select onValueChange={(v) => setFormData({...formData, userId: v})}>
-                <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 focus:ring-0">
-                  <SelectValue placeholder="Пошук за email або імені" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                  {users.filter(u => u.role === 'artist').map(u => (
-                    <SelectItem key={u.id} value={u.id} className="uppercase font-bold text-[10px]">{u.artistName || u.login}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={artistOpen} onOpenChange={setArtistOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between bg-black/40 border-white/5 rounded-none h-12 text-white hover:bg-white/5"
+                  >
+                    {formData.userId
+                      ? artists.find((a) => a.id === formData.userId)?.artistName || artists.find((a) => a.id === formData.userId)?.login
+                      : "Пошук артиста..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0 bg-[#0a0a0a] border-white/5 rounded-none">
+                  <Command className="bg-transparent text-white">
+                    <CommandInput placeholder="Введіть ім'я..." className="h-12 border-none focus:ring-0" />
+                    <CommandList>
+                      <CommandEmpty className="p-4 text-xs text-zinc-600 uppercase font-bold">Артиста не знайдено</CommandEmpty>
+                      <CommandGroup>
+                        {artists.map((artist) => (
+                          <CommandItem
+                            key={artist.id}
+                            value={artist.artistName || artist.login}
+                            onSelect={() => {
+                              setFormData({...formData, userId: artist.id});
+                              setArtistOpen(false);
+                            }}
+                            className="flex items-center gap-3 p-3 cursor-pointer hover:bg-red-900/10"
+                          >
+                            <Check className={cn("h-4 w-4 text-red-700", formData.userId === artist.id ? "opacity-100" : "opacity-0")} />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold uppercase tracking-widest">{artist.artistName || artist.login}</span>
+                              <span className="text-[9px] text-zinc-600 font-mono">{artist.login}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
