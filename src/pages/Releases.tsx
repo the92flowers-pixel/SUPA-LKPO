@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, AlertTriangle, FileAudio, Hash } from 'lucide-react';
+import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, AlertTriangle, FileAudio, Hash, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,6 +30,7 @@ const Releases = () => {
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
   const [viewingRelease, setViewingRelease] = useState<any>(null);
   const [customSlug, setCustomSlug] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
   const [platforms, setPlatforms] = useState<PlatformItem[]>([{ id: '1', name: 'Spotify', url: '' }]);
   const [isEditing, setIsEditing] = useState(false);
   const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
@@ -69,11 +70,13 @@ const Releases = () => {
       setIsEditing(true);
       setExistingLinkId(existingLink.id);
       setCustomSlug(existingLink.slug);
+      setCoverUrl(existingLink.coverUrl || release.coverUrl);
       setPlatforms(existingLink.platforms.length > 0 ? existingLink.platforms.map(p => ({ id: p.id || Date.now().toString(), name: p.name, url: p.url })) : [{ id: '1', name: 'Spotify', url: '' }]);
     } else {
       setIsEditing(false);
       setExistingLinkId(null);
       setCustomSlug((release.title || '').toLowerCase().replace(/\s+/g, '-'));
+      setCoverUrl(release.coverUrl);
       setPlatforms([{ id: '1', name: 'Spotify', url: '' }]);
     }
   };
@@ -97,7 +100,7 @@ const Releases = () => {
         slug: customSlug,
         title: selectedRelease.title,
         artist: selectedRelease.artist,
-        coverUrl: selectedRelease.coverUrl,
+        coverUrl: coverUrl || selectedRelease.coverUrl,
         platforms: platforms.filter(p => p.url !== '').map(p => ({ ...p, icon: p.name.toLowerCase().replace(/\s+/g, '-') })),
       };
 
@@ -232,16 +235,41 @@ const Releases = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Кастомний URL</Label>
-              <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
-                <span className="text-zinc-600 text-xs font-mono">/s/</span>
-                <input 
-                  value={customSlug} 
-                  onChange={(e) => setCustomSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                  className="bg-transparent border-none focus:ring-0 text-white text-xs font-mono flex-1"
-                  placeholder="your-link-here"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Кастомний URL</Label>
+                  <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
+                    <span className="text-zinc-600 text-xs font-mono">/s/</span>
+                    <input 
+                      value={customSlug} 
+                      onChange={(e) => setCustomSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                      className="bg-transparent border-none focus:ring-0 text-white text-xs font-mono flex-1"
+                      placeholder="your-link-here"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                    <ImageIcon size={14} /> URL Обкладинки
+                  </Label>
+                  <Input 
+                    value={coverUrl} 
+                    onChange={(e) => setCoverUrl(e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none h-12 text-xs"
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-center">
+                <div className="aspect-square w-full max-w-[180px] border border-white/10 overflow-hidden shadow-2xl bg-black/40">
+                  <img 
+                    src={coverUrl || FALLBACK_IMAGE} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => (e.currentTarget.src = FALLBACK_IMAGE)}
+                  />
+                </div>
               </div>
             </div>
 
