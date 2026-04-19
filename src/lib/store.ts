@@ -97,6 +97,37 @@ interface DataState {
   updateAdminConfig: (config: { logoText: string; accentColor: string }) => Promise<void>;
 }
 
+// Default genres list
+export const DEFAULT_GENRES = [
+  'Hip-Hop / Rap',
+  'R&B',
+  'Pop',
+  'Rock',
+  'Electronic / EDM',
+  'Jazz',
+  'Classical',
+  'Country',
+  'Latin',
+  'Metal',
+  'Indie',
+  'Alternative',
+  'Folk',
+  'Blues',
+  'Reggae',
+  'Soundtrack',
+  'World',
+  'Dance',
+  'Drill',
+  'UK Drill',
+  'Afro',
+  'Amapiano',
+  'Phonk',
+  'Lo-Fi',
+  'Trap',
+  'Grime',
+  'Другое'
+];
+
 export const useDataStore = create<DataState>((set, get) => ({
   releases: [],
   smartLinks: [],
@@ -136,8 +167,9 @@ export const useDataStore = create<DataState>((set, get) => ({
           ...r,
           userId: r.user_id,
           artist: r.artist || r.title?.split(' - ')[0] || '',
-          releaseDate: r.release_date,
-          coverUrl: r.cover_url,
+          releaseDate: r.release_date || r.releaseDate || new Date().toISOString().split('T')[0],
+          coverUrl: r.cover_url || r.coverUrl || '',
+          genre: r.genre || 'Другое',
           createdAt: r.created_at,
         })) });
       }
@@ -147,11 +179,34 @@ export const useDataStore = create<DataState>((set, get) => ({
   addRelease: async (releaseData) => {
     const { data: sessionData } = await supabase.auth.getUser();
     if (!sessionData?.user) return;
+    
+    // Default status for new releases - "На модерації"
+    const defaultStatus = get().statuses.find(s => s.isDefault)?.name || 'На модерації';
+    
+    const insertData = {
+      user_id: sessionData.user.id,
+      title: releaseData.title,
+      artist: releaseData.artist || '',
+      genre: releaseData.genre || 'Другое',
+      cover_url: releaseData.coverUrl || releaseData.cover_url || '',
+      audio_url: releaseData.audioUrl || releaseData.audio_url || '',
+      release_date: releaseData.releaseDate || releaseData.release_date || new Date().toISOString().split('T')[0],
+      status: releaseData.status || defaultStatus,
+      streams: 0,
+      history: [],
+      // Additional fields
+      isrc: releaseData.isrc || '',
+      label: releaseData.label || '',
+      description: releaseData.description || '',
+      explicit: releaseData.explicit || false,
+    };
+
     const result = await supabase
       .from('releases')
-      .insert({ ...releaseData, user_id: sessionData.user.id, streams: 0, history: [] })
+      .insert(insertData)
       .select()
       .single();
+      
     if (!result.error && result.data) {
       const mapped = {
         ...result.data,
@@ -162,11 +217,31 @@ export const useDataStore = create<DataState>((set, get) => ({
         createdAt: result.data.created_at,
       };
       set((state) => ({ releases: [mapped, ...state.releases] }));
+      return mapped;
+    } else if (result.error) {
+      console.error('Error creating release:', result.error);
     }
+    return null;
   },
 
   updateRelease: async (id, releaseData) => {
-    const result = await supabase.from('releases').update(releaseData).eq('id', id).select().single();
+    const updateData: any = {};
+    
+    if (releaseData.title !== undefined) updateData.title = releaseData.title;
+    if (releaseData.artist !== undefined) updateData.artist = releaseData.artist;
+    if (releaseData.genre !== undefined) updateData.genre = releaseData.genre;
+    if (releaseData.coverUrl !== undefined) updateData.cover_url = releaseData.coverUrl;
+    if (releaseData.cover_url !== undefined) updateData.cover_url = releaseData.cover_url;
+    if (releaseData.audioUrl !== undefined) updateData.audio_url = releaseData.audioUrl;
+    if (releaseData.audio_url !== undefined) updateData.audio_url = releaseData.audio_url;
+    if (releaseData.releaseDate !== undefined) updateData.release_date = releaseData.releaseDate;
+    if (releaseData.status !== undefined) updateData.status = releaseData.status;
+    if (releaseData.isrc !== undefined) updateData.isrc = releaseData.isrc;
+    if (releaseData.label !== undefined) updateData.label = releaseData.label;
+    if (releaseData.description !== undefined) updateData.description = releaseData.description;
+    if (releaseData.explicit !== undefined) updateData.explicit = releaseData.explicit;
+
+    const result = await supabase.from('releases').update(updateData).eq('id', id).select().single();
     if (!result.error && result.data) {
       const mapped = {
         ...result.data,
@@ -177,18 +252,28 @@ export const useDataStore = create<DataState>((set, get) => ({
         createdAt: result.data.created_at,
       };
       set((state) => ({ releases: state.releases.map(r => r.id === id ? mapped : r) }));
+      return mapped;
     }
+    return null;
   },
 
   updateReleaseStatus: async (id, status) => {
-    await get().updateRelease(id, { status } as Partial<Release>);
+    const result = await supabase.from('releases').update({ status }).eq('id', id).select().single();
+    if (!result.error && result.data) {
+      set((state) => ({ 
+        releases: state.releases.map(r => r.id === id ? { ...r, status } : r) 
+      }));
+    }
   },
 
   updateReleaseStreams: async (id, count, date) => {
     const release = get().releases.find(r => r.id === id);
     if (!release) return;
     const newHistory = [...(release.history || []), { date, count }];
-    await get().updateRelease(id, { streams: release.streams + count, history: newHistory } as Partial<Release>);
+    await supabase.from('releases').update({ streams: release.streams + count, history: newHistory }).eq('id', id);
+    set((state) => ({ 
+      releases: state.releases.map(r => r.id === id ? { ...r, streams: r.streams + count, history: newHistory } : r) 
+    }));
   },
 
   deleteRelease: async (id) => {

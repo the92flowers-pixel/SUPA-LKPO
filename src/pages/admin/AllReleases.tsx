@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Music, Edit2, Trash2, Search, Filter, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Music, Edit2, Trash2, Search, Filter, Eye, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,96 +9,179 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess } from '@/utils/toast';
+import { cn } from '@/lib/utils';
+
+const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
 const AllReleases = () => {
-  const { releases, updateRelease, statuses, fields } = useDataStore();
+  const { releases, updateRelease, updateReleaseStatus, statuses, fetchReleases, users } = useDataStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingRelease, setEditingRelease] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const filteredReleases = releases.filter(r => 
-    r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    r.artist.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    fetchReleases();
+  }, [fetchReleases]);
+
+  const filteredReleases = releases.filter(r => {
+    const matchesSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          r.artist.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleEdit = (release: any) => {
     setEditingRelease({ ...release });
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    updateRelease(editingRelease.id, editingRelease);
-    showSuccess('Дані релізу оновлено');
-    setIsDialogOpen(false);
+  const handleSave = async () => {
+    if (editingRelease) {
+      await updateRelease(editingRelease.id, editingRelease);
+      showSuccess('Дані релізу оновлено');
+      setIsDialogOpen(false);
+    }
   };
 
-  const getStatusBadge = (statusName: string) => {
-    const status = statuses.find(s => s.name === statusName);
-    const color = status?.color || 'gray';
-    
-    const colors: Record<string, string> = {
-      green: "bg-green-500/10 text-green-500 border-green-500/20",
-      yellow: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-      red: "bg-red-500/10 text-red-500 border-red-500/20",
-      blue: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-      gray: "bg-gray-500/10 text-gray-500 border-gray-500/20"
-    };
+  const handleQuickAction = async (id: string, newStatus: string) => {
+    await updateReleaseStatus(id, newStatus);
+    showSuccess(`Статус оновлено на "${newStatus}"`);
+  };
 
+  const getUserName = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user?.artistName || user?.login || 'Невідомий';
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { bg: string; text: string }> = {
+      'На модерації': { bg: 'bg-amber-500/10', text: 'text-amber-500' },
+      'Опубліковано': { bg: 'bg-green-500/10', text: 'text-green-500' },
+      'Відхилено': { bg: 'bg-red-500/10', text: 'text-red-500' },
+    };
+    const config = statusConfig[status] || statusConfig['На модерації'];
     return (
-      <Badge variant="outline" className={colors[color]}>
-        {statusName}
+      <Badge className={cn("border-none text-[9px] uppercase font-black tracking-widest rounded-none", config.bg, config.text)}>
+        {status}
       </Badge>
     );
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Всі релізи</h1>
-          <p className="text-gray-500">Керування каталогом усіх артистів ({releases.length})</p>
+          <h1 className="text-4xl font-black tracking-tight text-white uppercase">Всі релізи</h1>
+          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Керування каталогом ({releases.length})</p>
         </div>
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+        <Button 
+          onClick={() => fetchReleases()} 
+          variant="outline" 
+          className="border-white/10 text-[10px] font-black uppercase tracking-widest h-12 rounded-none"
+        >
+          <RefreshCw size={14} className="mr-2" /> Оновити
+        </Button>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
           <Input 
             placeholder="Пошук за назвою або артистом..." 
-            className="bg-[#1a1a1a] border-white/10 pl-10" 
+            className="bg-black/40 border-white/5 pl-10 h-12 rounded-none text-[10px] font-bold uppercase tracking-widest" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="bg-black/40 border-white/5 w-48 h-12 rounded-none text-[10px] font-black uppercase tracking-widest">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+            <SelectItem value="all" className="text-[10px] font-bold uppercase">Всі статуси</SelectItem>
+            {statuses.map(s => (
+              <SelectItem key={s.id} value={s.name} className="text-[10px] font-bold uppercase">{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <Card className="bg-[#1a1a1a] border-white/5 overflow-hidden">
+      <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-white/5 text-xs uppercase text-gray-500 font-bold">
+            <thead className="bg-white/5 text-[10px] uppercase text-zinc-500 font-black tracking-widest">
               <tr>
-                <th className="px-6 py-4">Реліз</th>
-                <th className="px-6 py-4">Артист</th>
-                <th className="px-6 py-4">Жанр</th>
-                <th className="px-6 py-4">Статус</th>
-                <th className="px-6 py-4">Дата</th>
-                <th className="px-6 py-4 text-right">Дії</th>
+                <th className="px-6 py-5">Реліз</th>
+                <th className="px-6 py-5">Артист</th>
+                <th className="px-6 py-5">Жанр</th>
+                <th className="px-6 py-5">Власник</th>
+                <th className="px-6 py-5">Статус</th>
+                <th className="px-6 py-5 text-right">Дії</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filteredReleases.map((release) => (
                 <tr key={release.id} className="hover:bg-white/5 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img src={release.coverUrl} className="w-10 h-10 rounded object-cover" alt="" />
-                      <span className="font-medium">{release.title}</span>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-4">
+                      <img 
+                        src={release.coverUrl || FALLBACK_IMAGE} 
+                        className="w-12 h-12 rounded-none object-cover border border-white/5" 
+                        alt="" 
+                        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                      />
+                      <div>
+                        <p className="text-xs font-bold text-white uppercase tracking-wider">{release.title}</p>
+                        <p className="text-[9px] text-zinc-600 font-mono">ID: {release.id.slice(0, 8)}</p>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-gray-400">{release.artist}</td>
-                  <td className="px-6 py-4 text-gray-400">{release.genre}</td>
-                  <td className="px-6 py-4">{getStatusBadge(release.status)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{release.releaseDate}</td>
-                  <td className="px-6 py-4 text-right">
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(release)}>
-                      <Edit2 size={16} />
-                    </Button>
+                  <td className="px-6 py-5">
+                    <p className="text-xs font-bold text-zinc-400">{release.artist}</p>
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{release.genre || 'Другое'}</span>
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{getUserName(release.userId)}</span>
+                  </td>
+                  <td className="px-6 py-5">
+                    {getStatusBadge(release.status)}
+                  </td>
+                  <td className="px-6 py-5 text-right">
+                    <div className="flex justify-end gap-2">
+                      {release.status === 'На модерації' && (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleQuickAction(release.id, 'Опубліковано')}
+                            className="text-green-500 hover:text-green-400 hover:bg-green-500/10 rounded-none"
+                            title="Схвалити"
+                          >
+                            <CheckCircle size={16} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleQuickAction(release.id, 'Відхилено')}
+                            className="text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-none"
+                            title="Відхилити"
+                          >
+                            <XCircle size={16} />
+                          </Button>
+                        </>
+                      )}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleEdit(release)}
+                        className="text-zinc-500 hover:text-white rounded-none"
+                      >
+                        <Edit2 size={16} />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -108,80 +191,91 @@ const AllReleases = () => {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-3xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
-            <DialogTitle>Редагувати реліз</DialogTitle>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Редагувати реліз</DialogTitle>
           </DialogHeader>
           {editingRelease && (
-            <div className="grid grid-cols-2 gap-6 py-4">
+            <div className="grid grid-cols-2 gap-6 py-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Статус релізу</Label>
-                  <Select 
-                    value={editingRelease.status} 
-                    onValueChange={(v) => setEditingRelease({...editingRelease, status: v})}
-                  >
-                    <SelectTrigger className="bg-black/40 border-white/5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва</Label>
+                  <Input 
+                    value={editingRelease.title} 
+                    onChange={(e) => setEditingRelease({...editingRelease, title: e.target.value})} 
+                    className="bg-black/40 border-white/5 rounded-none h-12" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист</Label>
+                  <Input 
+                    value={editingRelease.artist} 
+                    onChange={(e) => setEditingRelease({...editingRelease, artist: e.target.value})} 
+                    className="bg-black/40 border-white/5 rounded-none h-12" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Жанр</Label>
+                  <Input 
+                    value={editingRelease.genre} 
+                    onChange={(e) => setEditingRelease({...editingRelease, genre: e.target.value})} 
+                    className="bg-black/40 border-white/5 rounded-none h-12" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Статус</Label>
+                  <Select value={editingRelease.status} onValueChange={(v) => setEditingRelease({...editingRelease, status: v})}>
+                    <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0a0a0a] border-white/5 text-white">
+                    <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
                       {statuses.map(s => (
-                        <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                        <SelectItem key={s.id} value={s.name} className="text-xs font-bold uppercase">{s.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Назва</Label>
-                  <Input value={editingRelease.title} onChange={(e) => setEditingRelease({...editingRelease, title: e.target.value})} className="bg-black/40 border-white/5" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Артист</Label>
-                  <Input value={editingRelease.artist} onChange={(e) => setEditingRelease({...editingRelease, artist: e.target.value})} className="bg-black/40 border-white/5" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Жанр</Label>
-                  <Input value={editingRelease.genre} onChange={(e) => setEditingRelease({...editingRelease, genre: e.target.value})} className="bg-black/40 border-white/5" />
-                </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Обкладинка (URL)</Label>
-                  <Input value={editingRelease.coverUrl} onChange={(e) => setEditingRelease({...editingRelease, coverUrl: e.target.value})} className="bg-black/40 border-white/5" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Обкладинка (URL)</Label>
+                  <Input 
+                    value={editingRelease.coverUrl || ''} 
+                    onChange={(e) => setEditingRelease({...editingRelease, coverUrl: e.target.value})} 
+                    className="bg-black/40 border-white/5 rounded-none h-12" 
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Аудіо (URL)</Label>
-                  <Input value={editingRelease.audioUrl} onChange={(e) => setEditingRelease({...editingRelease, audioUrl: e.target.value})} className="bg-black/40 border-white/5" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Аудіо (URL)</Label>
+                  <Input 
+                    value={editingRelease.audioUrl || ''} 
+                    onChange={(e) => setEditingRelease({...editingRelease, audioUrl: e.target.value})} 
+                    className="bg-black/40 border-white/5 rounded-none h-12" 
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Дата релізу</Label>
-                  <Input type="date" value={editingRelease.releaseDate} onChange={(e) => setEditingRelease({...editingRelease, releaseDate: e.target.value})} className="bg-black/40 border-white/5" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Дата релізу</Label>
+                  <Input 
+                    type="date" 
+                    value={editingRelease.releaseDate || ''} 
+                    onChange={(e) => setEditingRelease({...editingRelease, releaseDate: e.target.value})} 
+                    className="bg-black/40 border-white/5 rounded-none h-12" 
+                  />
                 </div>
-                <div className="pt-4">
-                  <img src={editingRelease.coverUrl} className="w-full aspect-square object-cover rounded-lg border border-white/10" alt="Preview" />
-                </div>
-              </div>
-              
-              <div className="col-span-2 border-t border-white/5 pt-4">
-                <h3 className="text-sm font-bold mb-4 text-zinc-400 uppercase tracking-widest">Додаткові поля</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {fields.filter(f => f.section === 'release' && !['title', 'artist', 'genre', 'releaseDate', 'coverUrl', 'audioUrl'].includes(f.name)).map(field => (
-                    <div key={field.id} className="space-y-2">
-                      <Label>{field.label}</Label>
-                      <Input 
-                        value={editingRelease[field.name] || ''} 
-                        onChange={(e) => setEditingRelease({...editingRelease, [field.name]: e.target.value})} 
-                        className="bg-black/40 border-white/5" 
-                      />
-                    </div>
-                  ))}
+                <div className="aspect-square border border-white/5 overflow-hidden mt-4">
+                  <img 
+                    src={editingRelease.coverUrl || FALLBACK_IMAGE} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                  />
                 </div>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>Скасувати</Button>
-            <Button onClick={handleSave} className="bg-violet-600 hover:bg-violet-700">Зберегти зміни</Button>
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="text-[10px] font-black uppercase tracking-widest rounded-none">Скасувати</Button>
+            <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none">Зберегти</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

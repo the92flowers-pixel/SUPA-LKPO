@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Play, Info, Music, Link as LinkIcon, Plus, Trash2, Globe, Eye } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, MoreVertical, Play, Info, Music, Link as LinkIcon, Plus, Trash2, Globe, Eye, Clock, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,10 +41,30 @@ const Releases = () => {
 
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink, updateSmartLink, fields } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink, fields, fetchReleases } = useDataStore();
 
-  const userReleases = releases.filter(r => r.userId === user?.id);
-  const filteredReleases = userReleases.filter(r => r.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Fetch releases on mount and when user changes
+  useEffect(() => {
+    if (user) {
+      fetchReleases(user.id, user.role);
+    }
+  }, [user, fetchReleases]);
+
+  // Filter releases based on user role
+  const filteredReleases = releases.filter(r => {
+    // Admin/moderator sees all, artist sees only their own
+    if (user?.role === 'admin') {
+      return r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+             r.artist.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    // For artists, only show their own releases
+    return r.userId === user?.id && (
+      r.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      r.artist.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
+  const userReleases = filteredReleases;
 
   const handleOpenModal = (release: any) => {
     setSelectedRelease(release);
@@ -105,12 +125,32 @@ const Releases = () => {
 
   const releaseFields = fields.filter(f => f.section === 'release');
 
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { bg: string; text: string; icon: any }> = {
+      'На модерації': { bg: 'bg-amber-500/10', text: 'text-amber-500', icon: Clock },
+      'Опубліковано': { bg: 'bg-green-500/10', text: 'text-green-500', icon: CheckCircle },
+      'Відхилено': { bg: 'bg-red-500/10', text: 'text-red-500', icon: XCircle },
+    };
+    
+    const config = statusConfig[status] || statusConfig['На модерації'];
+    const Icon = config.icon;
+    
+    return (
+      <Badge className={cn("border-none text-[9px] uppercase font-black tracking-widest rounded-none", config.bg, config.text)}>
+        <Icon size={10} className="mr-1" />
+        {status}
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-white uppercase">Каталог</h1>
-          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Керування вашою спадщиною</p>
+          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">
+            {user?.role === 'admin' ? 'Всі релізи' : 'Ваші релізи'} ({userReleases.length})
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <Input 
@@ -119,40 +159,65 @@ const Releases = () => {
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
           />
+          <Button 
+            onClick={() => navigate('/new-release')}
+            className="bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12 px-6"
+          >
+            <Plus size={14} className="mr-2" />
+            Новий реліз
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {filteredReleases.map((release) => (
-          <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden group hover:border-red-900/30 transition-all duration-500">
-            <div className="aspect-square relative overflow-hidden">
-              <img 
-                src={release.coverUrl} 
-                onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" 
-                alt="" 
-              />
-              <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-6">
-                <Button onClick={() => handleOpenModal(release)} className="w-full bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
-                  <LinkIcon size={14} className="mr-2" /> 
-                  {smartLinks.some(l => l.releaseId === release.id) ? 'Редагувати Link' : 'Smart Link'}
-                </Button>
-                <Button onClick={() => setViewingRelease(release)} variant="outline" className="w-full border-white/10 hover:bg-white/5 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
-                  <Eye size={14} className="mr-2" /> Деталі
-                </Button>
+      {userReleases.length === 0 ? (
+        <div className="text-center py-20 border border-dashed border-white/5">
+          <Music className="mx-auto text-zinc-800 mb-4" size={48} />
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">
+            {searchQuery ? 'Нічого не знайдено' : 'Релізів ще немає'}
+          </p>
+          {!searchQuery && user?.role !== 'admin' && (
+            <Button onClick={() => navigate('/new-release')} className="mt-6 bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest">
+              <Plus size={14} className="mr-2" />
+              Створити перший реліз
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {userReleases.map((release) => (
+            <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden group hover:border-red-900/30 transition-all duration-500">
+              <div className="aspect-square relative overflow-hidden">
+                <img 
+                  src={release.coverUrl || FALLBACK_IMAGE} 
+                  onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                  className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all" 
+                  alt="" 
+                />
+                <div className="absolute top-3 left-3">
+                  {getStatusBadge(release.status)}
+                </div>
+                <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-6">
+                  <Button onClick={() => handleOpenModal(release)} className="w-full bg-red-700 hover:bg-red-800 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
+                    <LinkIcon size={14} className="mr-2" /> 
+                    {smartLinks.some(l => l.releaseId === release.id) ? 'Редагувати Link' : 'Smart Link'}
+                  </Button>
+                  <Button onClick={() => setViewingRelease(release)} variant="outline" className="w-full border-white/10 hover:bg-white/5 rounded-none text-[10px] font-black uppercase tracking-widest h-12">
+                    <Eye size={14} className="mr-2" /> Деталі
+                  </Button>
+                </div>
               </div>
-            </div>
-            <CardContent className="p-6">
-              <h3 className="font-black text-white text-sm uppercase tracking-wider truncate">{release.title}</h3>
-              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-1">{release.genre}</p>
-              <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
-                <Badge className="bg-white/5 text-zinc-500 border-none text-[9px] uppercase font-black">{release.status}</Badge>
-                <span className="text-xs font-black text-red-700">{release.streams.toLocaleString()}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <CardContent className="p-6">
+                <h3 className="font-black text-white text-sm uppercase tracking-wider truncate">{release.title}</h3>
+                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-1">{release.artist}</p>
+                <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
+                  <span className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">{release.genre}</span>
+                  <span className="text-xs font-black text-red-700">{release.streams.toLocaleString()}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Smart Link Modal */}
       <Dialog open={!!selectedRelease} onOpenChange={() => setSelectedRelease(null)}>
@@ -234,30 +299,58 @@ const Releases = () => {
               <div className="space-y-6">
                 <div className="aspect-square border border-white/5 shadow-2xl">
                   <img 
-                    src={viewingRelease.coverUrl} 
+                    src={viewingRelease.coverUrl || FALLBACK_IMAGE} 
                     onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
                     className="w-full h-full object-cover" 
                     alt="" 
                   />
                 </div>
-                <div className="p-4 bg-white/5 border border-white/5 space-y-2">
-                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Статус дистрибуції</p>
-                  <Badge className="bg-red-900/20 text-red-500 border-none text-[10px] font-black uppercase tracking-widest">
-                    {viewingRelease.status}
-                  </Badge>
+                <div className="p-4 bg-white/5 border border-white/5 space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Статус</p>
+                    {getStatusBadge(viewingRelease.status)}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Стріми</p>
+                    <p className="text-lg font-black text-white">{viewingRelease.streams?.toLocaleString() || 0}</p>
+                  </div>
                 </div>
               </div>
               <div className="space-y-6">
-                <div className="grid grid-cols-1 gap-6">
-                  {releaseFields.map(field => (
-                    <div key={field.id} className="space-y-1 border-b border-white/5 pb-3">
-                      <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">{field.label}</p>
-                      <p className="text-sm font-bold text-white uppercase tracking-tight">
-                        {viewingRelease[field.name] || '—'}
-                      </p>
-                    </div>
-                  ))}
+                <div className="space-y-1 border-b border-white/5 pb-3">
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Назва</p>
+                  <p className="text-lg font-black text-white uppercase tracking-tight">{viewingRelease.title}</p>
                 </div>
+                <div className="space-y-1 border-b border-white/5 pb-3">
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Артист</p>
+                  <p className="text-sm font-bold text-white">{viewingRelease.artist}</p>
+                </div>
+                <div className="space-y-1 border-b border-white/5 pb-3">
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Жанр</p>
+                  <p className="text-sm font-bold text-white">{viewingRelease.genre || 'Другое'}</p>
+                </div>
+                <div className="space-y-1 border-b border-white/5 pb-3">
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Дата релізу</p>
+                  <p className="text-sm font-bold text-white">{viewingRelease.releaseDate || viewingRelease.release_date || '—'}</p>
+                </div>
+                {viewingRelease.isrc && (
+                  <div className="space-y-1 border-b border-white/5 pb-3">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">ISRC</p>
+                    <p className="text-sm font-bold text-white font-mono">{viewingRelease.isrc}</p>
+                  </div>
+                )}
+                {viewingRelease.label && (
+                  <div className="space-y-1 border-b border-white/5 pb-3">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Лейбл</p>
+                    <p className="text-sm font-bold text-white">{viewingRelease.label}</p>
+                  </div>
+                )}
+                {viewingRelease.description && (
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Опис</p>
+                    <p className="text-sm text-zinc-400 leading-relaxed">{viewingRelease.description}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
