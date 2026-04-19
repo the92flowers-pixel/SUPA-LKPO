@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, RefreshCw, ExternalLink, AlertTriangle, FileAudio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -286,7 +286,7 @@ const Releases = () => {
 
       {/* Release Details Modal */}
       <Dialog open={!!viewingRelease} onOpenChange={() => setViewingRelease(null)}>
-        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-2xl max-h-[90vh] overflow-y-auto rounded-none">
+        <DialogContent className="bg-[#0a0a0a] border-white/5 text-white max-w-3xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tighter">Інформація про реліз</DialogTitle>
           </DialogHeader>
@@ -321,18 +321,14 @@ const Releases = () => {
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Артист</p>
                   <p className="text-sm font-bold text-white">{viewingRelease.artist}</p>
                 </div>
-                {viewingRelease.performer && (
-                  <div className="space-y-1 border-b border-white/5 pb-3">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Виконавець</p>
-                    <p className="text-sm font-bold text-white">{viewingRelease.performer}</p>
-                  </div>
-                )}
-                {viewingRelease.composer && (
-                  <div className="space-y-1 border-b border-white/5 pb-3">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Композитор</p>
-                    <p className="text-sm font-bold text-white">{viewingRelease.composer}</p>
-                  </div>
-                )}
+                <div className="space-y-1 border-b border-white/5 pb-3">
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Композитор</p>
+                  <p className="text-sm font-bold text-white">{viewingRelease.composer || '—'}</p>
+                </div>
+                <div className="space-y-1 border-b border-white/5 pb-3">
+                  <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Лейбл</p>
+                  <p className="text-sm font-bold text-white">{viewingRelease.label || 'ЖУРБА MUSIC'}</p>
+                </div>
                 <div className="space-y-1 border-b border-white/5 pb-3">
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Жанр</p>
                   <p className="text-sm font-bold text-white">{viewingRelease.genre || 'Другое'}</p>
@@ -341,38 +337,25 @@ const Releases = () => {
                   <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Дата релізу</p>
                   <p className="text-sm font-bold text-white">{viewingRelease.releaseDate || '—'}</p>
                 </div>
-                {viewingRelease.isrc && (
-                  <div className="space-y-1 border-b border-white/5 pb-3">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">ISRC</p>
-                    <p className="text-sm font-bold text-white font-mono">{viewingRelease.isrc}</p>
+                
+                <div className="space-y-3 pt-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Треклист</p>
+                  <div className="space-y-2">
+                    {viewingRelease.tracks?.map((track: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-white/5 border border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-black text-zinc-600">{idx + 1}</span>
+                          <div>
+                            <p className="text-[11px] font-bold text-white uppercase">{track.title}</p>
+                            <p className="text-[8px] text-zinc-500 flex items-center gap-1 mt-0.5">
+                              <FileAudio size={10} /> {track.fileName}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-                {viewingRelease.releaseUrl && (
-                  <div className="space-y-1 border-b border-white/5 pb-3">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Посилання на реліз</p>
-                    <a 
-                      href={viewingRelease.releaseUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm font-bold text-red-500 hover:text-red-400 underline break-all flex items-center gap-2"
-                    >
-                      <ExternalLink size={14} />
-                      {viewingRelease.releaseUrl}
-                    </a>
-                  </div>
-                )}
-                {viewingRelease.label && (
-                  <div className="space-y-1 border-b border-white/5 pb-3">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Лейбл</p>
-                    <p className="text-sm font-bold text-white">{viewingRelease.label}</p>
-                  </div>
-                )}
-                {viewingRelease.description && (
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Опис</p>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{viewingRelease.description}</p>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           )}

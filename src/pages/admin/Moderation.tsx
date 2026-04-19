@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -160,7 +160,7 @@ const Moderation = () => {
 
       {/* Moderation & Edit Modal */}
       <Dialog open={!!selectedTrack} onOpenChange={() => setSelectedTrack(null)}>
-        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-none">
+        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-5xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -173,7 +173,7 @@ const Moderation = () => {
           </DialogHeader>
 
           {selectedTrack && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-6">
               <div className="space-y-6">
                 <div className="aspect-square rounded-none overflow-hidden border border-white/5 shadow-2xl relative group">
                   <img 
@@ -245,22 +245,40 @@ const Moderation = () => {
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва релізу</Label>
-                    <Input 
-                      value={selectedTrack.title} 
-                      onChange={(e) => updateField('title', e.target.value)}
-                      className="bg-black/40 border-white/5 rounded-none h-12 text-white font-bold"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+              <div className="lg:col-span-2 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва релізу</Label>
+                      <Input 
+                        value={selectedTrack.title} 
+                        onChange={(e) => updateField('title', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-12 text-white font-bold"
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист</Label>
                       <Input 
                         value={selectedTrack.artist} 
                         onChange={(e) => updateField('artist', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Композитор (ПІБ)</Label>
+                      <Input 
+                        value={selectedTrack.composer || ''} 
+                        onChange={(e) => updateField('composer', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Лейбл</Label>
+                      <Input 
+                        value={selectedTrack.label || 'ЖУРБА MUSIC'} 
+                        onChange={(e) => updateField('label', e.target.value)}
                         className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
                       />
                     </div>
@@ -272,20 +290,43 @@ const Moderation = () => {
                         className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
                       />
                     </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4 border-t border-white/5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-red-700">Додаткові поля</p>
-                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Виконавець (ПІБ)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Дата релізу</Label>
                       <Input 
-                        value={selectedTrack.performer || ''} 
-                        onChange={(e) => updateField('performer', e.target.value)}
+                        type="date"
+                        value={selectedTrack.releaseDate} 
+                        onChange={(e) => updateField('releaseDate', e.target.value)}
                         className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-6 border-t border-white/5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-700 flex items-center gap-2">
+                    <Music size={14} /> Треклист та Файли
+                  </p>
+                  <div className="space-y-3">
+                    {selectedTrack.tracks?.map((track: any, idx: number) => (
+                      <div key={idx} className="p-4 bg-white/5 border border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-black text-zinc-600">{idx + 1}</span>
+                          <div>
+                            <p className="text-xs font-bold text-white uppercase">{track.title}</p>
+                            <p className="text-[9px] text-zinc-500 flex items-center gap-1 mt-1">
+                              <FileAudio size={10} /> {track.fileName || 'no_filename'}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-mono text-zinc-600">{track.duration}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-6 border-t border-white/5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Додаткові поля</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {releaseFields.map(field => (
                       <div key={field.id} className="space-y-2">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{field.label}</Label>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield } from 'lucide-react';
+import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 interface Track {
   id: string;
   title: string;
+  fileName: string;
   duration: string;
   explicit: boolean;
   lyrics: string;
@@ -36,11 +37,16 @@ const NewRelease = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Calculate min date (7 days from now)
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 7);
+  const minDateStr = minDate.toISOString().split('T')[0];
+
   const [formData, setFormData] = useState<any>({
     title: '',
     artist: user?.artistName || '',
     genre: 'Другое',
-    releaseDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    releaseDate: minDateStr,
     coverUrl: '',
     composer: '',
     performer: '',
@@ -56,7 +62,7 @@ const NewRelease = () => {
   
   const [releaseType, setReleaseType] = useState<'single' | 'album'>('single');
   const [tracks, setTracks] = useState<Track[]>([
-    { id: '1', title: '', duration: '', explicit: false, lyrics: '', position: 1 }
+    { id: '1', title: '', fileName: '', duration: '', explicit: false, lyrics: '', position: 1 }
   ]);
   
   const defaultStatus = statuses.find((s: any) => s.isDefault)?.name || 'На модерації';
@@ -71,6 +77,7 @@ const NewRelease = () => {
     setTracks([...tracks, { 
       id: Date.now().toString(), 
       title: '', 
+      fileName: '',
       duration: '', 
       explicit: false, 
       lyrics: '', 
@@ -95,12 +102,15 @@ const NewRelease = () => {
         const basicValid = formData.title.trim() !== '' && 
                           formData.artist.trim() !== '' && 
                           formData.performer.trim() !== '' &&
+                          formData.composer.trim() !== '' &&
+                          formData.label.trim() !== '' &&
+                          formData.releaseDate !== '' &&
                           formData.copyrights.trim() !== '';
         const dynamicValid = releaseFields.every(f => !f.required || (formData[f.name] && formData[f.name].toString().trim() !== ''));
         return basicValid && dynamicValid;
       }
       case 3: return formData.coverUrl.trim() !== '';
-      case 4: return tracks.every(t => t.title.trim() !== '');
+      case 4: return tracks.every(t => t.title.trim() !== '' && t.fileName.trim() !== '');
       case 5: return formData.copyrightConfirmed === true;
       default: return false;
     }
@@ -125,7 +135,7 @@ const NewRelease = () => {
         ...formData,
         status: defaultStatus,
         isSingle: releaseType === 'single',
-        tracks: releaseType === 'album' ? tracks : undefined,
+        tracks: tracks,
       };
 
       const result = await addRelease(releaseData);
@@ -197,12 +207,29 @@ const NewRelease = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист *</Label>
                   <Input value={formData.artist} onChange={(e) => updateFormData('artist', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Назва артиста..." />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Виконавець (ПІБ) *</Label>
                   <Input value={formData.performer} onChange={(e) => updateFormData('performer', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Прізвище Ім'я Побатькові..." />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Композитор (ПІБ) *</Label>
+                  <Input value={formData.composer} onChange={(e) => updateFormData('composer', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" placeholder="Прізвище Ім'я Побатькові..." />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Лейбл *</Label>
+                  <Select value={formData.label} onValueChange={(val) => updateFormData('label', val)}>
+                    <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                      <SelectItem value="ЖУРБА MUSIC" className="text-xs uppercase font-bold">ЖУРБА MUSIC</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -220,8 +247,17 @@ const NewRelease = () => {
                   </Select>
                 </div>
                 <div className="space-y-3">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Дата релізу</Label>
-                  <Input type="date" value={formData.releaseDate} onChange={(e) => updateFormData('releaseDate', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-12" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                    <Calendar size={14} /> Дата релізу *
+                  </Label>
+                  <Input 
+                    type="date" 
+                    min={minDateStr}
+                    value={formData.releaseDate} 
+                    onChange={(e) => updateFormData('releaseDate', e.target.value)} 
+                    className="bg-black/40 border-white/5 rounded-none h-12 text-white" 
+                  />
+                  <p className="text-[8px] text-zinc-600 uppercase font-bold">Мінімум 7 днів від сьогодні</p>
                 </div>
               </div>
 
@@ -313,11 +349,22 @@ const NewRelease = () => {
                         <Input value={track.title} onChange={(e) => updateTrack(track.id, 'title', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-10" placeholder="Назва треку..." />
                       </div>
                       <div className="space-y-2">
+                        <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Назва Файлу *</Label>
+                        <Input value={track.fileName} onChange={(e) => updateTrack(track.id, 'fileName', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-10" placeholder="track_final_v2.wav" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
                         <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Тривалість (хх:хх)</Label>
                         <Input value={track.duration} onChange={(e) => updateTrack(track.id, 'duration', e.target.value)} className="bg-black/40 border-white/5 rounded-none h-10" placeholder="03:45" />
                       </div>
                     </div>
                   </div>
+                  {releaseType === 'album' && tracks.length > 1 && (
+                    <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-zinc-700 hover:text-red-500" onClick={() => removeTrack(track.id)}>
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
                 </div>
               ))}
               {releaseType === 'album' && (
@@ -346,6 +393,10 @@ const NewRelease = () => {
                 <div className="p-4 bg-white/5 border border-white/5">
                   <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Виконавець</h4>
                   <p className="text-white font-bold">{formData.performer}</p>
+                </div>
+                <div className="p-4 bg-white/5 border border-white/5">
+                  <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Композитор</h4>
+                  <p className="text-white font-bold">{formData.composer}</p>
                 </div>
                 <div className="p-4 bg-white/5 border border-white/5">
                   <h4 className="text-[10px] text-zinc-600 uppercase font-black tracking-widest mb-1">Дата релізу</h4>

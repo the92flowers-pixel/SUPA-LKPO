@@ -56,6 +56,7 @@ export const toAppProfile = (dbProfile: Profile): AppUser => ({
 export interface Track {
   id?: string;
   title: string;
+  fileName: string;
   audioUrl?: string;
   duration?: string;
   explicit?: boolean;
