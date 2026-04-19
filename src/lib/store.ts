@@ -140,6 +140,7 @@ export const useDataStore = create<DataState>((set, get) => ({
           releaseUrl: r.release_url,
           createdAt: r.created_at,
           isSingle: r.is_single,
+          copyrightConfirmed: r.copyright_confirmed
         })) });
       }
     } catch (e) { console.error(e); }
@@ -147,25 +148,40 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addRelease: async (releaseData) => {
     try {
-      const { data: sessionData } = await supabase.auth.getUser();
-      if (!sessionData?.user) throw new Error('Unauthorized');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Unauthorized');
       
-      const insertData = {
-        ...releaseData,
-        user_id: sessionData.user.id,
+      const dbData = {
+        user_id: user.id,
+        title: releaseData.title,
+        artist: releaseData.artist,
+        genre: releaseData.genre,
         release_date: releaseData.releaseDate,
         cover_url: releaseData.coverUrl,
-        release_url: releaseData.releaseUrl,
-        is_single: releaseData.isSingle,
+        composer: releaseData.composer,
+        performer: releaseData.performer,
+        label: releaseData.label,
+        description: releaseData.description,
+        explicit: !!releaseData.explicit,
+        is_single: !!releaseData.isSingle,
+        isrc: releaseData.isrc || null,
+        upc: releaseData.upc || null,
+        release_url: releaseData.releaseUrl || null,
+        copyrights: releaseData.copyrights,
+        copyright_confirmed: !!releaseData.copyrightConfirmed,
+        tracks: releaseData.tracks || [],
+        status: releaseData.status || 'На модерації',
+        streams: 0,
+        history: []
       };
-      
-      delete insertData.releaseDate;
-      delete insertData.coverUrl;
-      delete insertData.releaseUrl;
-      delete insertData.isSingle;
 
-      const { data, error } = await supabase.from('releases').insert(insertData).select().single();
-      if (error) throw error;
+      const { data, error } = await supabase.from('releases').insert(dbData).select().single();
+      
+      if (error) {
+        console.error('Supabase Insert Error:', error);
+        throw error;
+      }
+
       if (data) {
         const mapped: Release = {
           ...data,
@@ -175,34 +191,46 @@ export const useDataStore = create<DataState>((set, get) => ({
           releaseUrl: data.release_url,
           createdAt: data.created_at,
           isSingle: data.is_single,
+          copyrightConfirmed: data.copyright_confirmed
         };
         set((state) => ({ releases: [mapped, ...state.releases] }));
         return mapped;
       }
       return null;
-    } catch (e) { throw e; }
+    } catch (e) { 
+      console.error('Add Release Error:', e);
+      throw e; 
+    }
   },
 
   updateRelease: async (id, releaseData) => {
     try {
-      const updateData: any = {
-        ...releaseData,
+      const dbData: any = {
+        title: releaseData.title,
+        artist: releaseData.artist,
+        genre: releaseData.genre,
         release_date: releaseData.releaseDate,
         cover_url: releaseData.coverUrl,
-        release_url: releaseData.releaseUrl,
-        is_single: releaseData.isSingle,
+        composer: releaseData.composer,
+        performer: releaseData.performer,
+        label: releaseData.label,
+        description: releaseData.description,
+        explicit: !!releaseData.explicit,
+        is_single: !!releaseData.isSingle,
+        isrc: releaseData.isrc || null,
+        upc: releaseData.upc || null,
+        release_url: releaseData.releaseUrl || null,
+        copyrights: releaseData.copyrights,
+        copyright_confirmed: !!releaseData.copyrightConfirmed,
+        tracks: releaseData.tracks || [],
+        status: releaseData.status
       };
-      
-      delete updateData.id;
-      delete updateData.userId;
-      delete updateData.releaseDate;
-      delete updateData.coverUrl;
-      delete updateData.releaseUrl;
-      delete updateData.isSingle;
-      delete updateData.createdAt;
 
-      const { data, error } = await supabase.from('releases').update(updateData).eq('id', id).select().single();
-      if (!error && data) {
+      const { data, error } = await supabase.from('releases').update(dbData).eq('id', id).select().single();
+      
+      if (error) throw error;
+
+      if (data) {
         const mapped: Release = {
           ...data,
           userId: data.user_id,
@@ -211,12 +239,16 @@ export const useDataStore = create<DataState>((set, get) => ({
           releaseUrl: data.release_url,
           createdAt: data.created_at,
           isSingle: data.is_single,
+          copyrightConfirmed: data.copyright_confirmed
         };
         set((state) => ({ releases: state.releases.map(r => r.id === id ? mapped : r) }));
         return mapped;
       }
       return null;
-    } catch (e) { return null; }
+    } catch (e) { 
+      console.error('Update Release Error:', e);
+      return null; 
+    }
   },
 
   updateReleaseStatus: async (id, status) => {
@@ -263,16 +295,18 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addSmartLink: async (linkData) => {
     try {
-      const { data: sessionData } = await supabase.auth.getUser();
-      if (!sessionData?.user) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const insertData = {
-        ...linkData,
-        user_id: sessionData.user.id,
+        user_id: user.id,
         release_id: linkData.releaseId,
+        slug: linkData.slug,
+        title: linkData.title,
+        artist: linkData.artist,
         cover_url: linkData.coverUrl,
+        platforms: linkData.platforms,
+        clicks: 0
       };
-      delete (insertData as any).releaseId;
-      delete (insertData as any).coverUrl;
 
       const { data, error } = await supabase.from('smart_links').insert(insertData).select().single();
       if (!error && data) {
@@ -290,12 +324,12 @@ export const useDataStore = create<DataState>((set, get) => ({
   updateSmartLink: async (id, linkData) => {
     try {
       const updateData = {
-        ...linkData,
-        release_id: linkData.releaseId,
+        slug: linkData.slug,
+        title: linkData.title,
+        artist: linkData.artist,
         cover_url: linkData.coverUrl,
+        platforms: linkData.platforms
       };
-      delete (updateData as any).releaseId;
-      delete (updateData as any).coverUrl;
 
       const { data, error } = await supabase.from('smart_links').update(updateData).eq('id', id).select().single();
       if (!error && data) {
@@ -336,16 +370,16 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addArtistWebsite: async (websiteData) => {
     try {
-      const { data: sessionData } = await supabase.auth.getUser();
-      if (!sessionData?.user) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const insertData = {
-        ...websiteData,
-        user_id: sessionData.user.id,
+        user_id: user.id,
         title: websiteData.stageName,
+        slug: websiteData.slug,
+        bio: websiteData.bio,
         photo_url: websiteData.photoUrl,
+        links: websiteData.links
       };
-      delete (insertData as any).stageName;
-      delete (insertData as any).photoUrl;
 
       const { data, error } = await supabase.from('artist_websites').insert(insertData).select().single();
       if (!error && data) {
@@ -363,12 +397,12 @@ export const useDataStore = create<DataState>((set, get) => ({
   updateArtistWebsite: async (id, websiteData) => {
     try {
       const updateData = {
-        ...websiteData,
         title: websiteData.stageName,
+        slug: websiteData.slug,
+        bio: websiteData.bio,
         photo_url: websiteData.photoUrl,
+        links: websiteData.links
       };
-      delete (updateData as any).stageName;
-      delete (updateData as any).photoUrl;
 
       const { data, error } = await supabase.from('artist_websites').update(updateData).eq('id', id).select().single();
       if (!error && data) {
@@ -491,12 +525,12 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addWithdrawalRequest: async (reqData) => {
     try {
-      const { data: sessionData } = await supabase.auth.getUser();
-      if (!sessionData?.user) return;
+      const { data: { user: sessionUser } } = await supabase.auth.getUser();
+      if (!sessionUser) return;
       
       // 1. Create request
       const insertData = {
-        user_id: sessionData.user.id,
+        user_id: sessionUser.id,
         amount: reqData.amount,
         contact_info: reqData.contactInfo,
         confirmation_agreed: reqData.confirmationAgreed,
@@ -507,13 +541,13 @@ export const useDataStore = create<DataState>((set, get) => ({
       
       if (!error && data) {
         // 2. Deduct balance immediately
-        const user = get().users.find(u => u.id === sessionData.user.id);
+        const user = get().users.find(u => u.id === sessionUser.id);
         const newBalance = (user?.balance || 0) - reqData.amount;
-        await get().updateUser(sessionData.user.id, { balance: newBalance });
+        await get().updateUser(sessionUser.id, { balance: newBalance });
 
         // 3. Add to transactions
         await get().addTransaction({
-          userId: sessionData.user.id,
+          userId: sessionUser.id,
           amount: reqData.amount,
           type: 'withdrawal',
           status: 'pending',
