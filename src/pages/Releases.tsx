@@ -214,6 +214,14 @@ const Releases = () => {
                     {release.artist}
                   </p>
                 </div>
+                {release.status === 'Відхилено' && release.rejection_reason && (
+                  <div className="p-3 bg-red-900/10 border border-red-900/20 rounded-none">
+                    <p className="text-[8px] font-black uppercase text-red-500 mb-1 flex items-center gap-1">
+                      <AlertTriangle size={10} /> Причина відхилення:
+                    </p>
+                    <p className="text-[9px] text-zinc-400 leading-tight">{release.rejection_reason}</p>
+                  </div>
+                )}
                 <div className="pt-4 border-t border-white/5 flex justify-between items-end">
                   <div className="space-y-1">
                     <p className="text-[7px] sm:text-[8px] text-zinc-700 uppercase font-black tracking-widest">Жанр</p>

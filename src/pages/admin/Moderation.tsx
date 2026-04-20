@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio, Hash, Truck } from 'lucide-react';
+import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio, Hash, Truck, AlertTriangle } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,8 @@ const Moderation = () => {
   const { releases, updateRelease, statuses, fetchReleases, users, fetchUsers, fields } = useDataStore();
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
   useEffect(() => {
     fetchReleases();
@@ -43,11 +45,21 @@ const Moderation = () => {
     
     setIsLoading(true);
     try {
-      const newStatus = action === 'approve' ? publishedStatus : action === 'reject' ? rejectedStatus : selectedTrack.status;
+      let newStatus = selectedTrack.status;
+      let reason = selectedTrack.rejection_reason;
+
+      if (action === 'approve') {
+        newStatus = publishedStatus;
+        reason = null;
+      } else if (action === 'reject') {
+        newStatus = rejectedStatus;
+        reason = rejectionReason;
+      }
       
       const updatedData = {
         ...selectedTrack,
-        status: newStatus
+        status: newStatus,
+        rejection_reason: reason
       };
 
       await updateRelease(selectedTrack.id, updatedData);
@@ -55,6 +67,8 @@ const Moderation = () => {
       if (action !== 'save') {
         showSuccess(`Реліз ${action === 'approve' ? 'схвалено' : 'відхилено'} та збережено`);
         setSelectedTrack(null);
+        setIsRejectModalOpen(false);
+        setRejectionReason('');
       } else {
         showSuccess('Зміни збережено');
       }
@@ -147,7 +161,7 @@ const Moderation = () => {
                   </Button>
                   <Button 
                     className="flex-1 bg-red-900 hover:bg-red-800 text-white rounded-none"
-                    onClick={() => { setSelectedTrack({ ...track }); handleAction('reject'); }}
+                    onClick={() => { setSelectedTrack({ ...track }); setIsRejectModalOpen(true); }}
                   >
                     <X size={16} />
                   </Button>
@@ -158,8 +172,38 @@ const Moderation = () => {
         </div>
       )}
 
+      {/* Rejection Reason Modal */}
+      <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
+        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-md rounded-none">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Причина відхилення</DialogTitle>
+            <DialogDescription className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
+              Вкажіть, що саме артисту потрібно виправити в релізі.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea 
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Наприклад: Обкладинка низької якості, помилка в назві треку..."
+              className="bg-black/40 border-white/5 rounded-none min-h-[120px] text-sm focus:ring-0 focus:border-red-700"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsRejectModalOpen(false)} className="rounded-none">Скасувати</Button>
+            <Button 
+              onClick={() => handleAction('reject')}
+              disabled={!rejectionReason || isLoading}
+              className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none"
+            >
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Відхилити реліз'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Moderation & Edit Modal */}
-      <Dialog open={!!selectedTrack} onOpenChange={() => setSelectedTrack(null)}>
+      <Dialog open={!!selectedTrack && !isRejectModalOpen} onOpenChange={() => setSelectedTrack(null)}>
         <DialogContent className="bg-[#050505] border-white/5 text-white max-w-5xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
             <div className="flex items-center justify-between">
@@ -428,7 +472,7 @@ const Moderation = () => {
             <div className="flex gap-2">
               <Button 
                 variant="destructive" 
-                onClick={() => handleAction('reject')}
+                onClick={() => setIsRejectModalOpen(true)}
                 disabled={isLoading}
                 className="bg-red-900 hover:bg-red-800 text-white rounded-none text-[10px] font-black uppercase tracking-widest px-8 h-12"
               >

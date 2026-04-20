@@ -96,6 +96,7 @@ export interface Release {
   copyrights?: string;
   copyrightConfirmed?: boolean;
   distributor?: string;
+  rejection_reason?: string;
 }
 
 export interface Task {

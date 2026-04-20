@@ -26,11 +26,16 @@ const SocialIcon = ({ name }: { name: string }) => {
 
 const SmartLinkPage = () => {
   const { slug } = useParams();
-  const { smartLinks, labelSocials, settings } = useDataStore();
+  const { smartLinks, labelSocials, settings, incrementSmartLinkClicks } = useDataStore();
   
   const link = smartLinks.find(l => l.slug === slug);
 
   if (!link) return <div className="min-h-screen flex items-center justify-center text-white font-black uppercase tracking-widest">404 | Link not found</div>;
+
+  const handlePlatformClick = (url: string) => {
+    incrementSmartLinkClicks(link.id);
+    window.open(url, '_blank');
+  };
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center py-12 px-6 relative overflow-hidden">
@@ -60,7 +65,7 @@ const SmartLinkPage = () => {
                   <span className="font-black uppercase tracking-widest text-[11px]">{p.name}</span>
                 </div>
                 <Button 
-                  onClick={() => window.open(p.url, '_blank')}
+                  onClick={() => handlePlatformClick(p.url)}
                   className="bg-white/10 hover:bg-white text-white hover:text-black text-[9px] font-black uppercase tracking-widest px-6 h-9 rounded-none transition-all"
                 >
                   Слухати

@@ -56,6 +56,7 @@ interface DataState {
   fetchSmartLinks: (userId?: string, role?: string) => Promise<void>;
   addSmartLink: (linkData: Partial<SmartLink>) => Promise<SmartLink | null>;
   updateSmartLink: (id: string, linkData: Partial<SmartLink>) => Promise<SmartLink | null>;
+  incrementSmartLinkClicks: (id: string) => Promise<void>;
   deleteSmartLink: (id: string) => Promise<void>;
   fetchArtistWebsites: (userId?: string, role?: string) => Promise<void>;
   addArtistWebsite: (websiteData: Partial<ArtistWebsite>) => Promise<ArtistWebsite | null>;
@@ -147,7 +148,8 @@ export const useDataStore = create<DataState>((set, get) => ({
           createdAt: r.created_at,
           isSingle: r.is_single,
           copyrightConfirmed: r.copyright_confirmed,
-          distributor: r.distributor
+          distributor: r.distributor,
+          rejection_reason: r.rejection_reason
         })) });
       }
     } catch (e) { console.error(e); }
@@ -230,7 +232,8 @@ export const useDataStore = create<DataState>((set, get) => ({
         copyright_confirmed: !!releaseData.copyrightConfirmed,
         tracks: releaseData.tracks || [],
         status: releaseData.status,
-        distributor: releaseData.distributor
+        distributor: releaseData.distributor,
+        rejection_reason: releaseData.rejection_reason || null
       };
 
       const { data, error } = await supabase.from('releases').update(dbData).eq('id', id).select().single();
@@ -247,7 +250,8 @@ export const useDataStore = create<DataState>((set, get) => ({
           createdAt: data.created_at,
           isSingle: data.is_single,
           copyrightConfirmed: data.copyright_confirmed,
-          distributor: data.distributor
+          distributor: data.distributor,
+          rejection_reason: data.rejection_reason
         };
         set((state) => ({ releases: state.releases.map(r => r.id === id ? mapped : r) }));
         return mapped;
@@ -356,6 +360,16 @@ export const useDataStore = create<DataState>((set, get) => ({
       }
       return null;
     } catch (e) { console.error(e); return null; }
+  },
+
+  incrementSmartLinkClicks: async (id) => {
+    try {
+      const link = get().smartLinks.find(l => l.id === id);
+      if (!link) return;
+      const newClicks = (link.clicks || 0) + 1;
+      await supabase.from('smart_links').update({ clicks: newClicks }).eq('id', id);
+      set((state) => ({ smartLinks: state.smartLinks.map(l => l.id === id ? { ...l, clicks: newClicks } : l) }));
+    } catch (e) { console.error(e); }
   },
 
   deleteSmartLink: async (id) => {
@@ -665,7 +679,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   updateStatuses: async (statuses) => {
     try {
       for (const s of statuses) {
-        await supabase.from('statuses').update({ name: s.name, color: s.color, sort_order: s.order, is_default: s.isDefault }).eq('id', s.id);
+        await supabase.from('statuses').update({ name: s.name, color: s.color, sort_order: s.order, is_default: s.is_default }).eq('id', s.id);
       }
       set({ statuses });
     } catch (e) { console.error(e); }
