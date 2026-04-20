@@ -25,6 +25,7 @@ export interface AppUser {
   isVerified: boolean;
   createdAt: string;
   bio?: string;
+  avatarUrl?: string;
   password?: string;
 }
 
@@ -39,6 +40,7 @@ export interface Profile {
   updated_at?: string;
   artist_name?: string;
   bio?: string;
+  avatar_url?: string;
 }
 
 export const toAppProfile = (dbProfile: Profile): AppUser => ({
@@ -51,6 +53,7 @@ export const toAppProfile = (dbProfile: Profile): AppUser => ({
   isVerified: dbProfile.is_verified || false,
   createdAt: dbProfile.created_at,
   bio: dbProfile.bio,
+  avatarUrl: dbProfile.avatar_url,
 });
 
 export interface Track {
@@ -248,7 +251,6 @@ export const uploadFile = async (bucket: string, path: string, file: File): Prom
     throw new Error('Supabase is not configured');
   }
 
-  const fileExt = file.name.split('.').pop();
   const sanitizedPath = path.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, "-");
 
   const { data, error } = await supabase.storage

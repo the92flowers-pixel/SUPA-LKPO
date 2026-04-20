@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, AlertTriangle, FileAudio, Hash, Image as ImageIcon } from 'lucide-react';
+import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, AlertTriangle, FileAudio, Hash, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,8 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import { uploadFile } from '@/lib/supabase';
 
 const PLATFORMS_LIST = [
   "Apple Music", "Deezer", "iTunes", "SoundCloud", "Spotify", "YouTube", "YouTube Music"
@@ -35,6 +36,7 @@ const Releases = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
   const [isSavingLink, setIsSavingLink] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { user } = useAuthStore();
   const { releases, smartLinks, addSmartLink, updateSmartLink, fetchReleases } = useDataStore();
@@ -78,6 +80,25 @@ const Releases = () => {
       setCustomSlug((release.title || '').toLowerCase().replace(/\s+/g, '-'));
       setCoverUrl(release.coverUrl);
       setPlatforms([{ id: '1', name: 'Spotify', url: '' }]);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const loadingId = showLoading('Завантаження обкладинки...');
+    try {
+      const path = `smartlinks/${user?.id}/${Date.now()}-${file.name}`;
+      const url = await uploadFile('covers', path, file);
+      setCoverUrl(url);
+      showSuccess('Обкладинку завантажено!');
+    } catch (err) {
+      showError('Помилка завантаження');
+    } finally {
+      setIsUploading(false);
+      dismissToast(loadingId);
     }
   };
 
@@ -257,15 +278,30 @@ const Releases = () => {
                     />
                   </div>
                 </div>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Завантажити обкладинку</Label>
+                  <div className="relative">
+                    <input type="file" id="smartlink-upload" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={isUploading} />
+                    <label htmlFor="smartlink-upload" className={cn(
+                      "flex flex-col items-center justify-center gap-2 w-full h-20 border border-dashed border-white/10 hover:border-red-700/50 hover:bg-red-900/5 cursor-pointer transition-all",
+                      isUploading && "opacity-50 cursor-not-allowed"
+                    )}>
+                      {isUploading ? <Loader2 className="animate-spin text-red-700" size={16} /> : <Upload size={16} className="text-zinc-500" />}
+                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                        {isUploading ? 'Завантаження...' : 'Оберіть файл'}
+                      </span>
+                    </label>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                    <ImageIcon size={14} /> URL Обкладинки
+                    <ImageIcon size={14} /> Або URL Обкладинки
                   </Label>
                   <Input 
                     value={coverUrl} 
-                    onChange={(e) => setCoverUrl(e.target.value)}
-                    className="bg-black/40 border-white/5 rounded-none h-12 text-xs"
-                    placeholder="https://..."
+                    onChange={(e) => setCoverUrl(e.target.value)} 
+                    className="bg-black/40 border-white/5 rounded-none h-12 text-xs" 
+                    placeholder="https://..." 
                   />
                 </div>
               </div>

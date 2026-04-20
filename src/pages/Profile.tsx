@@ -10,11 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import { uploadFile } from '@/lib/supabase';
 
-const FIXED_AVATAR = "https://jurbamusic.iceiy.com/profileavatar.png";
+const FALLBACK_AVATAR = "https://jurbamusic.iceiy.com/profileavatar.png";
 
 const PLATFORMS_LIST = [
   "Instagram", "Telegram", "YouTube", "TikTok", "Spotify", "Apple Music", "SoundCloud", "Website"
@@ -28,7 +28,8 @@ const Profile = () => {
   const userWebsite = artistWebsites.find(w => w.userId === currentUser?.id);
 
   const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isSavingWebsite, setIsSavingWebsite] = useState(false);
   
@@ -39,7 +40,7 @@ const Profile = () => {
     slug: '',
     stageName: '',
     bio: '',
-    photoUrl: FIXED_AVATAR,
+    photoUrl: FALLBACK_AVATAR,
     links: [{ id: '1', name: 'Instagram', url: '' }]
   });
 
@@ -52,7 +53,7 @@ const Profile = () => {
           slug: '',
           stageName: currentUser?.artistName || '',
           bio: '',
-          photoUrl: FIXED_AVATAR,
+          photoUrl: FALLBACK_AVATAR,
           links: [{ id: '1', name: 'Instagram', url: '' }]
         });
       }
@@ -74,6 +75,26 @@ const Profile = () => {
       await updateUser(currentUser.id, data);
       setAuth({ ...currentUser, ...data }, 'mock-jwt');
       showSuccess('Профіль успішно оновлено!');
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    const loadingId = showLoading('Оновлення аватарки...');
+    try {
+      const path = `avatars/${currentUser?.id}/${Date.now()}-${file.name}`;
+      const url = await uploadFile('avatars', path, file);
+      await updateUser(currentUser?.id || '', { avatarUrl: url });
+      setAuth({ ...currentUser, avatarUrl: url } as any);
+      showSuccess('Аватарку оновлено!');
+    } catch (err) {
+      showError('Помилка завантаження');
+    } finally {
+      setIsUploadingAvatar(false);
+      dismissToast(loadingId);
     }
   };
 
@@ -111,21 +132,16 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.includes('jpeg') && !file.type.includes('jpg') && !file.type.includes('png')) {
-      showError('Будь ласка, завантажте JPG або PNG');
-      return;
-    }
-
-    setIsUploading(true);
+    setIsUploadingPhoto(true);
     try {
       const fileName = `artists/${currentUser?.id}/${Date.now()}-${file.name}`;
-      const publicUrl = await uploadFile('covers', fileName, file);
+      const publicUrl = await uploadFile('avatars', fileName, file);
       setWebsiteData({ ...websiteData, photoUrl: publicUrl });
       showSuccess('Фото завантажено');
     } catch (error) {
       showError('Помилка завантаження');
     } finally {
-      setIsUploading(false);
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -207,8 +223,12 @@ const Profile = () => {
         <div className="lg:col-span-1 space-y-6 sm:space-y-8">
           <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl h-fit">
             <CardContent className="pt-8 sm:pt-12 flex flex-col items-center text-center">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-red-900/5 border border-white/5 flex items-center justify-center mb-6 sm:mb-8 relative overflow-hidden">
-                <img src={FIXED_AVATAR} className="w-full h-full object-cover" alt="Avatar" />
+              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-red-900/5 border border-white/5 flex items-center justify-center mb-6 sm:mb-8 relative overflow-hidden group">
+                <img src={currentUser?.avatarUrl || FALLBACK_AVATAR} className="w-full h-full object-cover" alt="Avatar" />
+                <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                  {isUploadingAvatar ? <Loader2 className="animate-spin text-white" /> : <Camera className="text-white" />}
+                </label>
+                <input type="file" id="avatar-upload" className="hidden" accept="image/*" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
               </div>
               <h3 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider truncate max-w-full px-4">{currentUser?.artistName || currentUser?.login}</h3>
               <p className="text-[9px] sm:text-[10px] text-zinc-600 mt-2 uppercase font-bold tracking-[0.3em]">{currentUser?.role}</p>
@@ -378,15 +398,21 @@ const Profile = () => {
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border border-white/10 bg-black/40 shrink-0">
                   <img src={websiteData.photoUrl} className="w-full h-full object-cover" alt="" />
                 </div>
-                <div className="w-full flex-1">
-                  <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={isUploading} />
+                <div className="w-full flex-1 space-y-3">
+                  <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
                   <label htmlFor="photo-upload" className={cn(
                     "flex items-center justify-center gap-2 w-full h-10 sm:h-12 border border-dashed border-white/20 hover:border-red-700/50 hover:bg-red-900/5 cursor-pointer transition-all text-[9px] sm:text-[10px] font-black uppercase tracking-widest",
-                    isUploading && "opacity-50 cursor-not-allowed"
+                    isUploadingPhoto && "opacity-50 cursor-not-allowed"
                   )}>
-                    {isUploading ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
-                    {isUploading ? 'Завантаження...' : 'Змінити фото'}
+                    {isUploadingPhoto ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+                    {isUploadingPhoto ? 'Завантаження...' : 'Завантажити файл'}
                   </label>
+                  <Input 
+                    value={websiteData.photoUrl} 
+                    onChange={(e) => setWebsiteData({...websiteData, photoUrl: e.target.value})}
+                    className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                    placeholder="Або вкажіть URL..."
+                  />
                 </div>
               </div>
             </div>
