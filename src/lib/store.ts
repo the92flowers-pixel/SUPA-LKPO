@@ -791,9 +791,13 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   addTask: async (taskData) => {
     try {
-      // Remove id if it exists to let DB generate it
-      const { id, ...cleanData } = taskData as any;
-      const { data, error } = await supabase.from('tasks').insert(cleanData).select().single();
+      const insertData = {
+        title: taskData.title,
+        description: taskData.description,
+        status: taskData.status || 'pending',
+        priority: taskData.priority || 'medium'
+      };
+      const { data, error } = await supabase.from('tasks').insert(insertData).select().single();
       if (error) throw error;
       if (data) set((state) => ({ tasks: [data, ...state.tasks] }));
     } catch (e) { 
@@ -804,9 +808,13 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   updateTask: async (id, taskData) => {
     try {
-      // Remove system fields that shouldn't be updated manually
-      const { id: _, created_at, updated_at, ...cleanData } = taskData as any;
-      const { data, error } = await supabase.from('tasks').update(cleanData).eq('id', id).select().single();
+      const updateData = {
+        title: taskData.title,
+        description: taskData.description,
+        status: taskData.status,
+        priority: taskData.priority
+      };
+      const { data, error } = await supabase.from('tasks').update(updateData).eq('id', id).select().single();
       if (error) throw error;
       if (data) set((state) => ({ tasks: state.tasks.map(t => t.id === id ? data : t) }));
     } catch (e) { 
