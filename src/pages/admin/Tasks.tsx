@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, CheckCircle, Clock, AlertCircle, Save, Search, ListTodo, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, Edit2, CheckCircle, Clock, AlertCircle, Save, Search, ListTodo, MessageSquare, Loader2 } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ const Tasks = () => {
   const [editingTask, setEditingTask] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -43,14 +44,21 @@ const Tasks = () => {
       return;
     }
 
-    if (editingTask.id) {
-      await updateTask(editingTask.id, editingTask);
-      showSuccess('Завдання оновлено');
-    } else {
-      await addTask(editingTask);
-      showSuccess('Завдання додано');
+    setIsSaving(true);
+    try {
+      if (editingTask.id) {
+        await updateTask(editingTask.id, editingTask);
+        showSuccess('Завдання оновлено');
+      } else {
+        await addTask(editingTask);
+        showSuccess('Завдання додано');
+      }
+      setIsDialogOpen(false);
+    } catch (error) {
+      showError('Помилка при збереженні завдання');
+    } finally {
+      setIsSaving(false);
     }
-    setIsDialogOpen(false);
   };
 
   const filteredTasks = tasks.filter(t => {
@@ -163,6 +171,7 @@ const Tasks = () => {
                   value={editingTask.title} 
                   onChange={(e) => setEditingTask({...editingTask, title: e.target.value})}
                   className="bg-black/40 border-white/5 rounded-none h-12"
+                  disabled={isSaving}
                 />
               </div>
               <div className="space-y-2">
@@ -171,12 +180,13 @@ const Tasks = () => {
                   value={editingTask.description} 
                   onChange={(e) => setEditingTask({...editingTask, description: e.target.value})}
                   className="bg-black/40 border-white/5 rounded-none min-h-[100px] resize-none"
+                  disabled={isSaving}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Статус</Label>
-                  <Select value={editingTask.status} onValueChange={(v) => setEditingTask({...editingTask, status: v})}>
+                  <Select value={editingTask.status} onValueChange={(v) => setEditingTask({...editingTask, status: v})} disabled={isSaving}>
                     <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
                       <SelectItem value="pending" className="text-xs uppercase font-bold">Очікує</SelectItem>
@@ -187,7 +197,7 @@ const Tasks = () => {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Пріоритет</Label>
-                  <Select value={editingTask.priority} onValueChange={(v) => setEditingTask({...editingTask, priority: v})}>
+                  <Select value={editingTask.priority} onValueChange={(v) => setEditingTask({...editingTask, priority: v})} disabled={isSaving}>
                     <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
                       <SelectItem value="low" className="text-xs uppercase font-bold">Низький</SelectItem>
@@ -200,8 +210,9 @@ const Tasks = () => {
             </div>
           )}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-none text-[10px] font-black uppercase tracking-widest">Скасувати</Button>
-            <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none">
+            <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="rounded-none text-[10px] font-black uppercase tracking-widest" disabled={isSaving}>Скасувати</Button>
+            <Button onClick={handleSave} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none" disabled={isSaving}>
+              {isSaving ? <Loader2 className="animate-spin mr-2" size={14} /> : null}
               Зберегти
             </Button>
           </DialogFooter>
