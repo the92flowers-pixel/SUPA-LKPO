@@ -36,6 +36,7 @@ import LoginCustomization from '@/pages/admin/LoginCustomization';
 import Settings from '@/pages/admin/Settings';
 import Export from '@/pages/admin/Export';
 import Tasks from '@/pages/admin/Tasks';
+import AdminLinks from '@/components/admin/AdminLinks';
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#050505]">
@@ -107,58 +108,12 @@ const App = () => {
                 fetchWithdrawalRequests(),
                 userRole === 'admin' ? fetchTasks() : Promise.resolve(),
               ]);
-            } else if (error?.code === 'PGRST116') {
-              const { data: newProfile, error: createError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.artist_name || '',
-                  role: 'artist',
-                  balance: 0,
-                  is_verified: false,
-                })
-                .select()
-                .single();
-              
-              if (!createError && newProfile) {
-                setAuth(toAppProfile(newProfile));
-              } else {
-                setAuth({
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  login: session.user.email || '',
-                  role: 'artist',
-                  artistName: session.user.user_metadata?.full_name || session.user.user_metadata?.artist_name || null,
-                  balance: 0,
-                  isVerified: false,
-                  createdAt: session.user.created_at || new Date().toISOString(),
-                });
-              }
             } else {
-              setAuth({
-                id: session.user.id,
-                email: session.user.email || '',
-                login: session.user.email || '',
-                role: 'artist',
-                artistName: session.user.user_metadata?.full_name || session.user.user_metadata?.artist_name || null,
-                balance: 0,
-                isVerified: false,
-                createdAt: session.user.created_at || new Date().toISOString(),
-              });
+              setAuth(null);
             }
           } catch (err) {
             console.error('Error fetching profile:', err);
-            setAuth({
-              id: session.user.id,
-              email: session.user.email || '',
-              login: session.user.email || '',
-              role: 'artist',
-              artistName: session.user.user_metadata?.full_name || session.user.user_metadata?.artist_name || null,
-              balance: 0,
-              isVerified: false,
-              createdAt: session.user.created_at || new Date().toISOString(),
-            });
+            setAuth(null);
           }
         } else {
           setAuth(null);
@@ -173,26 +128,14 @@ const App = () => {
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile) {
-            setAuth(toAppProfile(profile));
-            await Promise.all([
-              fetchReleases(session.user.id, profile.role),
-              fetchSmartLinks(profile.role === 'admin' ? undefined : session.user.id, profile.role),
-              fetchArtistWebsites(profile.role === 'admin' ? undefined : session.user.id, profile.role),
-              fetchTransactions(session.user.id),
-              fetchReports(profile.role === 'admin' ? undefined : session.user.id),
-              profile.role === 'admin' ? fetchTasks() : Promise.resolve(),
-            ]);
-          }
-        } catch (err) {
-          console.error('Auth state change error:', err);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile) {
+          setAuth(toAppProfile(profile));
         }
       } else if (event === 'SIGNED_OUT') {
         setAuth(null);
@@ -237,6 +180,7 @@ const App = () => {
         <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
         <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><Statistics /></ProtectedRoute>} />
         <Route path="/admin/tasks" element={<ProtectedRoute role="admin"><Tasks /></ProtectedRoute>} />
+        <Route path="/admin/links" element={<ProtectedRoute role="admin"><AdminLinks /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
         <Route path="/admin/export" element={<ProtectedRoute role="admin"><Export /></ProtectedRoute>} />
 

@@ -26,7 +26,7 @@ export interface AppUser {
   createdAt: string;
   bio?: string;
   avatarUrl?: string;
-  password?: string;
+  avatarLocal?: string; // Нове поле
 }
 
 export interface Profile {
@@ -41,6 +41,7 @@ export interface Profile {
   artist_name?: string;
   bio?: string;
   avatar_url?: string;
+  avatar_local?: string; // Нове поле
 }
 
 export const toAppProfile = (dbProfile: Profile): AppUser => ({
@@ -54,38 +55,21 @@ export const toAppProfile = (dbProfile: Profile): AppUser => ({
   createdAt: dbProfile.created_at,
   bio: dbProfile.bio,
   avatarUrl: dbProfile.avatar_url,
+  avatarLocal: dbProfile.avatar_local,
 });
-
-export interface Track {
-  id?: string;
-  title: string;
-  fileName: string;
-  audioUrl?: string;
-  duration?: string;
-  explicit?: boolean;
-  lyrics?: string;
-  position?: number;
-}
 
 export interface Release {
   id: string;
-  user_id?: string;
   userId: string;
   title: string;
   artist: string;
   genre: string;
-  release_date?: string;
   releaseDate: string;
-  cover_url?: string;
   coverUrl: string;
-  release_url?: string;
-  releaseUrl?: string;
-  audio_url?: string;
+  coverImageLocal?: string; // Нове поле
   status: string;
-  deletion_status?: 'pending' | null;
   streams: number;
   history: { date: string; count: number }[];
-  created_at?: string;
   createdAt: string;
   composer?: string;
   performer?: string;
@@ -95,155 +79,38 @@ export interface Release {
   isSingle?: boolean;
   isrc?: string;
   upc?: string;
-  tracks?: Track[];
+  tracks?: any[];
   copyrights?: string;
   copyrightConfirmed?: boolean;
   distributor?: string;
   rejection_reason?: string;
 }
 
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  created_at: string;
-}
-
 export interface SmartLink {
   id: string;
-  user_id?: string;
   userId: string;
-  release_id?: string;
   releaseId: string | null;
   title: string;
   artist: string;
-  cover_url?: string;
   coverUrl: string;
+  avatarLocal?: string; // Нове поле
   slug: string;
-  platforms: SmartLinkPlatform[];
+  platforms: any[];
   clicks: number;
-  created_at?: string;
   createdAt: string;
-}
-
-export interface SmartLinkPlatform {
-  id?: string;
-  name: string;
-  url: string;
-  active?: boolean;
-  icon?: string;
 }
 
 export interface ArtistWebsite {
   id: string;
-  user_id?: string;
   userId: string;
   title: string;
   slug: string;
   stageName: string;
   bio: string;
-  photo_url?: string;
   photoUrl: string;
-  links: WebsiteLink[];
-  created_at?: string;
+  siteAvatarLocal?: string; // Нове поле
+  links: any[];
   createdAt: string;
-}
-
-export interface WebsiteLink {
-  id: string;
-  name: string;
-  url: string;
-}
-
-export interface Transaction {
-  id: string;
-  user_id?: string;
-  userId: string;
-  type: 'deposit' | 'withdrawal' | 'adjustment';
-  amount: number;
-  description: string;
-  status?: 'completed' | 'pending' | 'cancelled';
-  created_at?: string;
-  createdAt: string;
-}
-
-export interface WithdrawalRequest {
-  id: string;
-  user_id?: string;
-  userId: string;
-  amount: number;
-  status: 'pending' | 'paid' | 'approved' | 'rejected';
-  contactInfo?: string;
-  confirmationAgreed?: boolean;
-  admin_comment?: string;
-  created_at?: string;
-  createdAt: string;
-}
-
-export interface QuarterlyReport {
-  id: string;
-  user_id?: string;
-  userId: string;
-  title?: string;
-  quarter: number;
-  year: number;
-  fileUrl: string;
-  file_url?: string;
-  fileName?: string;
-  created_at?: string;
-  createdAt: string;
-}
-
-export interface Status {
-  id?: number;
-  name: string;
-  color: string;
-  order: number;
-  sort_order?: number;
-  isDefault: boolean;
-  is_default?: boolean;
-}
-
-export interface Field {
-  id?: number;
-  name: string;
-  label: string;
-  type: string;
-  required: boolean;
-  section: string;
-  forRole?: string;
-  order: number;
-  sort_order?: number;
-  visible: boolean;
-  options?: string;
-  fileTypes?: string;
-  maxSize?: string;
-}
-
-export interface LabelSocial {
-  id: string;
-  name: string;
-  url: string;
-  platform?: string;
-}
-
-export interface AppConfig {
-  id?: number;
-  settings: { siteName: string; registrationEnabled: boolean; contactEmail: string };
-  home_page: { heroTitle: string; heroSubtitle: string; buttonText: string; primaryColor: string };
-  admin_panel: { logoText: string; accentColor: string };
-  login_page: {
-    logoText: string;
-    welcomeTitle: string;
-    welcomeSubtitle: string;
-    socialIcons: string[];
-  };
-  label_socials: LabelSocial[];
-  labelSocials: LabelSocial[];
-  fields: Field[];
-  statuses: Status[];
 }
 
 export const uploadFile = async (bucket: string, path: string, file: File): Promise<string> => {

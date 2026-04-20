@@ -2,11 +2,12 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, User, LogOut, ShieldCheck, BarChart3, Settings, 
-  Users as UsersIcon, Music, Menu, X, LayoutGrid, Disc, Link2, Globe, Wallet, FileText, ListTodo
+  Users as UsersIcon, Music, Menu, X, LayoutGrid, Disc, Link2, Globe, Wallet, FileText, ListTodo, ExternalLink
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import AdminHeaderLinks from './AdminHeaderLinks';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, logout } = useAuthStore();
@@ -40,6 +41,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { to: '/admin/users', icon: UsersIcon, label: 'Користувачі' },
     { to: '/admin/statistics', icon: BarChart3, label: 'Статистика' },
     { to: '/admin/tasks', icon: ListTodo, label: 'Завдання' },
+    { to: '/admin/links', icon: ExternalLink, label: 'Адмін-посилання' },
     { to: '/admin/settings', icon: Settings, label: 'Налаштування' },
   ];
 
@@ -50,7 +52,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const getUserName = () => user?.artistName || user?.login || 'Користувач';
   const getUserInitial = () => getUserName()[0]?.toUpperCase() || 'U';
 
-  // Close sidebar on link click on mobile
   const handleLinkClick = () => {
     if (window.innerWidth < 1024) {
       toggleSidebar();
@@ -59,7 +60,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-transparent text-[#e5e5e5] flex flex-col lg:flex-row">
-      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden" 
@@ -120,13 +120,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-20 border-b border-white/5 bg-black/40 backdrop-blur-md flex items-center justify-between px-6 lg:px-10 sticky top-0 z-40">
-          <Button variant="ghost" size="icon" className="lg:hidden text-zinc-400" onClick={toggleSidebar}>
-            <Menu size={24} />
-          </Button>
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" className="lg:hidden text-zinc-400 mr-4" onClick={toggleSidebar}>
+              <Menu size={24} />
+            </Button>
+            <AdminHeaderLinks />
+          </div>
           <div className="flex-1 lg:hidden flex justify-center">
             <h1 className="text-sm font-black tracking-[0.3em] uppercase" style={{ color: accentColor }}>{logoText}</h1>
           </div>
-          <div className="w-10 lg:hidden" /> {/* Spacer for centering */}
+          <div className="w-10 lg:hidden" />
         </header>
         
         <main className="flex-1 overflow-x-hidden p-6 lg:p-10 max-w-7xl mx-auto w-full">
