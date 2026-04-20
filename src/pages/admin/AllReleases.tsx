@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Edit2, Search, RefreshCw, CheckCircle, XCircle, Loader2, Save, X, Shield, Hash, Truck } from 'lucide-react';
+import { Music, Edit2, Search, RefreshCw, CheckCircle, XCircle, Loader2, Save, X, Shield, Hash, Truck, Download, FileSpreadsheet, CheckSquare, Square } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { useDataStore } from '@/lib/store';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +23,11 @@ const AllReleases = () => {
   const [editingRelease, setEditingRelease] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Export State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedExportIds, setSelectedExportIds] = useState<string[]>([]);
+  const [exportSearch, setExportSearch] = useState('');
 
   useEffect(() => {
     fetchReleases();
@@ -44,9 +51,13 @@ const AllReleases = () => {
     if (!editingRelease) return;
     setIsSaving(true);
     try {
-      await updateRelease(editingRelease.id, editingRelease);
-      showSuccess('Дані релізу оновлено та синхронізовано');
-      setIsDialogOpen(false);
+      const result = await updateRelease(editingRelease.id, editingRelease);
+      if (result) {
+        showSuccess('Дані релізу оновлено та синхронізовано');
+        setIsDialogOpen(false);
+      } else {
+        throw new Error('Update failed');
+      }
     } catch (error) {
       showError('Помилка при збереженні');
     } finally {
@@ -64,16 +75,86 @@ const AllReleases = () => {
     return user?.artistName || user?.login || 'Невідомий';
   };
 
+  // Export Logic
+  const runExport = (dataToExport: any[]) => {
+    const exportData = dataToExport.map(r => {
+      const row: any = {
+        'ID': r.id,
+        'Назва': r.title,
+        'Артист': r.artist,
+        'Жанр': r.genre,
+        'Дата релізу': r.releaseDate,
+        'Статус': r.status,
+        'Стріми': r.streams,
+        'UPC': r.upc || '',
+        'ISRC': r.isrc || '',
+        'Композитор': r.composer || '',
+        'Виконавець': r.performer || '',
+        'Лейбл': r.label || 'ЖУРБА MUSIC',
+        'Дистриб\'ютор': r.distributor || '',
+        'Дата створення': new Date(r.createdAt).toLocaleDateString()
+      };
+      // Add dynamic fields
+      releaseFields.forEach(f => {
+        row[f.label] = r[f.name] || '';
+      });
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Releases");
+    XLSX.writeFile(wb, `zhurba_releases_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showSuccess('Експорт завершено');
+  };
+
+  const handleExportSelected = () => {
+    const toExport = releases.filter(r => selectedExportIds.includes(r.id));
+    if (toExport.length === 0) {
+      showError('Оберіть хоча б один реліз');
+      return;
+    }
+    runExport(toExport);
+    setIsExportModalOpen(false);
+  };
+
+  const handleExportAll = () => {
+    runExport(releases);
+    setIsExportModalOpen(false);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedExportIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedExportIds.length === releases.length) {
+      setSelectedExportIds([]);
+    } else {
+      setSelectedExportIds(releases.map(r => r.id));
+    }
+  };
+
   return (
     <div className="space-y-10">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-white uppercase">Всі релізи</h1>
           <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Керування каталогом ({releases.length})</p>
         </div>
-        <Button onClick={() => fetchReleases()} variant="outline" className="border-white/10 text-[10px] font-black uppercase tracking-widest h-12 rounded-none">
-          <RefreshCw size={14} className="mr-2" /> Оновити
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            onClick={() => setIsExportModalOpen(true)}
+            className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest h-12 rounded-none px-6"
+          >
+            <FileSpreadsheet size={14} className="mr-2 text-green-500" /> Експорт Excel
+          </Button>
+          <Button onClick={() => fetchReleases()} variant="outline" className="border-white/10 text-[10px] font-black uppercase tracking-widest h-12 rounded-none">
+            <RefreshCw size={14} className="mr-2" /> Оновити
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
@@ -138,9 +219,83 @@ const AllReleases = () => {
         </div>
       </Card>
 
+      {/* Export Modal */}
+      <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
+        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-2xl max-h-[80vh] overflow-y-auto rounded-none">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Експорт даних в Excel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={14} />
+                <Input 
+                  placeholder="Пошук для експорту..." 
+                  className="bg-black/40 border-white/5 pl-10 h-10 text-[10px] font-bold uppercase"
+                  value={exportSearch}
+                  onChange={(e) => setExportSearch(e.target.value)}
+                />
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={toggleSelectAll}
+                className="border-white/10 text-[9px] font-black uppercase tracking-widest h-10 rounded-none"
+              >
+                {selectedExportIds.length === releases.length ? 'Зняти всі' : 'Обрати всі'}
+              </Button>
+            </div>
+
+            <div className="border border-white/5 divide-y divide-white/5 max-h-[400px] overflow-y-auto custom-scrollbar">
+              {releases.filter(r => r.title.toLowerCase().includes(exportSearch.toLowerCase()) || r.artist.toLowerCase().includes(exportSearch.toLowerCase())).map(r => (
+                <div key={r.id} className="flex items-center gap-4 p-3 hover:bg-white/5 transition-colors cursor-pointer" onClick={() => toggleSelect(r.id)}>
+                  {selectedExportIds.includes(r.id) ? <CheckSquare className="text-red-700" size={18} /> : <Square className="text-zinc-700" size={18} />}
+                  <img src={r.coverUrl || FALLBACK_IMAGE} className="w-8 h-8 object-cover" alt="" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-white uppercase truncate">{r.title}</p>
+                    <p className="text-[8px] text-zinc-500 uppercase truncate">{r.artist}</p>
+                  </div>
+                  <Badge variant="outline" className="text-[7px] border-white/10 text-zinc-500 uppercase">{r.status}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="gap-3">
+            <Button 
+              onClick={handleExportAll}
+              className="bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest px-6 h-12 rounded-none"
+            >
+              Експортувати ВСЕ ({releases.length})
+            </Button>
+            <Button 
+              onClick={handleExportSelected}
+              disabled={selectedExportIds.length === 0}
+              className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-8 h-12 rounded-none"
+            >
+              Експортувати обрані ({selectedExportIds.length})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-[#050505] border-white/5 text-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-none">
-          <DialogHeader><DialogTitle className="text-xl font-black uppercase tracking-tighter">Редагування релізу (Адмін)</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-black uppercase tracking-tighter">Редагування релізу (Адмін)</DialogTitle>
+              {editingRelease && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => runExport([editingRelease])}
+                  className="border-white/10 text-[9px] font-black uppercase tracking-widest h-8 rounded-none"
+                >
+                  <Download size={12} className="mr-2" /> Експорт цього релізу
+                </Button>
+              )}
+            </div>
+          </DialogHeader>
           {editingRelease && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               <div className="space-y-6">
@@ -201,7 +356,6 @@ const AllReleases = () => {
                   </Select>
                 </div>
 
-                {/* Admin Only: Distributor Field */}
                 <div className="p-4 bg-blue-900/5 border border-blue-900/10 space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
                     <Truck size={14} /> Дистриб'ютор (Тільки Адмін)

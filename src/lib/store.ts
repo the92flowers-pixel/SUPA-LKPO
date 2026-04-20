@@ -562,8 +562,8 @@ export const useDataStore = create<DataState>((set, get) => ({
       const insertData = {
         user_id: sessionUser.id,
         amount: reqData.amount,
-        contact_info: reqData.contactInfo,
-        confirmation_agreed: reqData.confirmationAgreed,
+        contact_info: reqData.contact_info,
+        confirmation_agreed: reqData.confirmation_agreed,
         status: 'pending'
       };
 

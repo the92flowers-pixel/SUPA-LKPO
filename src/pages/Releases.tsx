@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, AlertTriangle, FileAudio, Hash, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
+import { Search, Music, Link as LinkIcon, Plus, Trash2, Eye, Clock, CheckCircle, XCircle, AlertTriangle, FileAudio, Hash, Image as ImageIcon, Upload, Loader2, Download, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -39,7 +40,7 @@ const Releases = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink, updateSmartLink, fetchReleases } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink, fetchReleases, fields } = useDataStore();
 
   useEffect(() => {
     if (user) {
@@ -140,6 +141,35 @@ const Releases = () => {
     } finally {
       setIsSavingLink(false);
     }
+  };
+
+  const exportSingleRelease = (r: any) => {
+    const releaseFields = fields.filter(f => f.section === 'release');
+    const row: any = {
+      'ID': r.id,
+      'Назва': r.title,
+      'Артист': r.artist,
+      'Жанр': r.genre,
+      'Дата релізу': r.releaseDate,
+      'Статус': r.status,
+      'Стріми': r.streams,
+      'UPC': r.upc || '',
+      'ISRC': r.isrc || '',
+      'Композитор': r.composer || '',
+      'Виконавець': r.performer || '',
+      'Лейбл': r.label || 'ЖУРБА MUSIC',
+      'Дистриб\'ютор': r.distributor || '',
+      'Дата створення': new Date(r.createdAt).toLocaleDateString()
+    };
+    releaseFields.forEach(f => {
+      row[f.label] = r[f.name] || '';
+    });
+
+    const ws = XLSX.utils.json_to_sheet([row]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Release");
+    XLSX.writeFile(wb, `release_${r.title.replace(/\s+/g, '_')}.xlsx`);
+    showSuccess('Експорт завершено');
   };
 
   const getStatusBadge = (status: string) => {
@@ -377,7 +407,19 @@ const Releases = () => {
       <Dialog open={!!viewingRelease} onOpenChange={() => setViewingRelease(null)}>
         <DialogContent className="bg-[#0a0a0a] border-white/5 text-white w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto rounded-none p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl font-black uppercase tracking-tighter">Інформація про реліз</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg sm:text-xl font-black uppercase tracking-tighter">Інформація про реліз</DialogTitle>
+              {viewingRelease && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => exportSingleRelease(viewingRelease)}
+                  className="border-white/10 text-[9px] font-black uppercase tracking-widest h-8 rounded-none"
+                >
+                  <FileSpreadsheet size={12} className="mr-2 text-green-500" /> Експорт Excel
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           {viewingRelease && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 py-4 sm:py-6">
