@@ -88,6 +88,11 @@ const Releases = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Файл занадто великий. Максимальний розмір: 5 МБ');
+      return;
+    }
+
     setIsUploading(true);
     const loadingId = showLoading('Завантаження обкладинки...');
     try {
@@ -318,7 +323,7 @@ const Releases = () => {
                     )}>
                       {isUploading ? <Loader2 className="animate-spin text-red-700" size={16} /> : <Upload size={16} className="text-zinc-500" />}
                       <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">
-                        {isUploading ? 'Завантаження...' : 'Оберіть файл'}
+                        {isUploading ? 'Завантаження...' : 'Оберіть файл (макс. 5 МБ)'}
                       </span>
                     </label>
                   </div>

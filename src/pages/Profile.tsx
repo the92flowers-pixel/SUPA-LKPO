@@ -82,6 +82,11 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Файл занадто великий. Максимальний розмір: 5 МБ');
+      return;
+    }
+
     setIsUploadingAvatar(true);
     const loadingId = showLoading('Оновлення аватарки...');
     try {
@@ -131,6 +136,11 @@ const Profile = () => {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Файл занадто великий. Максимальний розмір: 5 МБ');
+      return;
+    }
 
     setIsUploadingPhoto(true);
     try {
@@ -405,7 +415,7 @@ const Profile = () => {
                     isUploadingPhoto && "opacity-50 cursor-not-allowed"
                   )}>
                     {isUploadingPhoto ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
-                    {isUploadingPhoto ? 'Завантаження...' : 'Завантажити файл'}
+                    {isUploadingPhoto ? 'Завантаження...' : 'Завантажити файл (макс. 5 МБ)'}
                   </label>
                   <Input 
                     value={websiteData.photoUrl} 

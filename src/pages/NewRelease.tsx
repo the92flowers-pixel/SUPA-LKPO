@@ -79,6 +79,11 @@ const NewRelease = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Файл занадто великий. Максимальний розмір: 5 МБ');
+      return;
+    }
+
     setIsUploading(true);
     const loadingId = showLoading('Завантаження обкладинки...');
     try {
@@ -375,7 +380,7 @@ const NewRelease = () => {
                     )}>
                       {isUploading ? <Loader2 className="animate-spin text-red-700" /> : <Upload className="text-zinc-500" />}
                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                        {isUploading ? 'Завантаження...' : 'Оберіть файл (JPG/PNG)'}
+                        {isUploading ? 'Завантаження...' : 'Оберіть файл (JPG/PNG, макс. 5 МБ)'}
                       </span>
                     </label>
                   </div>
@@ -499,7 +504,7 @@ const NewRelease = () => {
           </Button>
           {currentStep < STEPS.length ? (
             <Button onClick={handleNext} disabled={!canProceed()} className="bg-red-700 hover:bg-red-800 text-[9px] sm:text-[10px] font-black uppercase tracking-widest h-10 sm:h-12 px-6 sm:px-10 rounded-none">
-              Далі <ChevronRight size={14} className="ml-1 sm:ml-2" />
+              Далі <ChevronRight size={14} className="ml-1 sm:mr-2" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting} className="bg-red-700 hover:bg-red-800 text-[9px] sm:text-[10px] font-black uppercase tracking-widest h-10 sm:h-12 px-6 sm:px-10 rounded-none">
