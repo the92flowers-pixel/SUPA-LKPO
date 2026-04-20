@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio, Hash } from 'lucide-react';
+import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio, Hash, Truck } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -242,6 +242,20 @@ const Moderation = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Admin Only: Distributor Field */}
+                  <div className="p-4 bg-blue-900/5 border border-blue-900/10 space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
+                      <Truck size={14} /> Дистриб'ютор (Тільки Адмін)
+                    </Label>
+                    <Select value={selectedTrack.distributor || ''} onValueChange={(v) => updateField('distributor', v)}>
+                      <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-10 text-xs"><SelectValue placeholder="Оберіть..." /></SelectTrigger>
+                      <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                        <SelectItem value="Route Note" className="text-xs font-bold uppercase">Route Note</SelectItem>
+                        <SelectItem value="jumpstr.io" className="text-xs font-bold uppercase">jumpstr.io</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -357,7 +371,7 @@ const Moderation = () => {
                           <Textarea 
                             value={selectedTrack[field.name] || ''} 
                             onChange={(e) => updateField(field.name, e.target.value)}
-                            className="bg-black/40 border-white/5 rounded-none min-h-[80px] text-xs"
+                            className="bg-black/40 border-white/5 rounded-none min-h-[120px] text-xs"
                           />
                         ) : field.type === 'select' ? (
                           <Select value={selectedTrack[field.name] || ''} onValueChange={(v) => updateField(field.name, v)}>

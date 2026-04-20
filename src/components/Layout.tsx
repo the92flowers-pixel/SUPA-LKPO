@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, User, LogOut, ShieldCheck, BarChart3, Settings, 
-  Users as UsersIcon, Music, Menu, X, LayoutGrid, Disc, Link2, Globe, Wallet, FileText
+  Users as UsersIcon, Music, Menu, X, LayoutGrid, Disc, Link2, Globe, Wallet, FileText, ListTodo
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -39,6 +39,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { to: '/admin/artist-websites', icon: Globe, label: 'Сайти артистів' },
     { to: '/admin/users', icon: UsersIcon, label: 'Користувачі' },
     { to: '/admin/statistics', icon: BarChart3, label: 'Статистика' },
+    { to: '/admin/tasks', icon: ListTodo, label: 'Завдання' },
     { to: '/admin/settings', icon: Settings, label: 'Налаштування' },
   ];
 

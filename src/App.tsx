@@ -35,6 +35,7 @@ import LabelSocials from '@/pages/admin/LabelSocials';
 import LoginCustomization from '@/pages/admin/LoginCustomization';
 import Settings from '@/pages/admin/Settings';
 import Export from '@/pages/admin/Export';
+import Tasks from '@/pages/admin/Tasks';
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center bg-[#050505]">
@@ -60,7 +61,7 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: 
 
 const App = () => {
   const { setAuth } = useAuthStore();
-  const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests } = useDataStore();
+  const { init, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests, fetchTasks } = useDataStore();
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -104,6 +105,7 @@ const App = () => {
                 fetchReports(userRole === 'admin' ? undefined : userId),
                 fetchUsers(),
                 fetchWithdrawalRequests(),
+                userRole === 'admin' ? fetchTasks() : Promise.resolve(),
               ]);
             } else if (error?.code === 'PGRST116') {
               const { data: newProfile, error: createError } = await supabase
@@ -186,6 +188,7 @@ const App = () => {
               fetchArtistWebsites(profile.role === 'admin' ? undefined : session.user.id, profile.role),
               fetchTransactions(session.user.id),
               fetchReports(profile.role === 'admin' ? undefined : session.user.id),
+              profile.role === 'admin' ? fetchTasks() : Promise.resolve(),
             ]);
           }
         } catch (err) {
@@ -199,7 +202,7 @@ const App = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isInitialized, setAuth, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests]);
+  }, [isInitialized, setAuth, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests, fetchTasks]);
 
   if (!isInitialized) {
     return <LoadingScreen />;
@@ -233,10 +236,7 @@ const App = () => {
         <Route path="/admin/artist-websites" element={<ProtectedRoute role="admin"><ArtistWebsitesManagement /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
         <Route path="/admin/statistics" element={<ProtectedRoute role="admin"><Statistics /></ProtectedRoute>} />
-        <Route path="/admin/statuses" element={<ProtectedRoute role="admin"><Statuses /></ProtectedRoute>} />
-        <Route path="/admin/fields" element={<ProtectedRoute role="admin"><Fields /></ProtectedRoute>} />
-        <Route path="/admin/label-socials" element={<ProtectedRoute role="admin"><LabelSocials /></ProtectedRoute>} />
-        <Route path="/admin/login-customization" element={<ProtectedRoute role="admin"><LoginCustomization /></ProtectedRoute>} />
+        <Route path="/admin/tasks" element={<ProtectedRoute role="admin"><Tasks /></ProtectedRoute>} />
         <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
         <Route path="/admin/export" element={<ProtectedRoute role="admin"><Export /></ProtectedRoute>} />
 

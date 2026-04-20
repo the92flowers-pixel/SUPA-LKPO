@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase, toAppProfile, AppUser, Release, SmartLink, ArtistWebsite, Transaction, WithdrawalRequest, QuarterlyReport, Status, Field, LabelSocial } from './supabase';
+import { supabase, toAppProfile, AppUser, Release, SmartLink, ArtistWebsite, Transaction, WithdrawalRequest, QuarterlyReport, Status, Field, LabelSocial, Task } from './supabase';
 
 interface AuthState {
   user: AppUser | null;
@@ -39,6 +39,7 @@ interface DataState {
   withdrawalRequests: WithdrawalRequest[];
   quarterlyReports: QuarterlyReport[];
   labelSocials: LabelSocial[];
+  tasks: Task[];
   settings: { siteName: string; registrationEnabled: boolean; contactEmail: string };
   homePageConfig: { heroTitle: string; heroSubtitle: string; buttonText: string; primaryColor: string };
   adminPanelConfig: { logoText: string; accentColor: string };
@@ -85,6 +86,10 @@ interface DataState {
   updateSettings: (settings: any) => Promise<void>;
   updateHomeConfig: (config: any) => Promise<void>;
   updateAdminConfig: (config: any) => Promise<void>;
+  fetchTasks: () => Promise<void>;
+  addTask: (taskData: Partial<Task>) => Promise<void>;
+  updateTask: (id: string, taskData: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
 }
 
 export const DEFAULT_GENRES = [
@@ -105,6 +110,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   withdrawalRequests: [],
   quarterlyReports: [],
   labelSocials: [],
+  tasks: [],
   settings: { siteName: "ЖУРБА MUSIC", registrationEnabled: true, contactEmail: "support@jurba.music" },
   homePageConfig: { heroTitle: "Твоя музика. Скрізь.", heroSubtitle: "Дистрибуція на 150+ платформ.", buttonText: "Почати", primaryColor: "#ef4444" },
   adminPanelConfig: { logoText: "ЖУРБА", accentColor: "#ef4444" },
@@ -140,7 +146,8 @@ export const useDataStore = create<DataState>((set, get) => ({
           releaseUrl: r.release_url,
           createdAt: r.created_at,
           isSingle: r.is_single,
-          copyrightConfirmed: r.copyright_confirmed
+          copyrightConfirmed: r.copyright_confirmed,
+          distributor: r.distributor
         })) });
       }
     } catch (e) { console.error(e); }
@@ -172,7 +179,8 @@ export const useDataStore = create<DataState>((set, get) => ({
         tracks: releaseData.tracks || [],
         status: releaseData.status || 'На модерації',
         streams: 0,
-        history: []
+        history: [],
+        distributor: releaseData.distributor || null
       };
 
       const { data, error } = await supabase.from('releases').insert(dbData).select().single();
@@ -188,7 +196,8 @@ export const useDataStore = create<DataState>((set, get) => ({
           releaseUrl: data.release_url,
           createdAt: data.created_at,
           isSingle: data.is_single,
-          copyrightConfirmed: data.copyright_confirmed
+          copyrightConfirmed: data.copyright_confirmed,
+          distributor: data.distributor
         };
         set((state) => ({ releases: [mapped, ...state.releases] }));
         return mapped;
@@ -220,7 +229,8 @@ export const useDataStore = create<DataState>((set, get) => ({
         copyrights: releaseData.copyrights,
         copyright_confirmed: !!releaseData.copyrightConfirmed,
         tracks: releaseData.tracks || [],
-        status: releaseData.status
+        status: releaseData.status,
+        distributor: releaseData.distributor
       };
 
       const { data, error } = await supabase.from('releases').update(dbData).eq('id', id).select().single();
@@ -236,7 +246,8 @@ export const useDataStore = create<DataState>((set, get) => ({
           releaseUrl: data.release_url,
           createdAt: data.created_at,
           isSingle: data.is_single,
-          copyrightConfirmed: data.copyright_confirmed
+          copyrightConfirmed: data.copyright_confirmed,
+          distributor: data.distributor
         };
         set((state) => ({ releases: state.releases.map(r => r.id === id ? mapped : r) }));
         return mapped;
@@ -754,6 +765,34 @@ export const useDataStore = create<DataState>((set, get) => ({
     try {
       await supabase.from('app_config').update({ admin_panel: adminPanelConfig }).eq('id', 1);
       set({ adminPanelConfig });
+    } catch (e) { console.error(e); }
+  },
+
+  fetchTasks: async () => {
+    try {
+      const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+      if (!error && data) set({ tasks: data });
+    } catch (e) { console.error(e); }
+  },
+
+  addTask: async (taskData) => {
+    try {
+      const { data, error } = await supabase.from('tasks').insert(taskData).select().single();
+      if (!error && data) set((state) => ({ tasks: [data, ...state.tasks] }));
+    } catch (e) { console.error(e); }
+  },
+
+  updateTask: async (id, taskData) => {
+    try {
+      const { data, error } = await supabase.from('tasks').update(taskData).eq('id', id).select().single();
+      if (!error && data) set((state) => ({ tasks: state.tasks.map(t => t.id === id ? data : t) }));
+    } catch (e) { console.error(e); }
+  },
+
+  deleteTask: async (id) => {
+    try {
+      await supabase.from('tasks').delete().eq('id', id);
+      set((state) => ({ tasks: state.tasks.filter(t => t.id !== id) }));
     } catch (e) { console.error(e); }
   },
 }));

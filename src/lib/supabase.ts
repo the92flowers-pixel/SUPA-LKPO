@@ -95,6 +95,16 @@ export interface Release {
   tracks?: Track[];
   copyrights?: string;
   copyrightConfirmed?: boolean;
+  distributor?: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  created_at: string;
 }
 
 export interface SmartLink {

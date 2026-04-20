@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Edit2, Search, RefreshCw, CheckCircle, XCircle, Loader2, Save, X, Shield, Hash } from 'lucide-react';
+import { Music, Edit2, Search, RefreshCw, CheckCircle, XCircle, Loader2, Save, X, Shield, Hash, Truck } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -200,6 +200,21 @@ const AllReleases = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Admin Only: Distributor Field */}
+                <div className="p-4 bg-blue-900/5 border border-blue-900/10 space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
+                    <Truck size={14} /> Дистриб'ютор (Тільки Адмін)
+                  </Label>
+                  <Select value={editingRelease.distributor || ''} onValueChange={(v) => setEditingRelease({...editingRelease, distributor: v})}>
+                    <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-10 text-xs"><SelectValue placeholder="Оберіть..." /></SelectTrigger>
+                    <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                      <SelectItem value="Route Note" className="text-xs font-bold uppercase">Route Note</SelectItem>
+                      <SelectItem value="jumpstr.io" className="text-xs font-bold uppercase">jumpstr.io</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
