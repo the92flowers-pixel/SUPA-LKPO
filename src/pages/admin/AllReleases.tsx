@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
@@ -190,7 +191,7 @@ const AllReleases = () => {
                 <tr key={release.id} className="hover:bg-white/5 transition-colors group">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
-                      <img src={release.coverUrl || FALLBACK_IMAGE} className="w-12 h-12 rounded-none object-cover border border-white/5" alt="" onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }} />
+                      <img src={release.coverImageLocal || release.coverUrl || FALLBACK_IMAGE} className="w-12 h-12 rounded-none object-cover border border-white/5" alt="" onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }} />
                       <div>
                         <p className="text-xs font-bold text-white uppercase tracking-wider">{release.title}</p>
                         <p className="text-[9px] text-zinc-600 font-mono">ID: {release.id.slice(0, 8)}</p>
@@ -200,7 +201,7 @@ const AllReleases = () => {
                   <td className="px-6 py-5"><p className="text-xs font-bold text-zinc-400">{release.artist}</p></td>
                   <td className="px-6 py-5"><span className="text-[10px] font-bold text-zinc-500 uppercase">{getUserName(release.userId)}</span></td>
                   <td className="px-6 py-5">
-                    <Badge className={cn("border-none text-[9px] uppercase font-black tracking-widest rounded-none", release.status === 'Опубліковано' ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-500')}>
+                    <Badge className={cn("border-none text-[9px] uppercase font-black tracking-widest rounded-none px-3 py-1", release.status === 'Опубліковано' ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-500')}>
                       {release.status}
                     </Badge>
                   </td>
@@ -250,7 +251,7 @@ const AllReleases = () => {
               {releases.filter(r => r.title.toLowerCase().includes(exportSearch.toLowerCase()) || r.artist.toLowerCase().includes(exportSearch.toLowerCase())).map(r => (
                 <div key={r.id} className="flex items-center gap-4 p-3 hover:bg-white/5 transition-colors cursor-pointer" onClick={() => toggleSelect(r.id)}>
                   {selectedExportIds.includes(r.id) ? <CheckSquare className="text-red-700" size={18} /> : <Square className="text-zinc-700" size={18} />}
-                  <img src={r.coverUrl || FALLBACK_IMAGE} className="w-8 h-8 object-cover" alt="" />
+                  <img src={r.coverImageLocal || r.coverUrl || FALLBACK_IMAGE} className="w-8 h-8 object-cover" alt="" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold text-white uppercase truncate">{r.title}</p>
                     <p className="text-[8px] text-zinc-500 uppercase truncate">{r.artist}</p>
@@ -342,10 +343,17 @@ const AllReleases = () => {
                 ))}
               </div>
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL Обкладинки</Label>
-                  <Input value={editingRelease.coverUrl} onChange={(e) => setEditingRelease({...editingRelease, coverUrl: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
-                </div>
+                <ImageUploader 
+                  bucket="covers"
+                  path={`releases/${editingRelease.userId}`}
+                  currentLocalUrl={editingRelease.coverImageLocal}
+                  currentExternalUrl={editingRelease.coverUrl}
+                  onUpload={(url) => setEditingRelease({...editingRelease, coverImageLocal: url})}
+                  onExternalUrlChange={(url) => setEditingRelease({...editingRelease, coverUrl: url})}
+                  onRemove={() => setEditingRelease({...editingRelease, coverImageLocal: ''})}
+                  label="Обкладинка релізу"
+                />
+
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Статус</Label>
                   <Select value={editingRelease.status} onValueChange={(v) => setEditingRelease({...editingRelease, status: v})}>

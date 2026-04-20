@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 const PLATFORMS_LIST = [
   "Instagram", "Telegram", "YouTube", "TikTok", "Spotify", "Apple Music", "SoundCloud", "Website"
@@ -110,7 +111,7 @@ const ArtistWebsitesManagement = () => {
                   <tr key={website.id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
-                        <img src={website.photoUrl} className="w-12 h-12 rounded-none object-cover border border-white/5" alt="" />
+                        <img src={website.siteAvatarLocal || website.photoUrl || "https://jurbamusic.iceiy.com/profileavatar.png"} className="w-12 h-12 rounded-none object-cover border border-white/5" alt="" />
                         <span className="font-bold text-xs text-white uppercase tracking-wider">{website.stageName}</span>
                       </div>
                     </td>
@@ -165,6 +166,17 @@ const ArtistWebsitesManagement = () => {
           </DialogHeader>
           {editingWebsite && (
             <div className="space-y-8 py-6">
+              <ImageUploader 
+                bucket="artist-sites"
+                path={`sites/${editingWebsite.userId}`}
+                currentLocalUrl={editingWebsite.siteAvatarLocal}
+                currentExternalUrl={editingWebsite.photoUrl}
+                onUpload={(url) => setEditingWebsite({...editingWebsite, siteAvatarLocal: url})}
+                onExternalUrlChange={(url) => setEditingWebsite({...editingWebsite, photoUrl: url})}
+                onRemove={() => setEditingWebsite({...editingWebsite, siteAvatarLocal: ''})}
+                label="Аватар сайту артиста"
+              />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Персональне посилання (URL)</Label>
@@ -193,17 +205,6 @@ const ArtistWebsitesManagement = () => {
                   value={editingWebsite.bio} 
                   onChange={(e) => setEditingWebsite({...editingWebsite, bio: e.target.value})}
                   className="bg-black/40 border-white/5 rounded-none min-h-[100px] resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                  <ImageIcon size={14} /> Посилання на фото (URL)
-                </Label>
-                <Input 
-                  value={editingWebsite.photoUrl} 
-                  onChange={(e) => setEditingWebsite({...editingWebsite, photoUrl: e.target.value})}
-                  className="bg-black/40 border-white/5 rounded-none h-12"
                 />
               </div>
 
