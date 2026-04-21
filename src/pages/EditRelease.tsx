@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, Loader2, Shield, ListMusic, Save } from 'lucide-react';
+import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, Loader2, Shield, ListMusic, Save, Layers } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ const EditRelease = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { releases, updateRelease, statuses, fields } = useDataStore();
+  const { releases, updateRelease, fields } = useDataStore();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,6 +27,8 @@ const EditRelease = () => {
   const [formData, setFormData] = useState<any>(null);
   const [tracks, setTracks] = useState<any[]>([]);
   const [releaseType, setReleaseType] = useState<'single' | 'album'>('single');
+
+  const releaseFields = fields.filter(f => f.section === 'release' && f.visible);
 
   useEffect(() => {
     const release = releases.find(r => r.id === id);
@@ -39,7 +41,6 @@ const EditRelease = () => {
       setReleaseType(release.isSingle ? 'single' : 'album');
       setIsLoading(false);
     } else {
-      // If not found in store, maybe it's still loading or doesn't exist
       const timer = setTimeout(() => {
         if (isLoading) navigate('/releases');
       }, 2000);
@@ -65,6 +66,14 @@ const EditRelease = () => {
   };
 
   const handleNext = () => {
+    // Dynamic fields validation
+    if (currentStep === 5) {
+      const missingRequired = releaseFields.find(f => f.required && !formData[f.name]);
+      if (missingRequired) {
+        showError(`Поле "${missingRequired.label}" є обов'язковим`);
+        return;
+      }
+    }
     setCurrentStep(prev => prev + 1);
     window.scrollTo(0, 0);
   };
@@ -88,7 +97,7 @@ const EditRelease = () => {
         ...formData,
         isSingle: releaseType === 'single',
         tracks: tracks,
-        status: 'На модерації' // Reset status to moderation after edit
+        status: 'На модерації'
       };
 
       await updateRelease(id!, finalData);
@@ -272,6 +281,48 @@ const EditRelease = () => {
         );
       case 5:
         return (
+          <div className="space-y-8 max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Додаткові поля</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-6">
+              {releaseFields.map(field => (
+                <div key={field.id} className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                    {field.label} {field.required && '*'}
+                  </Label>
+                  {field.type === 'textarea' ? (
+                    <Textarea 
+                      value={formData[field.name] || ''} 
+                      onChange={(e) => updateFormData(field.name, e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none min-h-[100px]"
+                    />
+                  ) : field.type === 'select' ? (
+                    <Select value={formData[field.name] || ''} onValueChange={(v) => updateFormData(field.name, v)}>
+                      <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                        {field.options?.split(',').map((opt: string) => (
+                          <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs uppercase font-bold">{opt.trim()}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      type={field.type}
+                      value={formData[field.name] || ''} 
+                      onChange={(e) => updateFormData(field.name, e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none h-12"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 6:
+        return (
           <div className="space-y-8 max-w-3xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Юридична інформація</h2>
@@ -309,7 +360,8 @@ const EditRelease = () => {
     { id: 2, label: 'Мета' },
     { id: 3, label: 'Треки' },
     { id: 4, label: 'Арт' },
-    { id: 5, label: 'Права' },
+    { id: 5, label: 'Додатково' },
+    { id: 6, label: 'Права' },
   ];
 
   return (
@@ -351,14 +403,13 @@ const EditRelease = () => {
             <ChevronLeft className="mr-2" size={16} /> Назад
           </Button>
           
-          {currentStep < 5 ? (
+          {currentStep < 6 ? (
             <Button onClick={handleNext} className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none">
               Далі <ChevronRight className="ml-2" size={16} />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase tracking-widest h-12 px-12 rounded-none">
-              {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Save className="mr-2" size={16} />}
-              Зберегти зміни
+              {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <><Save className="mr-2" size={16} /> Зберегти зміни</>}
             </Button>
           )}
         </div>

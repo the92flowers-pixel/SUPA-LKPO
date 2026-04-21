@@ -160,7 +160,8 @@ export const useDataStore = create<DataState>((set, get) => ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Unauthorized');
       
-      const dbData = {
+      // Core fields
+      const dbData: any = {
         user_id: user.id,
         title: releaseData.title,
         artist: releaseData.artist,
@@ -184,6 +185,14 @@ export const useDataStore = create<DataState>((set, get) => ({
         history: [],
         distributor: releaseData.distributor || null
       };
+
+      // Add dynamic fields
+      const releaseFields = get().fields.filter(f => f.section === 'release');
+      releaseFields.forEach(f => {
+        if (releaseData[f.name] !== undefined) {
+          dbData[f.name] = releaseData[f.name];
+        }
+      });
 
       const { data, error } = await supabase.from('releases').insert(dbData).select().single();
       
@@ -235,6 +244,14 @@ export const useDataStore = create<DataState>((set, get) => ({
         distributor: releaseData.distributor,
         rejection_reason: releaseData.rejection_reason || null
       };
+
+      // Add dynamic fields
+      const releaseFields = get().fields.filter(f => f.section === 'release');
+      releaseFields.forEach(f => {
+        if (releaseData[f.name] !== undefined) {
+          dbData[f.name] = releaseData[f.name];
+        }
+      });
 
       const { data, error } = await supabase.from('releases').update(dbData).eq('id', id).select().single();
       

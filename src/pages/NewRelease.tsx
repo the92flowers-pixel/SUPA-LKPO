@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar, Hash, Upload, ListMusic } from 'lucide-react';
+import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar, Hash, Upload, ListMusic, Layers } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 const NewRelease = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { addRelease, statuses, fetchReleases, fields } = useDataStore();
+  const { addRelease, statuses, fields } = useDataStore();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,6 +25,8 @@ const NewRelease = () => {
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 7);
   const minDateStr = minDate.toISOString().split('T')[0];
+
+  const releaseFields = fields.filter(f => f.section === 'release' && f.visible);
 
   const [formData, setFormData] = useState<any>({
     title: '',
@@ -79,6 +81,16 @@ const NewRelease = () => {
       showError('Вкажіть назви для всіх треків');
       return;
     }
+    
+    // Dynamic fields validation
+    if (currentStep === 5) {
+      const missingRequired = releaseFields.find(f => f.required && !formData[f.name]);
+      if (missingRequired) {
+        showError(`Поле "${missingRequired.label}" є обов'язковим`);
+        return;
+      }
+    }
+
     setCurrentStep(prev => prev + 1);
     window.scrollTo(0, 0);
   };
@@ -331,6 +343,56 @@ const NewRelease = () => {
         );
       case 5:
         return (
+          <div className="space-y-8 max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Додаткові поля</h2>
+              <p className="text-zinc-500 text-xs sm:text-sm">Інформація, необхідна для дистрибуції</p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-6">
+              {releaseFields.length > 0 ? (
+                releaseFields.map(field => (
+                  <div key={field.id} className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                      {field.label} {field.required && '*'}
+                    </Label>
+                    {field.type === 'textarea' ? (
+                      <Textarea 
+                        value={formData[field.name] || ''} 
+                        onChange={(e) => updateFormData(field.name, e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none min-h-[100px]"
+                      />
+                    ) : field.type === 'select' ? (
+                      <Select value={formData[field.name] || ''} onValueChange={(v) => updateFormData(field.name, v)}>
+                        <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12">
+                          <SelectValue placeholder="Оберіть варіант..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                          {field.options?.split(',').map((opt: string) => (
+                            <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs uppercase font-bold">{opt.trim()}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input 
+                        type={field.type}
+                        value={formData[field.name] || ''} 
+                        onChange={(e) => updateFormData(field.name, e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-12"
+                      />
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10 border border-dashed border-white/5">
+                  <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest">Додаткових полів не встановлено</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case 6:
+        return (
           <div className="space-y-8 max-w-3xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Юридична інформація</h2>
@@ -380,7 +442,8 @@ const NewRelease = () => {
     { id: 2, label: 'Мета', icon: FileText },
     { id: 3, label: 'Треки', icon: ListMusic },
     { id: 4, label: 'Арт', icon: Image },
-    { id: 5, label: 'Права', icon: Shield },
+    { id: 5, label: 'Додатково', icon: Layers },
+    { id: 6, label: 'Права', icon: Shield },
   ];
 
   return (
@@ -420,7 +483,7 @@ const NewRelease = () => {
             <ChevronLeft className="mr-2" size={16} /> Назад
           </Button>
           
-          {currentStep < 5 ? (
+          {currentStep < 6 ? (
             <Button 
               onClick={handleNext}
               className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none"
@@ -433,8 +496,7 @@ const NewRelease = () => {
               disabled={isSubmitting}
               className="bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase tracking-widest h-12 px-12 rounded-none shadow-[0_0_30px_rgba(22,163,74,0.2)]"
             >
-              {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Check className="mr-2" size={16} />}
-              Відправити реліз
+              {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <><Check className="mr-2" size={16} /> Відправити реліз</>}
             </Button>
           )}
         </div>
