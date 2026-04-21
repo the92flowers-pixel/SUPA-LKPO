@@ -250,7 +250,7 @@ const NewRelease = () => {
                 <li>• Мінімальний розмір: 1500x1500px</li>
                 <li>• Без логотипів стрімінгів та соцмереж</li>
                 <li>• Без контактної інформації та адрес сайтів</li>
-                <li>• Формати: JPG, PNG, WEBP, GIF • Max 10MB</li>
+                <li>• Формати: JPG, PNG, WEBP, GIF • Max 5MB</li>
               </ul>
             </div>
           </div>
