@@ -1,6 +1,6 @@
 "use client";
 
-import React, { { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ShieldCheck, ShieldAlert, Save as SaveIcon, Loader2, Globe, Plus, Trash2, Edit2, ExternalLink, Music, Link as LinkIcon, Check, AlertTriangle } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,29 @@ const PLATFORMS_LIST = [
   { name: "Twitter", icon: "twitter" },
 ];
 
+interface AppUser {
+  id: string;
+  email?: string;
+  login: string;
+  role: 'admin' | 'artist';
+  artistName: string | null;
+  balance: number;
+  isVerified: boolean;
+  bio?: string;
+  avatarUrl?: string;
+  avatarLocal?: string;
+}
+
+interface ArtistWebsiteFormData {
+  id?: string;
+  title: string;
+  slug: string;
+  bio: string;
+  photoUrl: string;
+  siteAvatarLocal: string;
+  links: { id: string; name: string; url: string }[];
+}
+
 const Profile: React.FC = () => {
   const { user, setAuth } = useAuthStore();
   const { users, fetchUsers, artistWebsites, addArtistWebsite, updateArtistWebsite, deleteArtistWebsite } = useDataStore();
@@ -40,30 +63,6 @@ const Profile: React.FC = () => {
   // Artist Website State
   const [isWebsiteDialogOpen, setIsWebsiteDialogOpen] = useState(false);
   const [editingWebsite, setEditingWebsite] = useState<ArtistWebsiteFormData | null>(null);
-
-  // Type for website form data
-  interface AppUser {
-    id: string;
-    email?: string;
-    login: string;
-    role: 'admin' | 'artist';
-    artistName: string | null;
-    balance: number;
-    isVerified: boolean;
-    bio?: string;
-    avatarUrl?: string;
-    avatarLocal?: string;
-  }
-
-  interface ArtistWebsiteFormData {
-    id?: string;
-    title: string;
-    slug: string;
-    bio: string;
-    photoUrl: string;
-    siteAvatarLocal: string;
-    links: { id: string; name: string; url: string }[];
-  }
 
   // Load profile data
   useEffect(() => {
@@ -187,7 +186,7 @@ const Profile: React.FC = () => {
     updateField('avatarUrl', '');
   };
 
-  // Artist Website Functions - ONE WEBSITE PER USER
+  // Artist Website Functions
   const userWebsite = artistWebsites.find(w => w.userId === user?.id);
   const hasWebsite = !!userWebsite;
   
