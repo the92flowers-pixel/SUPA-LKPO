@@ -44,25 +44,22 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [isValidating, setIsValidating] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | currentLocalUrl || '');
+  const [previewUrl, setPreviewUrl] = useState<string>(currentLocalUrl || '');
 
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
   const validateImage = (file: File): Promise<{ valid: boolean; error?: string }> => {
     return new Promise((resolve) => {
-      // Check file type
       if (!acceptedTypes.includes(file.type)) {
         resolve({ valid: false, error: `Непідтримуваний формат. Дозволені: JPG, PNG, WebP` });
         return;
       }
 
-      // Check file size
       if (file.size > maxSizeBytes) {
         resolve({ valid: false, error: `Файл занадто великий. Максимум: ${maxSizeMB}МБ` });
         return;
       }
 
-      // Check dimensions
       if (minDimensions) {
         const img = new window.Image();
         img.onload = () => {
@@ -72,9 +69,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               error: `Зображення занадто маленьке. Мінімум: ${minDimensions.width}x${minDimensions.height}px` 
             });
           } else {
-            // Check aspect ratio (allow some tolerance)
             const ratio = img.width / img.height;
-            const expectedRatio = 1; // 1:1
+            const expectedRatio = 1;
             const tolerance = 0.02;
             
             if (Math.abs(ratio - expectedRatio) > tolerance) {
@@ -107,7 +103,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     setIsValidating(true);
 
     try {
-      // Validate the image
       const validation = await validateImage(file);
       
       if (!validation.valid) {
@@ -118,11 +113,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
       setIsValidating(false);
       
-      // Show preview immediately
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
 
-      // Upload to Supabase Storage
       setIsUploading(true);
       setUploadProgress(10);
 
@@ -145,13 +138,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
       setUploadProgress(80);
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(data.path);
 
       setUploadProgress(100);
-      onUpload(publicUrl);
-      setPreviewUrl(publicUrl);
+      onUpload(urlData.publicUrl);
+      setPreviewUrl(urlData.publicUrl);
       showSuccess('Зображення завантажено!');
       
     } catch (err: any) {
@@ -160,7 +153,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -190,7 +182,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     <div className={`space-y-4 ${className}`}>
       <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{label}</Label>
       
-      {/* Validation Error */}
       {validationError && (
         <div className="p-3 bg-red-900/10 border border-red-900/20 flex items-start gap-2">
           <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
@@ -198,7 +189,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         </div>
       )}
 
-      {/* Upload Progress */}
       {isUploading && (
         <div className="space-y-2">
           <div className="h-2 bg-white/5 overflow-hidden">
@@ -213,10 +203,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         </div>
       )}
 
-      {/* Image Preview / Upload Area */}
       {hasImage ? (
         <div className="relative group">
-          {/* Image */}
           <div className="aspect-square relative overflow-hidden border border-white/10 bg-black/40">
             <img 
               src={displayUrl} 
@@ -224,7 +212,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
               className="w-full h-full object-cover"
             />
             
-            {/* Overlay on hover */}
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
               {currentLocalUrl || previewUrl ? (
                 <>
@@ -262,13 +249,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             </div>
           </div>
           
-          {/* Success indicator */}
           <div className="absolute top-3 right-3 bg-green-500/20 text-green-500 p-1.5">
             <Check size={14} />
           </div>
         </div>
       ) : (
-        /* Upload Zone */
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -310,7 +295,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         </div>
       )}
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -319,7 +303,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         className="hidden"
       />
 
-      {/* External URL option */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <div className="flex-1 h-px bg-white/5" />
