@@ -26,7 +26,8 @@ export interface AppUser {
   createdAt: string;
   bio?: string;
   avatarUrl?: string;
-  avatarLocal?: string; // Нове поле
+  avatarLocal?: string;
+  [key: string]: any; // Дозволяє динамічні поля профілю
 }
 
 export interface Profile {
@@ -41,7 +42,8 @@ export interface Profile {
   artist_name?: string;
   bio?: string;
   avatar_url?: string;
-  avatar_local?: string; // Нове поле
+  avatar_local?: string;
+  [key: string]: any;
 }
 
 export const toAppProfile = (dbProfile: Profile): AppUser => ({
@@ -56,6 +58,7 @@ export const toAppProfile = (dbProfile: Profile): AppUser => ({
   bio: dbProfile.bio,
   avatarUrl: dbProfile.avatar_url,
   avatarLocal: dbProfile.avatar_local,
+  ...dbProfile // Прокидаємо всі інші поля
 });
 
 export interface Release {
@@ -66,7 +69,7 @@ export interface Release {
   genre: string;
   releaseDate: string;
   coverUrl: string;
-  coverImageLocal?: string; // Нове поле
+  coverImageLocal?: string;
   status: string;
   streams: number;
   history: { date: string; count: number }[];
@@ -84,6 +87,8 @@ export interface Release {
   copyrightConfirmed?: boolean;
   distributor?: string;
   rejection_reason?: string;
+  releaseUrl?: string;
+  [key: string]: any; // Дозволяє динамічні поля релізу
 }
 
 export interface SmartLink {
@@ -93,7 +98,7 @@ export interface SmartLink {
   title: string;
   artist: string;
   coverUrl: string;
-  avatarLocal?: string; // Нове поле
+  avatarLocal?: string;
   slug: string;
   platforms: any[];
   clicks: number;
@@ -108,9 +113,77 @@ export interface ArtistWebsite {
   stageName: string;
   bio: string;
   photoUrl: string;
-  siteAvatarLocal?: string; // Нове поле
+  siteAvatarLocal?: string;
   links: any[];
   createdAt: string;
+}
+
+export interface Transaction {
+  id: string;
+  userId: string;
+  amount: number;
+  type: 'deposit' | 'withdrawal' | 'adjustment';
+  status: 'pending' | 'completed' | 'cancelled';
+  description: string;
+  createdAt: string;
+}
+
+export interface WithdrawalRequest {
+  id: string;
+  userId: string;
+  amount: number;
+  status: 'pending' | 'paid' | 'rejected';
+  contactInfo: string;
+  confirmationAgreed: boolean;
+  adminComment?: string;
+  createdAt: string;
+}
+
+export interface QuarterlyReport {
+  id: string;
+  userId: string;
+  quarter: number;
+  year: number;
+  fileUrl: string;
+  fileName: string;
+  createdAt: string;
+}
+
+export interface Status {
+  id: number;
+  name: string;
+  color: string;
+  order: number;
+  isDefault: boolean;
+}
+
+export interface Field {
+  id: number;
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  section: 'release' | 'profile';
+  order: number;
+  visible: boolean;
+  options?: string;
+  fileTypes?: string;
+  maxSize?: string;
+}
+
+export interface LabelSocial {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  created_at: string;
 }
 
 export const uploadFile = async (bucket: string, path: string, file: File): Promise<string> => {
