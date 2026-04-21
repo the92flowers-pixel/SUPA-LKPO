@@ -63,6 +63,14 @@ const NewRelease = () => {
       showError('Заповніть основні поля');
       return;
     }
+    // Validate cover on step 2 (metadata step, before cover step)
+    if (currentStep === 2) {
+      // Check if cover is uploaded
+      if (!formData.coverImageLocal && !formData.coverUrl) {
+        showError('Завантажте обкладинку релізу');
+        return;
+      }
+    }
     setCurrentStep(prev => prev + 1);
     window.scrollTo(0, 0);
   };
@@ -75,6 +83,12 @@ const NewRelease = () => {
   const handleSubmit = async () => {
     if (!formData.copyrightConfirmed) {
       showError('Ви повинні підтвердити авторські права');
+      return;
+    }
+
+    // Final validation - cover is required
+    if (!formData.coverImageLocal && !formData.coverUrl) {
+      showError('Обкладинка релізу є обов\'язковою');
       return;
     }
 
@@ -99,6 +113,24 @@ const NewRelease = () => {
       dismissToast(loadingId);
     }
   };
+
+  const handleCoverUpload = (url: string) => {
+    updateFormData('coverImageLocal', url);
+    updateFormData('coverUrl', url);
+  };
+
+  const handleCoverRemove = () => {
+    updateFormData('coverImageLocal', '');
+    updateFormData('coverUrl', '');
+  };
+
+  const handleExternalUrlChange = (url: string) => {
+    updateFormData('coverUrl', url);
+    updateFormData('coverImageLocal', '');
+  };
+
+  const hasCover = formData.coverImageLocal || formData.coverUrl;
+  const displayCover = formData.coverImageLocal || formData.coverUrl || FALLBACK_IMAGE;
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -231,22 +263,41 @@ const NewRelease = () => {
               path={`releases/${user?.id}`}
               currentLocalUrl={formData.coverImageLocal}
               currentExternalUrl={formData.coverUrl}
-              onUpload={(url) => updateFormData('coverImageLocal', url)}
-              onExternalUrlChange={(url) => updateFormData('coverUrl', url)}
-              onRemove={() => updateFormData('coverImageLocal', '')}
+              onUpload={handleCoverUpload}
+              onExternalUrlChange={handleExternalUrlChange}
+              onRemove={handleCoverRemove}
               label="Обкладинка релізу"
               className="max-w-xl mx-auto"
+              acceptedTypes="image/jpeg,image/jpg,image/png,image/webp"
+              maxSizeMB={7}
+              minDimensions={{ width: 1500, height: 1500 }}
+              aspectRatio="1:1"
             />
 
+            {/* Requirements */}
             <div className="p-6 bg-red-900/5 border border-red-900/10 space-y-3 mt-8">
               <p className="text-[10px] font-black uppercase tracking-widest text-red-700 flex items-center gap-2">
                 <AlertCircle size={14} /> Вимоги до обкладинки
               </p>
               <ul className="text-[9px] text-zinc-500 space-y-1 uppercase font-bold tracking-wider">
-                <li>• Тільки квадратні зображення (1:1)</li>
-                <li>• Мінімальний розмір: 1500x1500px</li>
-                <li>• Без логотипів стрімінгів та соцмереж</li>
-                <li>• Без контактної інформації та адрес сайтів</li>
+                <li className="flex items-center gap-2">
+                  <Check size={10} className="text-green-500" /> Тільки квадратні зображення (1:1)
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check size={10} className="text-green-500" /> Мінімальний розмір: 1500x1500px
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check size={10} className="text-green-500" /> Максимальний розмір: 7МБ
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check size={10} className="text-green-500" /> Без логотипів стрімінгів та соцмереж
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check size={10} className="text-green-500" /> Без контактної інформації та адрес сайтів
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check size={10} className="text-green-500" /> Формати: JPG, PNG, WebP
+                </li>
               </ul>
             </div>
           </div>
@@ -283,13 +334,37 @@ const NewRelease = () => {
                   id="copyright" 
                   checked={formData.copyrightConfirmed} 
                   onCheckedChange={(checked) => updateFormData('copyrightConfirmed', checked as boolean)}
-                  className="mt-1 border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none"
+                  className="mt-1 border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none shrink-0"
                 />
                 <Label htmlFor="copyright" className="text-[10px] sm:text-xs text-zinc-400 leading-relaxed font-bold uppercase tracking-wider cursor-pointer">
                   Я підтверджую, що володію всіма необхідними правами на цей контент (музика, текст, обкладинка) або маю дозвіл від правовласників на його дистрибуцію.
                 </Label>
               </div>
             </div>
+
+            {/* Preview Card */}
+            {hasCover && (
+              <div className="p-6 bg-black/40 border border-white/5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">Попередній перегляд</p>
+                <div className="flex items-start gap-6">
+                  <div className="w-32 h-32 shrink-0 overflow-hidden border border-white/10">
+                    <img 
+                      src={displayCover} 
+                      alt="Cover preview" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-black text-white uppercase tracking-wider">{formData.title || 'Назва релізу'}</p>
+                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{formData.artist || 'Артист'}</p>
+                    <p className="text-[9px] text-zinc-700 font-bold uppercase tracking-widest mt-4">
+                      {releaseType === 'single' ? 'Single' : 'Album / EP'} • {formData.genre}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       default:
@@ -351,8 +426,8 @@ const NewRelease = () => {
           ) : (
             <Button 
               onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase tracking-widest h-12 px-12 rounded-none shadow-[0_0_30px_rgba(22,163,74,0.2)]"
+              disabled={isSubmitting || !hasCover}
+              className="bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase tracking-widest h-12 px-12 rounded-none shadow-[0_0_30px_rgba(22,163,74,0.2)] disabled:opacity-30"
             >
               {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Check className="mr-2" size={16} />}
               Відправити реліз
