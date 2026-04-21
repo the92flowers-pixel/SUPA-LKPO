@@ -18,6 +18,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
@@ -118,7 +119,7 @@ const Moderation = () => {
             <Card key={track.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-amber-500/30 transition-all duration-300">
               <div className="aspect-square relative overflow-hidden">
                 <img 
-                  src={track.coverUrl || FALLBACK_IMAGE} 
+                  src={track.coverImageLocal || track.coverUrl || FALLBACK_IMAGE} 
                   alt={track.title} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                   onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
@@ -219,24 +220,18 @@ const Moderation = () => {
           {selectedTrack && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-6">
               <div className="space-y-6">
-                <div className="aspect-square rounded-none overflow-hidden border border-white/5 shadow-2xl relative group">
-                  <img 
-                    src={selectedTrack.coverUrl || FALLBACK_IMAGE} 
-                    alt={selectedTrack.title} 
-                    className="w-full h-full object-cover" 
-                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                  />
-                </div>
+                <ImageUploader 
+                  bucket="covers"
+                  path={`releases/${selectedTrack.userId}`}
+                  currentLocalUrl={selectedTrack.coverImageLocal}
+                  currentExternalUrl={selectedTrack.coverUrl}
+                  onUpload={(url) => updateField('coverImageLocal', url)}
+                  onExternalUrlChange={(url) => updateField('coverUrl', url)}
+                  onRemove={() => updateField('coverImageLocal', '')}
+                  label="Обкладинка релізу"
+                />
                 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL Обкладинки</Label>
-                    <Input 
-                      value={selectedTrack.coverUrl} 
-                      onChange={(e) => updateField('coverUrl', e.target.value)}
-                      className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Посилання на файли</Label>
                     <div className="flex gap-2">

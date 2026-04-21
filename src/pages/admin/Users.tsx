@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { showSuccess } from '@/utils/toast';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 const Users = () => {
   const { users, releases, updateUser, deleteUser, fields } = useDataStore();
@@ -67,8 +68,12 @@ const Users = () => {
               <tr key={user.id} className="hover:bg-white/5 transition-colors group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-500 font-bold">
-                      {user.artistName?.[0] || user.login[0].toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-500 font-bold overflow-hidden">
+                      {user.avatarLocal || user.avatarUrl ? (
+                        <img src={user.avatarLocal || user.avatarUrl} className="w-full h-full object-cover" alt="" />
+                      ) : (
+                        user.artistName?.[0] || user.login[0].toUpperCase()
+                      )}
                     </div>
                     <div>
                       <p className="font-medium">{user.artistName || 'Без імені'}</p>
@@ -113,6 +118,17 @@ const Users = () => {
           </DialogHeader>
           {editingUser && (
             <div className="space-y-6 py-4">
+              <ImageUploader 
+                bucket="avatars"
+                path={`profiles/${editingUser.id}`}
+                currentLocalUrl={editingUser.avatarLocal}
+                currentExternalUrl={editingUser.avatarUrl}
+                onUpload={(url) => setEditingUser({...editingUser, avatarLocal: url})}
+                onExternalUrlChange={(url) => setEditingUser({...editingUser, avatarUrl: url})}
+                onRemove={() => setEditingUser({...editingUser, avatarLocal: ''})}
+                label="Аватар користувача"
+              />
+
               <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-lg">
                 <div className="space-y-0.5">
                   <Label className="text-base">Верифікація артиста</Label>

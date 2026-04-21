@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showSuccess } from '@/utils/toast';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 const PLATFORMS_LIST = [
   "Apple Music",
@@ -113,7 +114,7 @@ const SmartLinksManagement = () => {
                   <tr key={link.id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <img src={link.coverUrl || FALLBACK_IMAGE} className="w-10 h-10 rounded object-cover" alt="" />
+                        <img src={link.avatarLocal || link.coverUrl || FALLBACK_IMAGE} className="w-10 h-10 rounded object-cover" alt="" />
                         <div>
                           <p className="font-medium text-sm">{link.title}</p>
                           <p className="text-[10px] text-gray-500 uppercase">{link.artist}</p>
@@ -184,37 +185,24 @@ const SmartLinksManagement = () => {
           </DialogHeader>
           {editingLink && (
             <div className="space-y-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-zinc-400 uppercase text-[10px] font-bold tracking-widest">URL Slug</Label>
-                    <Input 
-                      value={editingLink.slug} 
-                      onChange={(e) => setEditingLink({...editingLink, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})} 
-                      className="bg-black/40 border-white/5 font-mono h-12" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-zinc-400 uppercase text-[10px] font-bold tracking-widest flex items-center gap-2">
-                      <ImageIcon size={14} /> URL Обкладинки
-                    </Label>
-                    <Input 
-                      value={editingLink.coverUrl} 
-                      onChange={(e) => setEditingLink({...editingLink, coverUrl: e.target.value})} 
-                      className="bg-black/40 border-white/5 h-12 text-xs" 
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-center">
-                  <div className="aspect-square w-full max-w-[180px] border border-white/10 overflow-hidden shadow-2xl bg-black/40">
-                    <img 
-                      src={editingLink.coverUrl || FALLBACK_IMAGE} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => (e.currentTarget.src = FALLBACK_IMAGE)}
-                    />
-                  </div>
-                </div>
+              <ImageUploader 
+                bucket="smartlinks"
+                path={`smartlinks/${editingLink.userId}`}
+                currentLocalUrl={editingLink.avatarLocal}
+                currentExternalUrl={editingLink.coverUrl}
+                onUpload={(url) => setEditingLink({...editingLink, avatarLocal: url})}
+                onExternalUrlChange={(url) => setEditingLink({...editingLink, coverUrl: url})}
+                onRemove={() => setEditingLink({...editingLink, avatarLocal: ''})}
+                label="Обкладинка смартлінка"
+              />
+
+              <div className="space-y-2">
+                <Label className="text-zinc-400 uppercase text-[10px] font-bold tracking-widest">URL Slug</Label>
+                <Input 
+                  value={editingLink.slug} 
+                  onChange={(e) => setEditingLink({...editingLink, slug: e.target.value.toLowerCase().replace(/\s+/g, '-')})} 
+                  className="bg-black/40 border-white/5 font-mono h-12" 
+                />
               </div>
               
               <div className="space-y-4">
