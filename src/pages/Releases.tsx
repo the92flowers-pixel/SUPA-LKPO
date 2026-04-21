@@ -21,7 +21,9 @@ import {
   Calendar,
   Hash,
   FileAudio,
-  ShieldCheck
+  ShieldCheck,
+  User,
+  Clock
 } from 'lucide-react';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -371,16 +373,41 @@ const Releases = () => {
 
                   <div className="space-y-4">
                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-700 flex items-center gap-2">
-                      <Music size={14} /> Треклист
+                      <Music size={14} /> Трекліст та Метадані
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {viewingRelease.tracks?.map((track: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-white/5 border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-colors">
-                          <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-black text-zinc-700">{idx + 1}</span>
-                            <span className="text-xs font-bold text-white uppercase tracking-wider">{track.title}</span>
+                        <div key={idx} className="p-5 bg-white/5 border border-white/5 space-y-4 group hover:bg-white/[0.07] transition-all">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <span className="text-[10px] font-black text-zinc-700">{idx + 1}</span>
+                              <span className="text-sm font-black text-white uppercase tracking-wider">{track.title}</span>
+                            </div>
+                            {track.explicit && <Badge variant="outline" className="text-[8px] border-red-900/30 text-red-700 uppercase font-black">Explicit</Badge>}
                           </div>
-                          {track.explicit && <Badge variant="outline" className="text-[8px] border-red-900/30 text-red-700 uppercase font-black">Explicit</Badge>}
+                          
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/5">
+                            <div className="space-y-1">
+                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><User size={10} /> Артист</p>
+                              <p className="text-[10px] font-bold text-zinc-300 uppercase">{track.artist || viewingRelease.artist}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><FileAudio size={10} /> Файл</p>
+                              <p className="text-[10px] font-mono text-zinc-400 truncate">{track.fileName || '—'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><Clock size={10} /> Preview</p>
+                              <p className="text-[10px] font-bold text-zinc-300">{track.previewStart || '0'} сек</p>
+                            </div>
+                            <div className="space-y-1 col-span-2 sm:col-span-1">
+                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Композитор</p>
+                              <p className="text-[10px] font-bold text-zinc-400 uppercase">{track.composer || '—'}</p>
+                            </div>
+                            <div className="space-y-1 col-span-2">
+                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Автор тексту</p>
+                              <p className="text-[10px] font-bold text-zinc-400 uppercase">{track.lyricist || '—'}</p>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>

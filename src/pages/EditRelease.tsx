@@ -4,7 +4,7 @@ import {
   Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, 
   Image as ImageIcon, Disc, FileText, AlertCircle, 
   Loader2, Shield, Calendar, Hash, Upload, 
-  ListMusic, Layers, ArrowLeft, Save, Info
+  ListMusic, Layers, ArrowLeft, Save, Info, Clock, FileAudio
 } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,17 @@ const EditRelease = () => {
   };
 
   const addTrack = () => {
-    setTracks([...tracks, { id: Date.now().toString(), title: '', explicit: false, position: tracks.length + 1 }]);
+    setTracks([...tracks, { 
+      id: Date.now().toString(), 
+      title: '', 
+      fileName: '',
+      previewStart: '0',
+      artist: user?.artistName || '',
+      composer: '',
+      lyricist: '',
+      explicit: false, 
+      position: tracks.length + 1 
+    }]);
   };
 
   const removeTrack = (id: string) => {
@@ -71,6 +81,13 @@ const EditRelease = () => {
   };
 
   const handleNext = () => {
+    if (currentStep === 3) {
+      const invalidTrack = tracks.find(t => !t.title || !t.fileName || !t.artist || !t.composer || !t.lyricist);
+      if (invalidTrack) {
+        showError('Заповніть всі обов\'язкові поля для кожного треку');
+        return;
+      }
+    }
     if (currentStep === 5) {
       const missingRequired = releaseFields.find(f => f.required && !formData[f.name]);
       if (missingRequired) {
@@ -150,7 +167,7 @@ const EditRelease = () => {
                 />
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Артист *</Label>
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Головний Артист *</Label>
                 <Input 
                   value={formData.artist} 
                   onChange={(e) => updateFormData('artist', e.target.value)} 
@@ -216,15 +233,18 @@ const EditRelease = () => {
                 </div>
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Лейбл</Label>
-                <Input 
-                  value={formData.label} 
-                  onChange={(e) => updateFormData('label', e.target.value)} 
-                  className="bg-white/[0.03] border-white/5 h-14 rounded-none focus:border-red-700/50" 
-                />
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Лейбл *</Label>
+                <Select value={formData.label} onValueChange={(v) => updateFormData('label', v)}>
+                  <SelectTrigger className="bg-white/[0.03] border-white/5 h-14 rounded-none focus:ring-0 focus:border-red-700/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                    <SelectItem value="ЖУРБА MUSIC" className="text-xs uppercase font-bold focus:bg-red-900/20">ЖУРБА MUSIC</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Композитор (ПІБ)</Label>
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Головний Композитор (ПІБ)</Label>
                 <Input 
                   value={formData.composer} 
                   onChange={(e) => updateFormData('composer', e.target.value)} 
@@ -232,7 +252,7 @@ const EditRelease = () => {
                 />
               </div>
               <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Виконавець (ПІБ)</Label>
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Головний Виконавець (ПІБ)</Label>
                 <Input 
                   value={formData.performer} 
                   onChange={(e) => updateFormData('performer', e.target.value)} 
@@ -253,29 +273,15 @@ const EditRelease = () => {
       case 3:
         return (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="space-y-4">
+            <div className="space-y-6">
               {tracks.map((track, index) => (
-                <div key={track.id} className="flex flex-col sm:flex-row gap-6 p-6 bg-white/[0.02] border border-white/5 relative group hover:bg-white/[0.04] transition-all">
-                  <div className="flex items-center justify-center w-10 h-10 bg-red-700 text-white font-black text-sm shrink-0">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Назва треку *</Label>
-                    <Input 
-                      value={track.title} 
-                      onChange={(e) => updateTrack(track.id, 'title', e.target.value)}
-                      className="bg-transparent border-b border-white/10 border-t-0 border-x-0 rounded-none h-10 text-base font-bold focus:border-red-700 transition-all px-0"
-                    />
-                  </div>
-                  <div className="flex items-end gap-6">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Checkbox 
-                        id={`explicit-${track.id}`} 
-                        checked={track.explicit} 
-                        onCheckedChange={(val) => updateTrack(track.id, 'explicit', val)}
-                        className="border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none w-5 h-5"
-                      />
-                      <Label htmlFor={`explicit-${track.id}`} className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer group-hover:text-zinc-300 transition-colors">Explicit</Label>
+                <div key={track.id} className="p-6 bg-white/[0.02] border border-white/5 relative group hover:bg-white/[0.04] transition-all space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-center w-10 h-10 bg-red-700 text-white font-black text-sm">
+                        {index + 1}
+                      </div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-white">Дані треку</h4>
                     </div>
                     {releaseType === 'album' && tracks.length > 1 && (
                       <Button 
@@ -287,6 +293,74 @@ const EditRelease = () => {
                         <Trash2 size={18} />
                       </Button>
                     )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Назва треку *</Label>
+                      <Input 
+                        value={track.title} 
+                        onChange={(e) => updateTrack(track.id, 'title', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-12 text-sm font-bold focus:border-red-700 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Назва файлу в архіві *</Label>
+                      <div className="relative">
+                        <FileAudio className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-700" size={14} />
+                        <Input 
+                          value={track.fileName} 
+                          onChange={(e) => updateTrack(track.id, 'fileName', e.target.value)}
+                          className="bg-black/40 border-white/5 pl-10 rounded-none h-12 text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Артист (Сценічне ім'я) *</Label>
+                      <Input 
+                        value={track.artist} 
+                        onChange={(e) => updateTrack(track.id, 'artist', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-12 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Початок Preview (сек) *</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-700" size={14} />
+                        <Input 
+                          type="number"
+                          value={track.previewStart} 
+                          onChange={(e) => updateTrack(track.id, 'previewStart', e.target.value)}
+                          className="bg-black/40 border-white/5 pl-10 rounded-none h-12 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Композитор (ПІБ) *</Label>
+                      <Input 
+                        value={track.composer} 
+                        onChange={(e) => updateTrack(track.id, 'composer', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-12 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Автор тексту (ПІБ) *</Label>
+                      <Input 
+                        value={track.lyricist} 
+                        onChange={(e) => updateTrack(track.id, 'lyricist', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-12 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <Checkbox 
+                      id={`explicit-${track.id}`} 
+                      checked={track.explicit} 
+                      onCheckedChange={(val) => updateTrack(track.id, 'explicit', val)}
+                      className="border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none w-5 h-5"
+                    />
+                    <Label htmlFor={`explicit-${track.id}`} className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer group-hover:text-zinc-300 transition-colors">Explicit Content</Label>
                   </div>
                 </div>
               ))}
