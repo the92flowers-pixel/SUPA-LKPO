@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { Music, CheckCircle2, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
-import { supabase, toAppProfile } from '@/lib/supabase';
+import { supabase, toAppProfile, AppUser } from '@/lib/supabase';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ const Login = () => {
   const { register, handleSubmit } = useForm();
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
-  const { loginPageConfig } = useDataStore();
+  const { loginPageConfig, fetchReleases, fetchSmartLinks, fetchArtistWebsites, fetchTransactions, fetchReports, fetchUsers, fetchWithdrawalRequests } = useDataStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,63 +43,84 @@ const Login = () => {
       }
 
       if (authData.user) {
-        // Try to fetch profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single();
-        
-        let finalProfile = profileData;
+        // Create app user from auth data directly (faster, doesn't need DB fetch)
+        const appUser: AppUser = {
+          id: authData.user.id,
+          email: authData.user.email || data.login,
+          login: authData.user.email || data.login,
+          role: 'artist', // Default role, will be updated if profile exists
+          artistName: authData.user.user_metadata?.full_name || authData.user.user_metadata?.artist_name || null,
+          balance: 0,
+          isVerified: false,
+          createdAt: authData.user.created_at || new Date().toISOString(),
+        };
 
-        // If profile doesn't exist (PGRST116), create it automatically
-        if (profileError && profileError.code === 'PGRST116') {
-          const { data: newProfile, error: createError } = await supabase
+        // Try to fetch profile from database
+        try {
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .insert({
-              id: authData.user.id,
-              email: authData.user.email || data.login,
-              full_name: authData.user.user_metadata?.full_name || authData.user.user_metadata?.artist_name || null,
-              role: 'artist',
-              balance: 0,
-              is_verified: false,
-            })
-            .select()
+            .select('*')
+            .eq('id', authData.user.id)
             .single();
           
-          if (createError) {
-            console.error('Error creating profile on login:', createError);
-            // Fallback to basic user object if DB insert fails
-            const fallbackUser = {
-              id: authData.user.id,
-              email: authData.user.email || data.login,
-              login: authData.user.email || data.login,
-              role: 'artist' as const,
-              artistName: authData.user.user_metadata?.full_name || authData.user.user_metadata?.artist_name || null,
-              balance: 0,
-              isVerified: false,
-              createdAt: new Date().toISOString(),
-            };
-            setAuth(fallbackUser);
-            showSuccess('Успішний вхід (тимчасовий профіль)');
-            navigate('/dashboard', { replace: true });
-            setIsLoading(false);
-            return;
+          if (!profileError && profileData) {
+            // Profile exists - use it
+            const fullProfile = toAppProfile(profileData);
+            appUser.role = fullProfile.role;
+            appUser.balance = fullProfile.balance;
+            appUser.isVerified = fullProfile.isVerified;
+            appUser.bio = fullProfile.bio;
+            appUser.avatarUrl = fullProfile.avatarUrl;
+            appUser.artistName = fullProfile.artistName;
+          } else if (profileError?.code === 'PGRST116') {
+            // Profile doesn't exist - create it
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert({
+                id: authData.user.id,
+                email: authData.user.email || data.login,
+                full_name: authData.user.user_metadata?.full_name || authData.user.user_metadata?.artist_name || null,
+                role: 'artist',
+                balance: 0,
+                is_verified: false,
+              })
+              .select()
+              .single();
+            
+            if (!createError && newProfile) {
+              const fullProfile = toAppProfile(newProfile);
+              appUser.role = fullProfile.role;
+              appUser.balance = fullProfile.balance;
+            }
           }
-          finalProfile = newProfile;
-        } else if (profileError) {
-          throw profileError;
+          // If other profile error (like 406 RLS), continue with basic user data
+        } catch (profileFetchError) {
+          console.log('Profile fetch error (continuing with basic data):', profileFetchError);
         }
+
+        // Set auth with available data
+        setAuth(appUser);
         
-        if (finalProfile) {
-          const appUser = toAppProfile(finalProfile);
-          setAuth(appUser);
-          showSuccess('Успішний вхід!');
-          
-          // Redirect based on role
-          const redirectPath = appUser.role === 'admin' ? '/admin/moderation' : '/dashboard';
-          navigate(redirectPath, { replace: true });
-        }
+        // Fetch all user data after successful login
+        const userId = authData.user.id;
+        const userRole = appUser.role;
+        
+        // Fetch user-specific data in parallel
+        await Promise.all([
+          fetchReleases(userId, userRole).catch(e => console.log('fetchReleases error:', e)),
+          fetchSmartLinks(userRole === 'admin' ? undefined : userId, userRole).catch(e => console.log('fetchSmartLinks error:', e)),
+          fetchArtistWebsites(userRole === 'admin' ? undefined : userId, userRole).catch(e => console.log('fetchArtistWebsites error:', e)),
+          fetchTransactions(userId).catch(e => console.log('fetchTransactions error:', e)),
+          fetchReports(userRole === 'admin' ? undefined : userId).catch(e => console.log('fetchReports error:', e)),
+          userRole === 'admin' ? fetchUsers().catch(e => console.log('fetchUsers error:', e)) : Promise.resolve(),
+          userRole === 'admin' ? fetchWithdrawalRequests().catch(e => console.log('fetchWithdrawalRequests error:', e)) : Promise.resolve(),
+        ]);
+        
+        showSuccess('Успішний вхід!');
+        
+        // Redirect based on role
+        const redirectPath = appUser.role === 'admin' ? '/admin/moderation' : '/dashboard';
+        navigate(redirectPath, { replace: true });
       }
     } catch (err: any) {
       console.error('Login error:', err);
