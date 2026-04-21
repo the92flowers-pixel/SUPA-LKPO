@@ -48,6 +48,11 @@ const AllReleases = () => {
     setIsDialogOpen(true);
   };
 
+  // Handle cover upload
+  const handleCoverUpload = (url: string) => {
+    setEditingRelease((prev: any) => ({ ...prev, coverImageLocal: url, coverUrl: url }));
+  };
+
   const handleSave = async () => {
     if (!editingRelease) return;
     setIsSaving(true);
@@ -279,7 +284,7 @@ const AllReleases = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Modal */}
+      {/* Edit Modal with ImageUploader */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="bg-[#050505] border-white/5 text-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
@@ -300,58 +305,61 @@ const AllReleases = () => {
           {editingRelease && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва релізу</Label>
-                  <Input value={editingRelease.title} onChange={(e) => setEditingRelease({...editingRelease, title: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист (Псевдонім)</Label>
-                  <Input value={editingRelease.artist} onChange={(e) => setEditingRelease({...editingRelease, artist: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Виконавець (ПІБ)</Label>
-                  <Input value={editingRelease.performer} onChange={(e) => setEditingRelease({...editingRelease, performer: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Композитор</Label>
-                  <Input value={editingRelease.composer} onChange={(e) => setEditingRelease({...editingRelease, composer: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Жанр</Label>
-                  <Input value={editingRelease.genre} onChange={(e) => setEditingRelease({...editingRelease, genre: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
-                </div>
-                
-                {/* Dynamic Fields */}
-                {releaseFields.map(field => (
-                  <div key={field.id} className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{field.label}</Label>
-                    {field.type === 'textarea' ? (
-                      <Textarea value={editingRelease[field.name] || ''} onChange={(e) => setEditingRelease({...editingRelease, [field.name]: e.target.value})} className="bg-black/40 border-white/5 rounded-none min-h-[100px]" />
-                    ) : field.type === 'select' ? (
-                      <Select value={editingRelease[field.name] || ''} onValueChange={(v) => setEditingRelease({...editingRelease, [field.name]: v})}>
-                        <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12"><SelectValue /></SelectTrigger>
-                        <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                          {field.options?.split(',').map((opt: string) => (
-                            <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs font-bold uppercase">{opt.trim()}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input value={editingRelease[field.name] || ''} onChange={(e) => setEditingRelease({...editingRelease, [field.name]: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
-                    )}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Назва релізу</Label>
+                    <Input value={editingRelease.title} onChange={(e) => setEditingRelease({...editingRelease, title: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
                   </div>
-                ))}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист (Псевдонім)</Label>
+                    <Input value={editingRelease.artist} onChange={(e) => setEditingRelease({...editingRelease, artist: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Виконавець (ПІБ)</Label>
+                    <Input value={editingRelease.performer} onChange={(e) => setEditingRelease({...editingRelease, performer: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Композитор</Label>
+                    <Input value={editingRelease.composer} onChange={(e) => setEditingRelease({...editingRelease, composer: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Жанр</Label>
+                    <Input value={editingRelease.genre} onChange={(e) => setEditingRelease({...editingRelease, genre: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
+                  </div>
+                  
+                  {/* Dynamic Fields */}
+                  {releaseFields.map(field => (
+                    <div key={field.id} className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{field.label}</Label>
+                      {field.type === 'textarea' ? (
+                        <Textarea value={editingRelease[field.name] || ''} onChange={(e) => setEditingRelease({...editingRelease, [field.name]: e.target.value})} className="bg-black/40 border-white/5 rounded-none min-h-[100px]" />
+                      ) : field.type === 'select' ? (
+                        <Select value={editingRelease[field.name] || ''} onValueChange={(v) => setEditingRelease({...editingRelease, [field.name]: v})}>
+                          <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-12"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                            {field.options?.split(',').map((opt: string) => (
+                              <SelectItem key={opt.trim()} value={opt.trim()} className="text-xs font-bold uppercase">{opt.trim()}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input value={editingRelease[field.name] || ''} onChange={(e) => setEditingRelease({...editingRelease, [field.name]: e.target.value})} className="bg-black/40 border-white/5 rounded-none h-12" />
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="space-y-6">
+                {/* Using ImageUploader for cover */}
                 <ImageUploader 
                   bucket="covers"
-                  path={`releases/${editingRelease.userId}`}
-                  currentLocalUrl={editingRelease.coverImageLocal}
-                  currentExternalUrl={editingRelease.coverUrl}
-                  onUpload={(url) => setEditingRelease({...editingRelease, coverImageLocal: url})}
-                  onExternalUrlChange={(url) => setEditingRelease({...editingRelease, coverUrl: url})}
-                  onRemove={() => setEditingRelease({...editingRelease, coverImageLocal: ''})}
+                  userId={editingRelease.userId}
+                  entityType="releases"
+                  currentUrl={editingRelease.coverImageLocal || editingRelease.coverUrl}
+                  onUpload={handleCoverUpload}
+                  onDelete={() => setEditingRelease({...editingRelease, coverImageLocal: '', coverUrl: ''})}
                   label="Обкладинка релізу"
+                  aspectRatio="square"
                 />
 
                 <div className="space-y-2">

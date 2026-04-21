@@ -18,6 +18,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
+import ImageUploader from '@/components/ui/ImageUploader';
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
@@ -86,6 +87,11 @@ const Moderation = () => {
 
   const updateField = (name: string, value: any) => {
     setSelectedTrack((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle cover upload
+  const handleCoverUpload = (url: string) => {
+    setSelectedTrack((prev: any) => ({ ...prev, coverUrl: url }));
   };
 
   return (
@@ -202,7 +208,7 @@ const Moderation = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Moderation & Edit Modal */}
+      {/* Moderation & Edit Modal with ImageUploader */}
       <Dialog open={!!selectedTrack && !isRejectModalOpen} onOpenChange={() => setSelectedTrack(null)}>
         <DialogContent className="bg-[#050505] border-white/5 text-white max-w-5xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
@@ -219,20 +225,23 @@ const Moderation = () => {
           {selectedTrack && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-6">
               <div className="space-y-6">
-                <div className="aspect-square rounded-none overflow-hidden border border-white/5 shadow-2xl relative group">
-                  <img 
-                    src={selectedTrack.coverUrl || FALLBACK_IMAGE} 
-                    alt={selectedTrack.title} 
-                    className="w-full h-full object-cover" 
-                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                  />
-                </div>
+                {/* Using ImageUploader for cover */}
+                <ImageUploader 
+                  bucket="covers"
+                  userId={selectedTrack.userId}
+                  entityType="releases"
+                  currentUrl={selectedTrack.coverImageLocal || selectedTrack.coverUrl}
+                  onUpload={handleCoverUpload}
+                  onDelete={() => updateField('coverUrl', '')}
+                  label="Обкладинка релізу"
+                  aspectRatio="square"
+                />
                 
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL Обкладинки</Label>
                     <Input 
-                      value={selectedTrack.coverUrl} 
+                      value={selectedTrack.coverUrl || ''} 
                       onChange={(e) => updateField('coverUrl', e.target.value)}
                       className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
                     />

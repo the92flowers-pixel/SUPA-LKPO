@@ -15,7 +15,8 @@ import {
   Loader2,
   Upload,
   X,
-  AlertCircle
+  AlertCircle,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,6 +99,17 @@ const Releases = () => {
       setPlatforms(PLATFORMS_LIST.map(p => ({ id: Date.now() + Math.random(), name: p, url: '', icon: p.toLowerCase().replace(/\s+/g, '-') })));
     }
     setIsSmartLinkModalOpen(true);
+  };
+
+  // Handle cover upload for smart link
+  const handleCoverUpload = (url: string) => {
+    setAvatarLocal(url);
+    setCoverUrl(url);
+  };
+
+  const handleCoverDelete = () => {
+    setAvatarLocal('');
+    setCoverUrl('');
   };
 
   const saveSmartLink = async () => {
@@ -278,7 +290,7 @@ const Releases = () => {
         )}
       </div>
 
-      {/* Smart Link Modal */}
+      {/* Smart Link Modal with ImageUploader */}
       <Dialog open={isSmartLinkModalOpen} onOpenChange={setIsSmartLinkModalOpen}>
         <DialogContent className="bg-[#050505] border-white/5 text-white w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto rounded-none p-6">
           <DialogHeader>
@@ -289,15 +301,17 @@ const Releases = () => {
           </DialogHeader>
           
           <div className="space-y-8 py-6">
+            {/* Using ImageUploader for Smart Link cover */}
             <ImageUploader 
               bucket="smartlinks"
-              path={`smartlinks/${user?.id}`}
-              currentLocalUrl={avatarLocal}
-              currentExternalUrl={coverUrl}
-              onUpload={(url) => setAvatarLocal(url)}
-              onExternalUrlChange={(url) => setCoverUrl(url)}
-              onRemove={() => setAvatarLocal('')}
+              userId={user?.id || ''}
+              entityType="smartlinks"
+              currentUrl={avatarLocal || coverUrl}
+              onUpload={handleCoverUpload}
+              onDelete={handleCoverDelete}
               label="Обкладинка смартлінка"
+              className="max-w-sm mx-auto"
+              aspectRatio="square"
             />
 
             <div className="space-y-3">

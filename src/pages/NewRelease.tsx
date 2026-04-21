@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar, Hash, Upload } from 'lucide-react';
+import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar, Hash, Upload } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 const NewRelease = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { addRelease, statuses, fetchReleases, fields } = useDataStore();
+  const { addRelease, statuses, fields } = useDataStore();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +32,6 @@ const NewRelease = () => {
     genre: 'Другое',
     releaseDate: minDateStr,
     coverUrl: '',
-    coverImageLocal: '',
     composer: '',
     performer: '',
     label: 'ЖУРБА MUSIC',
@@ -56,6 +55,10 @@ const NewRelease = () => {
 
   const updateFormData = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCoverUpload = (url: string) => {
+    updateFormData('coverUrl', url);
   };
 
   const handleNext = () => {
@@ -226,14 +229,14 @@ const NewRelease = () => {
               <p className="text-zinc-500 text-xs sm:text-sm">Завантажте квадратне зображення високої якості</p>
             </div>
             
+            {/* Using ImageUploader for cover upload */}
             <ImageUploader 
               bucket="covers"
-              path={`releases/${user?.id}`}
-              currentLocalUrl={formData.coverImageLocal}
-              currentExternalUrl={formData.coverUrl}
-              onUpload={(url) => updateFormData('coverImageLocal', url)}
-              onExternalUrlChange={(url) => updateFormData('coverUrl', url)}
-              onRemove={() => updateFormData('coverImageLocal', '')}
+              userId={user?.id || ''}
+              entityType="releases"
+              currentUrl={formData.coverUrl}
+              onUpload={handleCoverUpload}
+              onDelete={() => updateFormData('coverUrl', '')}
               label="Обкладинка релізу"
               className="max-w-xl mx-auto"
             />
@@ -247,6 +250,7 @@ const NewRelease = () => {
                 <li>• Мінімальний розмір: 1500x1500px</li>
                 <li>• Без логотипів стрімінгів та соцмереж</li>
                 <li>• Без контактної інформації та адрес сайтів</li>
+                <li>• Формати: JPG, PNG, WEBP, GIF • Max 5MB</li>
               </ul>
             </div>
           </div>
@@ -300,7 +304,7 @@ const NewRelease = () => {
   const steps = [
     { id: 1, label: 'Інфо', icon: Music },
     { id: 2, label: 'Мета', icon: FileText },
-    { id: 3, label: 'Арт', icon: Image },
+    { id: 3, label: 'Арт', icon: Upload },
     { id: 4, label: 'Права', icon: Shield },
   ];
 

@@ -63,6 +63,12 @@ const Dashboard = () => {
       .slice(0, 5);
   }, [userReleases]);
 
+  // Helper to get the correct cover image URL
+  const getCoverUrl = (release: any) => {
+    // Priority: local uploaded > external URL > fallback
+    return release.coverImageLocal || release.coverUrl || FALLBACK_IMAGE;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -168,7 +174,7 @@ const Dashboard = () => {
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/5 border border-white/5 overflow-hidden shrink-0">
                         <img 
-                          src={item.coverUrl || FALLBACK_IMAGE} 
+                          src={getCoverUrl(item)} 
                           className="w-full h-full object-cover" 
                           alt="" 
                           onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}

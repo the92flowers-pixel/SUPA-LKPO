@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { User, ShieldCheck, ShieldAlert, SaveIcon, Loader2, Globe, Plus, Trash2, Edit2, ExternalLink, Music, Link as LinkIcon, Check } from 'lucide-react';
+import { User, ShieldCheck, ShieldAlert, Save as SaveIcon, Loader2, Globe, Plus, Trash2, Edit2, ExternalLink, Music, Link as LinkIcon, Check } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ const PLATFORMS_LIST = [
 
 const Profile = () => {
   const { user, setAuth } = useAuthStore();
-  const { users, updateUser, fetchUsers, artistWebsites, addArtistWebsite, updateArtistWebsite, deleteArtistWebsite } = useDataStore();
+  const { users, fetchUsers, artistWebsites, addArtistWebsite, updateArtistWebsite, deleteArtistWebsite } = useDataStore();
   
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -157,6 +157,17 @@ const Profile = () => {
     setProfileData((prev: any) => prev ? { ...prev, [field]: value } : null);
   };
 
+  // Handle avatar upload
+  const handleAvatarUpload = (url: string) => {
+    updateField('avatarLocal', url);
+    updateField('avatarUrl', url);
+  };
+
+  const handleAvatarDelete = () => {
+    updateField('avatarLocal', null);
+    updateField('avatarUrl', null);
+  };
+
   // Artist Website Functions
   const userWebsites = artistWebsites.filter(w => w.userId === user?.id);
   
@@ -259,20 +270,20 @@ const Profile = () => {
         <div className="lg:col-span-1">
           <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
             <CardContent className="pt-12 flex flex-col items-center">
-              <ImageUploader 
-                bucket="avatars"
-                path={`profiles/${profileData?.id}`}
-                currentLocalUrl={profileData?.avatarLocal}
-                currentExternalUrl={profileData?.avatarUrl}
-                onUpload={(url) => updateField('avatarLocal', url)}
-                onExternalUrlChange={(url) => updateField('avatarUrl', url)}
-                onRemove={() => updateField('avatarLocal', null)}
-                label="Аватар профілю"
-                className="w-full"
-                acceptedTypes="image/jpeg,image/jpg,image/png,image/webp,gif"
-                maxSizeMB={5}
-                minDimensions={{ width: 200, height: 200 }}
-              />
+              {/* Using ImageUploader for Avatar */}
+              <div className="w-full max-w-[200px]">
+                <ImageUploader 
+                  bucket="avatars"
+                  userId={profileData?.id || ''}
+                  entityType="profile"
+                  currentUrl={profileData?.avatarLocal || profileData?.avatarUrl}
+                  onUpload={handleAvatarUpload}
+                  onDelete={handleAvatarDelete}
+                  label="Аватар профілю"
+                  className="w-full"
+                  aspectRatio="square"
+                />
+              </div>
               
               <div className="mt-8 w-full space-y-4">
                 <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5">
@@ -458,12 +469,12 @@ const Profile = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Фото (URL)</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Фото профілю</Label>
                   <Input 
                     value={editingWebsite.photoUrl} 
                     onChange={(e) => setEditingWebsite({...editingWebsite, photoUrl: e.target.value})}
                     className="bg-black/40 border-white/5 rounded-none h-12"
-                    placeholder="https://..."
+                    placeholder="URL або використайте ImageUploader"
                   />
                 </div>
               </div>
