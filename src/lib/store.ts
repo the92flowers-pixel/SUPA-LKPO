@@ -187,8 +187,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         distributor: releaseData.distributor || null
       };
 
-      console.log('Creating release with data:', dbData);
-
       const { data, error } = await supabase
         .from('releases')
         .insert(dbData)
@@ -199,8 +197,6 @@ export const useDataStore = create<DataState>((set, get) => ({
         console.error('Supabase error:', error);
         throw new Error(error.message || 'Помилка при створенні релізу');
       }
-
-      console.log('Release created successfully:', data);
 
       if (data) {
         const mapped: Release = {
@@ -474,7 +470,9 @@ export const useDataStore = create<DataState>((set, get) => ({
   fetchUsers: async () => {
     try {
       const { data, error } = await supabase.from('profiles').select('*');
-      if (!error && data) set({ users: data.map(p => toAppProfile(p)) });
+      if (!error && data) {
+        set({ users: data.map(p => toAppProfile(p)) });
+      }
     } catch (e) { console.error(e); }
   },
 
@@ -486,13 +484,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       if (userData.isVerified !== undefined) dbData.is_verified = userData.isVerified;
       if (userData.bio !== undefined) dbData.bio = userData.bio;
       if (userData.balance !== undefined) dbData.balance = userData.balance;
-      
-      const profileFields = get().fields.filter(f => f.section === 'profile');
-      profileFields.forEach(f => {
-        if ((userData as any)[f.name] !== undefined) {
-          dbData[f.name] = (userData as any)[f.name];
-        }
-      });
 
       const { data, error } = await supabase.from('profiles').update(dbData).eq('id', id).select().single();
       if (!error && data) {
@@ -535,12 +526,6 @@ export const useDataStore = create<DataState>((set, get) => ({
       }).select().single();
 
       if (!error && data) {
-        const user = get().users.find(u => u.id === txData.userId);
-        const currentBalance = user?.balance || 0;
-        const newBalance = txData.type === 'deposit' ? currentBalance + txData.amount : currentBalance - txData.amount;
-        
-        await get().updateUser(txData.userId, { balance: newBalance });
-
         set((state) => ({ 
           transactions: [{
             ...data,
@@ -575,26 +560,14 @@ export const useDataStore = create<DataState>((set, get) => ({
       const insertData = {
         user_id: sessionUser.id,
         amount: reqData.amount,
-        contact_info: reqData.contact_info,
-        confirmation_agreed: reqData.confirmation_agreed,
+        contact_info: reqData.contactInfo,
+        confirmation_agreed: reqData.confirmationAgreed,
         status: 'pending'
       };
 
       const { data, error } = await supabase.from('withdrawal_requests').insert(insertData).select().single();
       
       if (!error && data) {
-        const user = get().users.find(u => u.id === sessionUser.id);
-        const newBalance = (user?.balance || 0) - reqData.amount;
-        await get().updateUser(sessionUser.id, { balance: newBalance });
-
-        await get().addTransaction({
-          userId: sessionUser.id,
-          amount: reqData.amount,
-          type: 'withdrawal',
-          status: 'pending',
-          description: 'Запит на вивід коштів'
-        });
-
         set((state) => ({ 
           withdrawalRequests: [{
             ...data,
@@ -610,25 +583,7 @@ export const useDataStore = create<DataState>((set, get) => ({
 
   updateWithdrawalStatus: async (id, status, comment) => {
     try {
-      const req = get().withdrawalRequests.find(r => r.id === id);
-      if (!req) return;
-
       await supabase.from('withdrawal_requests').update({ status, admin_comment: comment }).eq('id', id);
-      
-      if (status === 'rejected') {
-        const user = get().users.find(u => u.id === req.userId);
-        const newBalance = (user?.balance || 0) + req.amount;
-        await get().updateUser(req.userId, { balance: newBalance });
-        
-        await get().addTransaction({
-          userId: req.userId,
-          amount: req.amount,
-          type: 'deposit',
-          status: 'completed',
-          description: `Повернення коштів (Відмова по заявці #${id})`
-        });
-      }
-
       set((state) => ({ 
         withdrawalRequests: state.withdrawalRequests.map(r => r.id === id ? { ...r, status, admin_comment: comment } : r) 
       }));
