@@ -515,100 +515,18 @@ SELECT 'copyrights', 'Copyright', 'textarea', false, 'release', 7, true, ''
 WHERE NOT EXISTS (SELECT 1 FROM public.fields WHERE name = 'copyrights');
 
 -- ============================================
--- STORAGE BUCKETS
+-- STORAGE BUCKETS (выполняется отдельно через UI)
 -- ============================================
 
--- Создаем bucket для аватаров
-INSERT INTO storage.buckets (id, name, public)
-SELECT 'avatars', 'avatars', true
-WHERE NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'avatars');
-
--- Создаем bucket для обложек
-INSERT INTO storage.buckets (id, name, public)
-SELECT 'covers', 'covers', true
-WHERE NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'covers');
-
--- Создаем bucket для релизов
-INSERT INTO storage.buckets (id, name, public)
-SELECT 'releases', 'releases', true
-WHERE NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'releases');
-
--- Создаем bucket для файлов
-INSERT INTO storage.buckets (id, name, public)
-SELECT 'files', 'files', true
-WHERE NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'files');
-
--- Storage policies
-DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
-CREATE POLICY "Anyone can view avatars" ON storage.objects
-    FOR SELECT USING (bucket_id = 'avatars');
-
-DROP POLICY IF EXISTS "Users can upload avatars" ON storage.objects;
-CREATE POLICY "Users can upload avatars" ON storage.objects
-    FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() = owner);
-
-DROP POLICY IF EXISTS "Users can update own avatars" ON storage.objects;
-CREATE POLICY "Users can update own avatars" ON storage.objects
-    FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid() = owner);
-
-DROP POLICY IF EXISTS "Anyone can view covers" ON storage.objects;
-CREATE POLICY "Anyone can view covers" ON storage.objects
-    FOR SELECT USING (bucket_id = 'covers');
-
-DROP POLICY IF EXISTS "Authenticated users can upload covers" ON storage.objects;
-CREATE POLICY "Authenticated users can upload covers" ON storage.objects
-    FOR INSERT WITH CHECK (bucket_id = 'covers' AND auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS "Users can update own covers" ON storage.objects;
-CREATE POLICY "Users can update own covers" ON storage.objects
-    FOR UPDATE USING (bucket_id = 'covers' AND auth.uid() = owner);
-
-DROP POLICY IF EXISTS "Anyone can view releases" ON storage.objects;
-CREATE POLICY "Anyone can view releases" ON storage.objects
-    FOR SELECT USING (bucket_id = 'releases');
-
-DROP POLICY IF EXISTS "Authenticated users can upload releases" ON storage.objects;
-CREATE POLICY "Authenticated users can upload releases" ON storage.objects
-    FOR INSERT WITH CHECK (bucket_id = 'releases' AND auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS "Users can update own releases" ON storage.objects;
-CREATE POLICY "Users can update own releases" ON storage.objects
-    FOR UPDATE USING (bucket_id = 'releases' AND auth.uid() = owner);
-
-DROP POLICY IF EXISTS "Anyone can view files" ON storage.objects;
-CREATE POLICY "Anyone can view files" ON storage.objects
-    FOR SELECT USING (bucket_id = 'files');
-
-DROP POLICY IF EXISTS "Authenticated users can upload files" ON storage.objects;
-CREATE POLICY "Authenticated users can upload files" ON storage.objects
-    FOR INSERT WITH CHECK (bucket_id = 'files' AND auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS "Users can update own files" ON storage.objects;
-CREATE POLICY "Users can update own files" ON storage.objects
-    FOR UPDATE USING (bucket_id = 'files' AND auth.uid() = owner);
+-- Вручную создайте в Supabase Storage следующие buckets:
+-- - avatars (public: true)
+-- - covers (public: true)
+-- - releases (public: true)
+-- - files (public: true)
 
 -- ============================================
 -- HELPER FUNCTIONS
 -- ============================================
-
--- Функция для получения публичного URL
-CREATE OR REPLACE FUNCTION public.get_public_url(bucket_name TEXT, file_path TEXT)
-RETURNS TEXT AS $$
-BEGIN
-    RETURN storage.api.get_public_url(bucket_name, file_path);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Функция для проверки прав администратора
-CREATE OR REPLACE FUNCTION public.is_admin(user_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN EXISTS (
-        SELECT 1 FROM public.profiles 
-        WHERE id = user_id AND role = 'admin'
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Функция для генерации slug
 CREATE OR REPLACE FUNCTION public.generate_unique_slug(base_slug TEXT, user_id_param UUID)
@@ -626,7 +544,7 @@ BEGIN
     
     RETURN new_slug;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Функция для генерации slug для artist websites
 CREATE OR REPLACE FUNCTION public.generate_unique_website_slug(base_slug TEXT, user_id_param UUID)
@@ -644,29 +562,19 @@ BEGIN
     
     RETURN new_slug;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Функция для проверки прав администратора
+CREATE OR REPLACE FUNCTION public.is_admin(user_id_param UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = user_id_param AND role = 'admin'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
--- FINAL GRANT PERMISSIONS
+-- GRANT PERMISSIONS (выполняется автоматически Supabase)
 -- ============================================
-
--- Grant permissions для сервиса
-GRANT USAGE ON SCHEMA public TO supabase_service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO supabase_service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO supabase_service_role;
-GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO supabase_service_role;
-
--- Grant permissions для анонимного доступа (RLS будет контролировать доступ)
-GRANT USAGE ON SCHEMA public TO anon;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
-GRANT INSERT ON ALL TABLES IN SCHEMA public TO anon;
-
--- Grant permissions для authenticated
-GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
-
--- Storage permissions
-GRANT ALL ON storage.buckets TO anon;
-GRANT ALL ON storage.buckets TO authenticated;
-GRANT ALL ON storage.objects TO anon;
-GRANT ALL ON storage.objects TO authenticated;
