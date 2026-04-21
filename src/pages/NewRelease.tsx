@@ -65,8 +65,6 @@ const NewRelease = () => {
         return;
       }
     }
-    // На кроці 3 (обкладинка) - НЕ перевіряємо обкладинку при переході на крок 4
-    // Користувач може повернутися і завантажити пізніше
     setCurrentStep(prev => prev + 1);
     window.scrollTo(0, 0);
   };
@@ -264,8 +262,8 @@ const NewRelease = () => {
               label="Обкладинка релізу"
               className="max-w-xl mx-auto"
               acceptedTypes="image/jpeg,image/jpg,image/png,image/webp"
-              maxSizeMB={7}
-              minDimensions={{ width: 1500, height: 1500 }}
+              maxSizeMB={10}
+              minDimensions={{ width: 1400, height: 1400 }}
               aspectRatio="1:1"
             />
 
@@ -279,10 +277,10 @@ const NewRelease = () => {
                   <Check size={10} className="text-green-500" /> Тільки квадратні зображення (1:1)
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check size={10} className="text-green-500" /> Мінімальний розмір: 1500x1500px
+                  <Check size={10} className="text-green-500" /> Мінімальний розмір: 1400x1400px
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check size={10} className="text-green-500" /> Максимальний розмір: 7МБ
+                  <Check size={10} className="text-green-500" /> Максимальний розмір: 10МБ
                 </li>
                 <li className="flex items-center gap-2">
                   <Check size={10} className="text-green-500" /> Без логотипів стрімінгів та соцмереж
