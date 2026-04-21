@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar, Hash, Upload } from 'lucide-react';
+import { Music, Plus, Trash2, Check, ChevronRight, ChevronLeft, Image, Disc, FileText, AlertCircle, CheckCircle2, Loader2, Shield, Calendar, Hash, Upload, ListMusic } from 'lucide-react';
 import { useDataStore, useAuthStore, DEFAULT_GENRES } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,19 +48,35 @@ const NewRelease = () => {
   
   const [releaseType, setReleaseType] = useState<'single' | 'album'>('single');
   const [tracks, setTracks] = useState<any[]>([
-    { id: '1', title: '', fileName: '', duration: '', explicit: false, lyrics: '', position: 1 }
+    { id: Date.now().toString(), title: '', explicit: false, position: 1 }
   ]);
   
   const defaultStatus = statuses.find((s: any) => s.isDefault)?.name || 'На модерації';
-  const releaseFields = fields.filter(f => f.section === 'release' && f.visible);
 
   const updateFormData = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  const addTrack = () => {
+    setTracks([...tracks, { id: Date.now().toString(), title: '', explicit: false, position: tracks.length + 1 }]);
+  };
+
+  const removeTrack = (id: string) => {
+    if (tracks.length === 1) return;
+    setTracks(tracks.filter(t => t.id !== id).map((t, i) => ({ ...t, position: i + 1 })));
+  };
+
+  const updateTrack = (id: string, field: string, value: any) => {
+    setTracks(tracks.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
+
   const handleNext = () => {
     if (currentStep === 1 && (!formData.title || !formData.artist)) {
       showError('Заповніть основні поля');
+      return;
+    }
+    if (currentStep === 3 && tracks.some(t => !t.title)) {
+      showError('Вкажіть назви для всіх треків');
       return;
     }
     setCurrentStep(prev => prev + 1);
@@ -145,7 +161,10 @@ const NewRelease = () => {
                     <Button 
                       variant="outline" 
                       className={cn("flex-1 rounded-none h-12 text-[10px] font-black uppercase tracking-widest", releaseType === 'single' ? "bg-red-700 border-red-700 text-white" : "border-white/5 text-zinc-500")}
-                      onClick={() => setReleaseType('single')}
+                      onClick={() => {
+                        setReleaseType('single');
+                        if (tracks.length > 1) setTracks([tracks[0]]);
+                      }}
                     >
                       Single
                     </Button>
@@ -220,6 +239,65 @@ const NewRelease = () => {
         );
       case 3:
         return (
+          <div className="space-y-8 max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Треклист</h2>
+              <p className="text-zinc-500 text-xs sm:text-sm">Додайте назви треків у порядку їх черговості</p>
+            </div>
+            
+            <div className="space-y-4">
+              {tracks.map((track, index) => (
+                <div key={track.id} className="flex flex-col sm:flex-row gap-4 p-6 bg-white/5 border border-white/5 relative group">
+                  <div className="flex items-center justify-center w-8 h-8 bg-red-700/10 text-red-700 font-black text-xs">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Назва треку *</Label>
+                    <Input 
+                      value={track.title} 
+                      onChange={(e) => updateTrack(track.id, 'title', e.target.value)}
+                      className="bg-black/40 border-white/5 rounded-none h-10 text-sm"
+                      placeholder="Введіть назву..."
+                    />
+                  </div>
+                  <div className="flex items-end gap-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Checkbox 
+                        id={`explicit-${track.id}`} 
+                        checked={track.explicit} 
+                        onCheckedChange={(val) => updateTrack(track.id, 'explicit', val)}
+                        className="border-zinc-800 data-[state=checked]:bg-red-700 data-[state=checked]:border-red-700 rounded-none"
+                      />
+                      <Label htmlFor={`explicit-${track.id}`} className="text-[10px] font-black uppercase tracking-widest text-zinc-500 cursor-pointer">Explicit</Label>
+                    </div>
+                    {releaseType === 'album' && tracks.length > 1 && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-zinc-700 hover:text-red-500 h-10 w-10"
+                        onClick={() => removeTrack(track.id)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              {releaseType === 'album' && (
+                <Button 
+                  onClick={addTrack}
+                  variant="outline"
+                  className="w-full border-dashed border-white/10 hover:border-red-700/50 hover:bg-red-700/5 h-14 rounded-none text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-red-500"
+                >
+                  <Plus size={16} className="mr-2" /> Додати ще один трек
+                </Button>
+              )}
+            </div>
+          </div>
+        );
+      case 4:
+        return (
           <div className="space-y-8 max-w-2xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-3">Обкладинка</h2>
@@ -251,7 +329,7 @@ const NewRelease = () => {
             </div>
           </div>
         );
-      case 4:
+      case 5:
         return (
           <div className="space-y-8 max-w-3xl mx-auto">
             <div className="text-center mb-8">
@@ -300,8 +378,9 @@ const NewRelease = () => {
   const steps = [
     { id: 1, label: 'Інфо', icon: Music },
     { id: 2, label: 'Мета', icon: FileText },
-    { id: 3, label: 'Арт', icon: Image },
-    { id: 4, label: 'Права', icon: Shield },
+    { id: 3, label: 'Треки', icon: ListMusic },
+    { id: 4, label: 'Арт', icon: Image },
+    { id: 5, label: 'Права', icon: Shield },
   ];
 
   return (
@@ -341,7 +420,7 @@ const NewRelease = () => {
             <ChevronLeft className="mr-2" size={16} /> Назад
           </Button>
           
-          {currentStep < 4 ? (
+          {currentStep < 5 ? (
             <Button 
               onClick={handleNext}
               className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none"
