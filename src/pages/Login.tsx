@@ -43,7 +43,7 @@ const Login = () => {
       }
 
       if (authData.user) {
-        // Fetch profile from database
+        // Try to fetch profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -52,7 +52,7 @@ const Login = () => {
         
         let finalProfile = profileData;
 
-        // If profile doesn't exist, create it
+        // If profile doesn't exist (PGRST116), create it automatically
         if (profileError && profileError.code === 'PGRST116') {
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
@@ -69,7 +69,7 @@ const Login = () => {
           
           if (createError) {
             console.error('Error creating profile on login:', createError);
-            // Fallback to basic user if DB insert fails
+            // Fallback to basic user object if DB insert fails
             const fallbackUser = {
               id: authData.user.id,
               email: authData.user.email || data.login,

@@ -161,14 +161,6 @@ const Releases = () => {
     }
   };
 
-  // Function to get the correct cover URL with priority
-  const getCoverUrl = (release: any): string => {
-    // Priority: coverImageLocal > coverUrl > fallback
-    if (release.coverImageLocal) return release.coverImageLocal;
-    if (release.coverUrl) return release.coverUrl;
-    return FALLBACK_IMAGE;
-  };
-
   return (
     <div className="space-y-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -191,7 +183,7 @@ const Releases = () => {
         {filteredReleases.map((release) => {
           const hasSmartLink = smartLinks.some(l => l.releaseId === release.id);
           const link = smartLinks.find(l => l.releaseId === release.id);
-          const displayCover = getCoverUrl(release);
+          const displayCover = release.coverImageLocal || release.coverUrl || FALLBACK_IMAGE;
 
           return (
             <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-red-700/30 transition-all duration-500">

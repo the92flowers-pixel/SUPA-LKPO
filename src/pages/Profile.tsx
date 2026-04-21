@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { User, ShieldCheck, ShieldAlert, Save, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, ShieldCheck, ShieldAlert, Mail, Key, Loader2 } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,108 +7,34 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { showSuccess, showError } from '@/utils/toast';
-import { supabase, toAppProfile } from '@/lib/supabase';
 import ImageUploader from '@/components/ui/ImageUploader';
 
 const FALLBACK_AVATAR = "https://jurbamusic.iceiy.com/profileavatar.png";
 
 const Profile = () => {
   const { user, setAuth } = useAuthStore();
-  const { users, updateUser, fetchUsers } = useDataStore();
+  const { updateUser, users } = useDataStore();
   
+  const currentUser = users.find(u => u.id === user?.id) || user;
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [profileData, setProfileData] = useState<any>(null);
-
-  // Load profile data
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!user?.id) return;
-      
-      setIsLoading(true);
-      try {
-        // First try to get from local store
-        const localUser = users.find(u => u.id === user.id);
-        if (localUser) {
-          setProfileData(localUser);
-        } else {
-          // Fetch from database
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          
-          if (!error && data) {
-            const appProfile = toAppProfile(data);
-            setProfileData(appProfile);
-            // Update local store
-            await fetchUsers();
-          }
-        }
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, [user?.id, users]);
 
   const handleSave = async () => {
-    if (!profileData || !user?.id) return;
+    if (!currentUser) return;
     setIsSaving(true);
-    
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: profileData.artistName,
-          artist_name: profileData.artistName,
-          bio: profileData.bio || null,
-          avatar_local: profileData.avatarLocal || null,
-          avatar_url: profileData.avatarUrl || null,
-        })
-        .eq('id', user.id)
-        .select()
-        .single();
-      
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        const appProfile = toAppProfile(data);
-        setAuth(appProfile);
-        await fetchUsers();
-        showSuccess('Профіль оновлено');
-      }
+      await updateUser(currentUser.id, currentUser);
+      showSuccess('Профіль оновлено');
     } catch (error) {
-      console.error('Error saving profile:', error);
-      showError('Помилка при збереженні профілю');
+      showError('Помилка при збереженні');
     } finally {
       setIsSaving(false);
     }
   };
 
   const updateField = (field: string, value: any) => {
-    setProfileData((prev: any) => ({ ...prev, [field]: value }));
+    const updated = { ...currentUser, [field]: value };
+    setAuth(updated as any);
   };
-
-  if (isLoading) {
-    return (
-      <div className="max-w-5xl mx-auto space-y-10">
-        <div>
-          <h1 className="text-4xl font-black tracking-tight text-white uppercase">Профіль</h1>
-          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Ваші персональні дані та налаштування</p>
-        </div>
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="animate-spin text-red-700" size={40} />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-10">
@@ -123,9 +49,9 @@ const Profile = () => {
             <CardContent className="pt-12 flex flex-col items-center">
               <ImageUploader 
                 bucket="avatars"
-                path={`profiles/${profileData?.id}`}
-                currentLocalUrl={profileData?.avatarLocal}
-                currentExternalUrl={profileData?.avatarUrl}
+                path={`profiles/${currentUser?.id}`}
+                currentLocalUrl={currentUser?.avatarLocal}
+                currentExternalUrl={currentUser?.avatarUrl}
                 onUpload={(url) => updateField('avatarLocal', url)}
                 onExternalUrlChange={(url) => updateField('avatarUrl', url)}
                 onRemove={() => updateField('avatarLocal', null)}
@@ -136,7 +62,7 @@ const Profile = () => {
               <div className="mt-8 w-full space-y-4">
                 <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5">
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Статус</span>
-                  {profileData?.isVerified ? (
+                  {currentUser?.isVerified ? (
                     <span className="text-[10px] font-black uppercase text-green-500 flex items-center gap-2">
                       <ShieldCheck size={14} /> Верифіковано
                     </span>
@@ -145,18 +71,6 @@ const Profile = () => {
                       <ShieldAlert size={14} /> Не верифіковано
                     </span>
                   )}
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Роль</span>
-                  <span className="text-[10px] font-black uppercase text-zinc-400">
-                    {profileData?.role === 'admin' ? 'Адмін' : 'Артист'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Баланс</span>
-                  <span className="text-[10px] font-black uppercase text-red-700">
-                    {profileData?.balance?.toLocaleString() || 0} ₴
-                  </span>
                 </div>
               </div>
             </CardContent>
@@ -168,19 +82,19 @@ const Profile = () => {
             <CardContent className="pt-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Email</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне ім'я</Label>
                   <Input 
-                    value={profileData?.email || profileData?.login || ''} 
-                    disabled
-                    className="bg-black/40 border-white/5 rounded-none h-12 opacity-50"
+                    value={currentUser?.artistName || ''} 
+                    onChange={(e) => updateField('artistName', e.target.value)}
+                    className="bg-black/40 border-white/5 rounded-none h-12"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне ім'я</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Email</Label>
                   <Input 
-                    value={profileData?.artistName || ''} 
-                    onChange={(e) => updateField('artistName', e.target.value)}
-                    className="bg-black/40 border-white/5 rounded-none h-12"
+                    value={currentUser?.email || ''} 
+                    disabled
+                    className="bg-black/40 border-white/5 rounded-none h-12 opacity-50"
                   />
                 </div>
               </div>
@@ -188,7 +102,7 @@ const Profile = () => {
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Біографія</Label>
                 <Textarea 
-                  value={profileData?.bio || ''} 
+                  value={currentUser?.bio || ''} 
                   onChange={(e) => updateField('bio', e.target.value)}
                   className="bg-black/40 border-white/5 rounded-none min-h-[120px] resize-none"
                   placeholder="Розкажіть про себе..."
