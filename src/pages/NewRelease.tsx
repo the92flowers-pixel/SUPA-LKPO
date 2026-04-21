@@ -59,18 +59,14 @@ const NewRelease = () => {
   };
 
   const handleNext = () => {
-    if (currentStep === 1 && (!formData.title || !formData.artist)) {
-      showError('Заповніть основні поля');
-      return;
-    }
-    // Validate cover on step 2 (metadata step, before cover step)
-    if (currentStep === 2) {
-      // Check if cover is uploaded
-      if (!formData.coverImageLocal && !formData.coverUrl) {
-        showError('Завантажте обкладинку релізу');
+    if (currentStep === 1) {
+      if (!formData.title || !formData.artist) {
+        showError('Заповніть основні поля (назва та артист)');
         return;
       }
     }
+    // На кроці 3 (обкладинка) - НЕ перевіряємо обкладинку при переході на крок 4
+    // Користувач може повернутися і завантажити пізніше
     setCurrentStep(prev => prev + 1);
     window.scrollTo(0, 0);
   };
@@ -86,9 +82,8 @@ const NewRelease = () => {
       return;
     }
 
-    // Final validation - cover is required
-    if (!formData.coverImageLocal && !formData.coverUrl) {
-      showError('Обкладинка релізу є обов\'язковою');
+    if (!formData.releaseUrl) {
+      showError('Вкажіть посилання на аудіофайли');
       return;
     }
 
@@ -300,6 +295,16 @@ const NewRelease = () => {
                 </li>
               </ul>
             </div>
+
+            {/* Нагадування */}
+            {!hasCover && (
+              <div className="p-4 bg-amber-900/10 border border-amber-900/20 flex items-start gap-3">
+                <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+                  Обкладинка необов'язкова на цьому етапі. Ви зможете завантажити її пізніше через редагування релізу.
+                </p>
+              </div>
+            )}
           </div>
         );
       case 4:
@@ -426,7 +431,7 @@ const NewRelease = () => {
           ) : (
             <Button 
               onClick={handleSubmit}
-              disabled={isSubmitting || !hasCover}
+              disabled={isSubmitting || !formData.releaseUrl || !formData.copyrightConfirmed}
               className="bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase tracking-widest h-12 px-12 rounded-none shadow-[0_0_30px_rgba(22,163,74,0.2)] disabled:opacity-30"
             >
               {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Check className="mr-2" size={16} />}
