@@ -57,7 +57,7 @@ const PLATFORMS_LIST = [
 const Releases = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink, updateSmartLink, deleteSmartLink, deleteRelease, statuses } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink, updateReleaseStatus, statuses } = useDataStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
@@ -135,13 +135,13 @@ const Releases = () => {
     }
   };
 
-  const handleDeleteRelease = async (id: string) => {
-    if (!confirm('Ви впевнені, що хочете видалити цей реліз?')) return;
+  const handleDeleteRequest = async (id: string) => {
+    if (!confirm('Ви впевнені, що хочете видалити цей реліз? Статус буде змінено на "Видаляється", і адміністратор отримає запит.')) return;
     try {
-      await deleteRelease(id);
-      showSuccess('Реліз видалено');
+      await updateReleaseStatus(id, 'Видаляється');
+      showSuccess('Запит на видалення відправлено');
     } catch (error) {
-      showError('Помилка при видаленні');
+      showError('Помилка при відправці запиту');
     }
   };
 
@@ -151,6 +151,8 @@ const Releases = () => {
   };
 
   const getStatusColor = (statusName: string) => {
+    if (statusName === 'Видаляється') return 'bg-red-900/20 text-red-500 border-red-900/30';
+    
     const status = statuses.find(s => s.name === statusName);
     if (!status) return 'bg-zinc-500/10 text-zinc-500';
     switch (status.color) {
@@ -185,9 +187,13 @@ const Releases = () => {
           const hasSmartLink = smartLinks.some(l => l.releaseId === release.id);
           const link = smartLinks.find(l => l.releaseId === release.id);
           const displayCover = release.coverImageLocal || release.coverUrl || FALLBACK_IMAGE;
+          const isDeleting = release.status === 'Видаляється';
 
           return (
-            <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-red-700/30 transition-all duration-500">
+            <Card key={release.id} className={cn(
+              "bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-red-700/30 transition-all duration-500",
+              isDeleting && "opacity-60 grayscale"
+            )}>
               <div className="aspect-square relative overflow-hidden">
                 <img 
                   src={displayCover} 
@@ -200,16 +206,18 @@ const Releases = () => {
                     {release.status}
                   </Badge>
                 </div>
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-white/10 border-white/20 text-white hover:bg-white hover:text-black rounded-none text-[10px] font-black uppercase tracking-widest"
-                    onClick={() => handleCreateSmartLink(release)}
-                  >
-                    <Link2 size={14} className="mr-2" /> {hasSmartLink ? 'Редагувати лінк' : 'Створити лінк'}
-                  </Button>
-                </div>
+                {!isDeleting && (
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="bg-white/10 border-white/20 text-white hover:bg-white hover:text-black rounded-none text-[10px] font-black uppercase tracking-widest"
+                      onClick={() => handleCreateSmartLink(release)}
+                    >
+                      <Link2 size={14} className="mr-2" /> {hasSmartLink ? 'Редагувати лінк' : 'Створити лінк'}
+                    </Button>
+                  </div>
+                )}
               </div>
               
               <CardContent className="p-6 flex-1">
@@ -218,27 +226,29 @@ const Releases = () => {
                     <h3 className="text-lg font-black text-white uppercase tracking-wider truncate">{release.title}</h3>
                     <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">{release.artist}</p>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white h-8 w-8">
-                        <MoreVertical size={18} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                      <DropdownMenuItem 
-                        className="text-[10px] font-black uppercase tracking-widest focus:bg-red-900/20 focus:text-red-500 cursor-pointer"
-                        onClick={() => navigate(`/edit-release/${release.id}`)}
-                      >
-                        <Edit2 size={14} className="mr-2" /> Редагувати
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-[10px] font-black uppercase tracking-widest text-red-900 focus:bg-red-900/20 focus:text-red-500 cursor-pointer"
-                        onClick={() => handleDeleteRelease(release.id)}
-                      >
-                        <Trash2 size={14} className="mr-2" /> Видалити
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {!isDeleting && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white h-8 w-8">
+                          <MoreVertical size={18} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                        <DropdownMenuItem 
+                          className="text-[10px] font-black uppercase tracking-widest focus:bg-red-900/20 focus:text-red-500 cursor-pointer"
+                          onClick={() => navigate(`/edit-release/${release.id}`)}
+                        >
+                          <Edit2 size={14} className="mr-2" /> Редагувати
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-[10px] font-black uppercase tracking-widest text-red-900 focus:bg-red-900/20 focus:text-red-500 cursor-pointer"
+                          onClick={() => handleDeleteRequest(release.id)}
+                        >
+                          <Trash2 size={14} className="mr-2" /> Видалити
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
@@ -252,7 +262,7 @@ const Releases = () => {
                   </div>
                 </div>
 
-                {hasSmartLink && (
+                {hasSmartLink && !isDeleting && (
                   <div className="mt-6 p-3 bg-white/5 border border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <Globe size={12} className="text-red-700 shrink-0" />
