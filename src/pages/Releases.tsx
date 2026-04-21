@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Music, 
   Plus, 
@@ -54,13 +55,13 @@ const PLATFORMS_LIST = [
 ];
 
 const Releases = () => {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { releases, smartLinks, addSmartLink, updateSmartLink, deleteSmartLink, deleteRelease, statuses } = useDataStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
   const [isSmartLinkModalOpen, setIsSmartLinkModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   
   // Smart Link Form State
   const [slug, setSlug] = useState('');
@@ -224,7 +225,10 @@ const Releases = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                      <DropdownMenuItem className="text-[10px] font-black uppercase tracking-widest focus:bg-red-900/20 focus:text-red-500 cursor-pointer">
+                      <DropdownMenuItem 
+                        className="text-[10px] font-black uppercase tracking-widest focus:bg-red-900/20 focus:text-red-500 cursor-pointer"
+                        onClick={() => navigate(`/edit-release/${release.id}`)}
+                      >
                         <Edit2 size={14} className="mr-2" /> Редагувати
                       </DropdownMenuItem>
                       <DropdownMenuItem 
