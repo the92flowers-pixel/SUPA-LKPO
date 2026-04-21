@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ShieldCheck, ShieldAlert, Mail, Key, Loader2 } from 'lucide-react';
+import { User, ShieldCheck, ShieldAlert, Mail, Key, Loader2, Save } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
