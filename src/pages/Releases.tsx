@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   Music, 
   Plus, 
@@ -16,14 +15,7 @@ import {
   Loader2,
   Upload,
   X,
-  AlertCircle,
-  Info,
-  Calendar,
-  Hash,
-  FileAudio,
-  ShieldCheck,
-  User,
-  Clock
+  AlertCircle
 } from 'lucide-react';
 import { useDataStore, useAuthStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,15 +54,13 @@ const PLATFORMS_LIST = [
 ];
 
 const Releases = () => {
-  const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { releases, smartLinks, addSmartLink, updateSmartLink, updateReleaseStatus, statuses, fields } = useDataStore();
+  const { releases, smartLinks, addSmartLink, updateSmartLink, deleteSmartLink, deleteRelease, statuses } = useDataStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
   const [isSmartLinkModalOpen, setIsSmartLinkModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [viewingRelease, setViewingRelease] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Smart Link Form State
   const [slug, setSlug] = useState('');
@@ -91,8 +81,6 @@ const Releases = () => {
     ),
     [userReleases, searchQuery]
   );
-
-  const releaseFields = fields.filter(f => f.section === 'release');
 
   const handleCreateSmartLink = (release: any) => {
     const existing = smartLinks.find(l => l.releaseId === release.id);
@@ -146,13 +134,13 @@ const Releases = () => {
     }
   };
 
-  const handleDeleteRequest = async (id: string) => {
-    if (!confirm('Ви впевнені, що хочете видалити цей реліз? Статус буде змінено на "Видаляється", і адміністратор отримає запит.')) return;
+  const handleDeleteRelease = async (id: string) => {
+    if (!confirm('Ви впевнені, що хочете видалити цей реліз?')) return;
     try {
-      await updateReleaseStatus(id, 'Видаляється');
-      showSuccess('Запит на видалення відправлено');
+      await deleteRelease(id);
+      showSuccess('Реліз видалено');
     } catch (error) {
-      showError('Помилка при відправці запиту');
+      showError('Помилка при видаленні');
     }
   };
 
@@ -162,8 +150,6 @@ const Releases = () => {
   };
 
   const getStatusColor = (statusName: string) => {
-    if (statusName === 'Видаляється') return 'bg-red-900/20 text-red-500 border-red-900/30';
-    
     const status = statuses.find(s => s.name === statusName);
     if (!status) return 'bg-zinc-500/10 text-zinc-500';
     switch (status.color) {
@@ -173,11 +159,6 @@ const Releases = () => {
       case 'blue': return 'bg-blue-500/10 text-blue-500';
       default: return 'bg-zinc-500/10 text-zinc-500';
     }
-  };
-
-  const handleViewDetails = (release: any) => {
-    setViewingRelease(release);
-    setIsDetailsModalOpen(true);
   };
 
   return (
@@ -203,14 +184,9 @@ const Releases = () => {
           const hasSmartLink = smartLinks.some(l => l.releaseId === release.id);
           const link = smartLinks.find(l => l.releaseId === release.id);
           const displayCover = release.coverImageLocal || release.coverUrl || FALLBACK_IMAGE;
-          const isDeleting = release.status === 'Видаляється';
-          const isRejected = statuses.find(s => s.name === release.status)?.color === 'red';
 
           return (
-            <Card key={release.id} className={cn(
-              "bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-red-700/30 transition-all duration-500",
-              isDeleting && "opacity-60 grayscale"
-            )}>
+            <Card key={release.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-red-700/30 transition-all duration-500">
               <div className="aspect-square relative overflow-hidden">
                 <img 
                   src={displayCover} 
@@ -223,26 +199,16 @@ const Releases = () => {
                     {release.status}
                   </Badge>
                 </div>
-                {!isDeleting && (
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="bg-white/10 border-white/20 text-white hover:bg-white hover:text-black rounded-none text-[10px] font-black uppercase tracking-widest"
-                      onClick={() => handleViewDetails(release)}
-                    >
-                      <Info size={14} className="mr-2" /> Деталі
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="bg-white/10 border-white/20 text-white hover:bg-white hover:text-black rounded-none text-[10px] font-black uppercase tracking-widest"
-                      onClick={() => handleCreateSmartLink(release)}
-                    >
-                      <Link2 size={14} className="mr-2" /> {hasSmartLink ? 'Смартлінк' : 'Створити лінк'}
-                    </Button>
-                  </div>
-                )}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-white/10 border-white/20 text-white hover:bg-white hover:text-black rounded-none text-[10px] font-black uppercase tracking-widest"
+                    onClick={() => handleCreateSmartLink(release)}
+                  >
+                    <Link2 size={14} className="mr-2" /> {hasSmartLink ? 'Редагувати лінк' : 'Створити лінк'}
+                  </Button>
+                </div>
               </div>
               
               <CardContent className="p-6 flex-1">
@@ -251,37 +217,25 @@ const Releases = () => {
                     <h3 className="text-lg font-black text-white uppercase tracking-wider truncate">{release.title}</h3>
                     <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">{release.artist}</p>
                   </div>
-                  {!isDeleting && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white h-8 w-8">
-                          <MoreVertical size={18} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                        <DropdownMenuItem 
-                          className="text-[10px] font-black uppercase tracking-widest focus:bg-red-900/20 focus:text-red-500 cursor-pointer"
-                          onClick={() => navigate(`/edit-release/${release.id}`)}
-                        >
-                          <Edit2 size={14} className="mr-2" /> Редагувати
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-[10px] font-black uppercase tracking-widest text-red-900 focus:bg-red-900/20 focus:text-red-500 cursor-pointer"
-                          onClick={() => handleDeleteRequest(release.id)}
-                        >
-                          <Trash2 size={14} className="mr-2" /> Видалити
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white h-8 w-8">
+                        <MoreVertical size={18} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
+                      <DropdownMenuItem className="text-[10px] font-black uppercase tracking-widest focus:bg-red-900/20 focus:text-red-500 cursor-pointer">
+                        <Edit2 size={14} className="mr-2" /> Редагувати
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-[10px] font-black uppercase tracking-widest text-red-900 focus:bg-red-900/20 focus:text-red-500 cursor-pointer"
+                        onClick={() => handleDeleteRelease(release.id)}
+                      >
+                        <Trash2 size={14} className="mr-2" /> Видалити
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-
-                {isRejected && release.rejection_reason && (
-                  <div className="mb-4 p-3 bg-red-900/10 border border-red-900/20">
-                    <p className="text-[8px] font-black uppercase text-red-700 mb-1">Зауваження модератора:</p>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed">{release.rejection_reason}</p>
-                  </div>
-                )}
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                   <div className="space-y-1">
@@ -294,7 +248,7 @@ const Releases = () => {
                   </div>
                 </div>
 
-                {hasSmartLink && !isDeleting && (
+                {hasSmartLink && (
                   <div className="mt-6 p-3 bg-white/5 border border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <Globe size={12} className="text-red-700 shrink-0" />
@@ -323,170 +277,6 @@ const Releases = () => {
           </div>
         )}
       </div>
-
-      {/* Details Modal */}
-      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="bg-[#050505] border-white/5 text-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-none p-0">
-          {viewingRelease && (
-            <div className="flex flex-col">
-              <div className="relative h-48 sm:h-64 overflow-hidden">
-                <img 
-                  src={viewingRelease.coverImageLocal || viewingRelease.coverUrl || FALLBACK_IMAGE} 
-                  className="w-full h-full object-cover blur-xl opacity-30 scale-110" 
-                  alt="" 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent" />
-                <div className="absolute bottom-6 left-8 flex items-end gap-6">
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 shadow-2xl border border-white/10">
-                    <img 
-                      src={viewingRelease.coverImageLocal || viewingRelease.coverUrl || FALLBACK_IMAGE} 
-                      className="w-full h-full object-cover" 
-                      alt={viewingRelease.title} 
-                    />
-                  </div>
-                  <div className="pb-2">
-                    <Badge className={cn("mb-3 border-none text-[9px] font-black uppercase tracking-widest rounded-none", getStatusColor(viewingRelease.status))}>
-                      {viewingRelease.status}
-                    </Badge>
-                    <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tighter leading-none">{viewingRelease.title}</h2>
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest mt-2">{viewingRelease.artist}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="lg:col-span-2 space-y-10">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Жанр</p>
-                      <p className="text-xs font-bold text-white uppercase">{viewingRelease.genre}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Дата виходу</p>
-                      <p className="text-xs font-bold text-white uppercase">{new Date(viewingRelease.releaseDate).toLocaleDateString()}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Лейбл</p>
-                      <p className="text-xs font-bold text-white uppercase">{viewingRelease.label || 'ЖУРБА MUSIC'}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-700 flex items-center gap-2">
-                      <Music size={14} /> Трекліст та Метадані
-                    </h4>
-                    <div className="space-y-4">
-                      {viewingRelease.tracks?.map((track: any, idx: number) => (
-                        <div key={idx} className="p-5 bg-white/5 border border-white/5 space-y-4 group hover:bg-white/[0.07] transition-all">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <span className="text-[10px] font-black text-zinc-700">{idx + 1}</span>
-                              <span className="text-sm font-black text-white uppercase tracking-wider">{track.title}</span>
-                            </div>
-                            {track.explicit && <Badge variant="outline" className="text-[8px] border-red-900/30 text-red-700 uppercase font-black">Explicit</Badge>}
-                          </div>
-                          
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/5">
-                            <div className="space-y-1">
-                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><User size={10} /> Артист</p>
-                              <p className="text-[10px] font-bold text-zinc-300 uppercase">{track.artist || viewingRelease.artist}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><FileAudio size={10} /> Файл</p>
-                              <p className="text-[10px] font-mono text-zinc-400 truncate">{track.fileName || '—'}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><Clock size={10} /> Preview</p>
-                              <p className="text-[10px] font-bold text-zinc-300">{track.previewStart || '0'} сек</p>
-                            </div>
-                            <div className="space-y-1 col-span-2 sm:col-span-1">
-                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Композитор</p>
-                              <p className="text-[10px] font-bold text-zinc-400 uppercase">{track.composer || '—'}</p>
-                            </div>
-                            <div className="space-y-1 col-span-2">
-                              <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Автор тексту</p>
-                              <p className="text-[10px] font-bold text-zinc-400 uppercase">{track.lyricist || '—'}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Dynamic Fields Display */}
-                  <div className="space-y-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Додаткова інформація</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      {releaseFields.map(field => (
-                        <div key={field.id} className="space-y-1">
-                          <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">{field.label}</p>
-                          <p className="text-xs font-bold text-zinc-300">{viewingRelease[field.name] || '—'}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-8">
-                  <div className="p-6 bg-white/5 border border-white/5 space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 text-zinc-500">
-                        <Hash size={16} />
-                        <div className="flex-1">
-                          <p className="text-[8px] font-black uppercase tracking-widest">UPC</p>
-                          <p className="text-[10px] font-mono text-white">{viewingRelease.upc || 'Очікується...'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-zinc-500">
-                        <Hash size={16} />
-                        <div className="flex-1">
-                          <p className="text-[8px] font-black uppercase tracking-widest">ISRC</p>
-                          <p className="text-[10px] font-mono text-white">{viewingRelease.isrc || 'Очікується...'}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-6 border-t border-white/10 space-y-4">
-                      <div className="flex items-center gap-3 text-zinc-500">
-                        <ShieldCheck size={16} className="text-green-600" />
-                        <div className="flex-1">
-                          <p className="text-[8px] font-black uppercase tracking-widest">Авторські права</p>
-                          <p className="text-[10px] font-bold text-white uppercase">Підтверджено</p>
-                        </div>
-                      </div>
-                      {viewingRelease.releaseUrl && (
-                        <Button 
-                          variant="outline" 
-                          className="w-full border-white/10 text-[9px] font-black uppercase tracking-widest h-10 rounded-none"
-                          onClick={() => window.open(viewingRelease.releaseUrl, '_blank')}
-                        >
-                          <ExternalLink size={12} className="mr-2" /> Файли релізу
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {viewingRelease.description && (
-                    <div className="space-y-2">
-                      <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Опис</p>
-                      <p className="text-xs text-zinc-400 leading-relaxed italic">{viewingRelease.description}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="p-8 border-t border-white/5 flex justify-end">
-                <Button 
-                  onClick={() => setIsDetailsModalOpen(false)}
-                  className="bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest h-12 px-10 rounded-none"
-                >
-                  Закрити
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Smart Link Modal */}
       <Dialog open={isSmartLinkModalOpen} onOpenChange={setIsSmartLinkModalOpen}>

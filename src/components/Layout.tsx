@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, User, LogOut, ShieldCheck, BarChart3, Settings, 
   Users as UsersIcon, Music, Menu, X, LayoutGrid, Disc, Link2, Globe, Wallet, FileText, ListTodo, ExternalLink
 } from 'lucide-react';
 import { useAuthStore, useUIStore, useDataStore } from '@/lib/store';
-import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import AdminHeaderLinks from './AdminHeaderLinks';
@@ -14,23 +13,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, logout } = useAuthStore();
   const { sidebarOpen, toggleSidebar } = useUIStore();
   const { adminPanelConfig } = useDataStore();
-  const [dynamicAdminLinks, setDynamicAdminLinks] = useState<any[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user?.role === 'admin') {
-      const fetchDynamicLinks = async () => {
-        const { data } = await supabase
-          .from('admin_links')
-          .select('*')
-          .eq('is_active', true)
-          .order('sort_order', { ascending: true });
-        if (data) setDynamicAdminLinks(data);
-      };
-      fetchDynamicLinks();
-    }
-  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -112,26 +96,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <span className="text-[11px] font-black uppercase tracking-widest">{link.label}</span>
             </Link>
           ))}
-
-          {/* Динамічні адмін-посилання */}
-          {user?.role === 'admin' && dynamicAdminLinks.length > 0 && (
-            <div className="pt-6 mt-6 border-t border-white/5">
-              <p className="px-4 mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700">Швидкі посилання</p>
-              {dynamicAdminLinks.map((link) => (
-                <a 
-                  key={link.id} 
-                  href={link.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:text-white hover:bg-white/5 transition-all group"
-                >
-                  <span className="text-lg">{link.icon}</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest truncate">{link.title}</span>
-                  <ExternalLink size={12} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              ))}
-            </div>
-          )}
         </nav>
 
         <div className="p-6 border-t border-white/5">

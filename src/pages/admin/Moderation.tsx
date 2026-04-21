@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio, Hash, Truck, AlertTriangle, Trash2, Undo2 } from 'lucide-react';
+import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio, Hash, Truck, AlertTriangle } from 'lucide-react';
 import { useDataStore } from '@/lib/store';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Dialog, 
   DialogContent, 
@@ -17,14 +16,13 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
 const Moderation = () => {
-  const { releases, updateRelease, deleteRelease, updateReleaseStatus, statuses, fetchReleases, users, fetchUsers, fields } = useDataStore();
+  const { releases, updateRelease, statuses, fetchReleases, users, fetchUsers, fields } = useDataStore();
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -40,7 +38,6 @@ const Moderation = () => {
   const rejectedStatus = statuses.find(s => s.color === 'red')?.name || 'Відхилено';
 
   const pendingReleases = releases.filter(r => r.status === defaultStatus);
-  const deletionRequests = releases.filter(r => r.status === 'Видаляється');
   const releaseFields = fields.filter(f => f.section === 'release');
 
   const handleAction = async (action: 'approve' | 'reject' | 'save') => {
@@ -79,135 +76,6 @@ const Moderation = () => {
       showError('Помилка при синхронізації з БД');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleFinalDelete = async (id: string) => {
-    if (!confirm('Ви впевнені, що хочете ОСТАТОЧНО видалити цей реліз з бази даних? Цю дію неможливо скасувати.')) return;
-    try {
-      await deleteRelease(id);
-      showSuccess('Реліз остаточно видалено');
-    } catch (error) {
-      showError('Помилка при видаленні');
-    }
-  };
-
-  const handleRestore = async (id: string) => {
-    try {
-      await updateReleaseStatus(id, publishedStatus);
-      showSuccess('Запит на видалення відхилено, реліз відновлено');
-    } catch (error) {
-      showError('Помилка при відновленні');
-    }
-  };
-
-  const getUserName = (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    return user?.artistName || user?.login || 'Невідомий';
-  };
-
-  const updateField = (name: string, value: any) => {
-    setSelectedTrack((prev: any) => ({ ...prev, [<dyad-write path="src/pages/admin/Moderation.tsx" description="Завершення оновлення панелі модерації з можливістю редагування розширених метаданих треків">
-import React, { useState, useEffect } from 'react';
-import { Check, X, Music, Info, User, Clock, RefreshCw, CheckCircle, ExternalLink, Save, Loader2, ShieldCheck, ShieldAlert, FileAudio, Hash, Truck, AlertTriangle, Trash2, Undo2 } from 'lucide-react';
-import { useDataStore } from '@/lib/store';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { showSuccess, showError } from '@/utils/toast';
-import { cn } from '@/lib/utils';
-
-const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
-
-const Moderation = () => {
-  const { releases, updateRelease, deleteRelease, updateReleaseStatus, statuses, fetchReleases, users, fetchUsers, fields } = useDataStore();
-  const [selectedTrack, setSelectedTrack] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-
-  useEffect(() => {
-    fetchReleases();
-    fetchUsers();
-  }, [fetchReleases, fetchUsers]);
-
-  const defaultStatus = statuses.find(s => s.isDefault)?.name || 'На модерації';
-  const publishedStatus = statuses.find(s => s.color === 'green')?.name || 'Опубліковано';
-  const rejectedStatus = statuses.find(s => s.color === 'red')?.name || 'Відхилено';
-
-  const pendingReleases = releases.filter(r => r.status === defaultStatus);
-  const deletionRequests = releases.filter(r => r.status === 'Видаляється');
-  const releaseFields = fields.filter(f => f.section === 'release');
-
-  const handleAction = async (action: 'approve' | 'reject' | 'save') => {
-    if (!selectedTrack) return;
-    
-    setIsLoading(true);
-    try {
-      let newStatus = selectedTrack.status;
-      let reason = selectedTrack.rejection_reason;
-
-      if (action === 'approve') {
-        newStatus = publishedStatus;
-        reason = null;
-      } else if (action === 'reject') {
-        newStatus = rejectedStatus;
-        reason = rejectionReason;
-      }
-      
-      const updatedData = {
-        ...selectedTrack,
-        status: newStatus,
-        rejection_reason: reason
-      };
-
-      await updateRelease(selectedTrack.id, updatedData);
-      
-      if (action !== 'save') {
-        showSuccess(`Реліз ${action === 'approve' ? 'схвалено' : 'відхилено'} та збережено`);
-        setSelectedTrack(null);
-        setIsRejectModalOpen(false);
-        setRejectionReason('');
-      } else {
-        showSuccess('Зміни збережено');
-      }
-    } catch (error) {
-      showError('Помилка при синхронізації з БД');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFinalDelete = async (id: string) => {
-    if (!confirm('Ви впевнені, що хочете ОСТАТОЧНО видалити цей реліз з бази даних? Цю дію неможливо скасувати.')) return;
-    try {
-      await deleteRelease(id);
-      showSuccess('Реліз остаточно видалено');
-    } catch (error) {
-      showError('Помилка при видаленні');
-    }
-  };
-
-  const handleRestore = async (id: string) => {
-    try {
-      await updateReleaseStatus(id, publishedStatus);
-      showSuccess('Запит на видалення відхилено, реліз відновлено');
-    } catch (error) {
-      showError('Помилка при відновленні');
     }
   };
 
@@ -220,18 +88,12 @@ const Moderation = () => {
     setSelectedTrack((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  const updateTrackField = (idx: number, field: string, value: any) => {
-    const newTracks = [...selectedTrack.tracks];
-    newTracks[idx] = { ...newTracks[idx], [field]: value };
-    setSelectedTrack({ ...selectedTrack, tracks: newTracks });
-  };
-
   return (
     <div className="space-y-10">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-white uppercase">Модерація</h1>
-          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Керування чергою запитів</p>
+          <p className="text-zinc-500 mt-2 text-xs font-bold uppercase tracking-[0.2em]">Перевірка та редагування ({pendingReleases.length})</p>
         </div>
         <Button 
           onClick={() => fetchReleases()} 
@@ -242,136 +104,73 @@ const Moderation = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="bg-black/40 border border-white/5 p-1 h-14 rounded-none">
-          <TabsTrigger value="pending" className="px-10 data-[state=active]:bg-red-700 data-[state=active]:text-white rounded-none text-[10px] font-black uppercase tracking-widest">
-            Нові релізи ({pendingReleases.length})
-          </TabsTrigger>
-          <TabsTrigger value="deleting" className="px-10 data-[state=active]:bg-red-700 data-[state=active]:text-white rounded-none text-[10px] font-black uppercase tracking-widest">
-            Запити на видалення ({deletionRequests.length})
-          </TabsTrigger>
-        </TabsList>
+      {pendingReleases.length === 0 ? (
+        <div className="text-center py-20 border border-dashed border-white/5">
+          <CheckCircle className="mx-auto text-green-500 mb-4" size={48} />
+          <h3 className="text-xl font-black text-white uppercase tracking-widest">Черга пуста</h3>
+          <p className="text-zinc-600 mt-2 text-xs font-bold uppercase tracking-widest">
+            Наразі немає релізів, що потребують перевірки
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {pendingReleases.map((track) => (
+            <Card key={track.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-amber-500/30 transition-all duration-300">
+              <div className="aspect-square relative overflow-hidden">
+                <img 
+                  src={track.coverUrl || FALLBACK_IMAGE} 
+                  alt={track.title} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                />
+                <div className="absolute top-3 left-3">
+                  <Badge className="bg-amber-500/20 text-amber-500 border-none text-[9px] font-black uppercase tracking-widest rounded-none">
+                    <Clock size={10} className="mr-1" /> На модерації
+                  </Badge>
+                </div>
+              </div>
+              
+              <CardContent className="p-6 flex-1 space-y-4">
+                <div>
+                  <h3 className="text-lg font-black text-white uppercase tracking-wider truncate">{track.title}</h3>
+                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">{track.artist}</p>
+                </div>
 
-        <TabsContent value="pending" className="mt-8">
-          {pendingReleases.length === 0 ? (
-            <div className="text-center py-20 border border-dashed border-white/5">
-              <CheckCircle className="mx-auto text-green-500 mb-4" size={48} />
-              <h3 className="text-xl font-black text-white uppercase tracking-widest">Черга пуста</h3>
-              <p className="text-zinc-600 mt-2 text-xs font-bold uppercase tracking-widest">Наразі немає нових релізів</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {pendingReleases.map((track) => (
-                <Card key={track.id} className="bg-black/40 border-white/5 rounded-none overflow-hidden flex flex-col group hover:border-amber-500/30 transition-all duration-300">
-                  <div className="aspect-square relative overflow-hidden">
-                    <img 
-                      src={track.coverUrl || FALLBACK_IMAGE} 
-                      alt={track.title} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-amber-500/20 text-amber-500 border-none text-[9px] font-black uppercase tracking-widest rounded-none">
-                        <Clock size={10} className="mr-1" /> На модерації
-                      </Badge>
-                    </div>
+                <div className="flex items-center justify-between text-xs text-zinc-500">
+                  <div className="flex items-center gap-2">
+                    <User size={14} /> {getUserName(track.userId)}
                   </div>
-                  <CardContent className="p-6 flex-1 space-y-4">
-                    <div>
-                      <h3 className="text-lg font-black text-white uppercase tracking-wider truncate">{track.title}</h3>
-                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">{track.artist}</p>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-zinc-500">
-                      <div className="flex items-center gap-2">
-                        <User size={14} /> {getUserName(track.userId)}
-                      </div>
-                      <div className="text-xs font-black uppercase tracking-widest">{track.genre}</div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-6 pt-0 grid grid-cols-2 gap-3">
-                    <Button 
-                      variant="outline" 
-                      className="border-white/10 hover:bg-white/5 text-white rounded-none text-[10px] font-black uppercase tracking-widest"
-                      onClick={() => setSelectedTrack({ ...track })}
-                    >
-                      <Info size={14} className="mr-2" /> Деталі
-                    </Button>
-                    <div className="flex gap-2">
-                      <Button 
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-none"
-                        onClick={() => { setSelectedTrack({ ...track }); handleAction('approve'); }}
-                      >
-                        <Check size={16} />
-                      </Button>
-                      <Button 
-                        className="flex-1 bg-red-900 hover:bg-red-800 text-white rounded-none"
-                        onClick={() => { setSelectedTrack({ ...track }); setIsRejectModalOpen(true); }}
-                      >
-                        <X size={16} />
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+                  <div className="text-xs font-black uppercase tracking-widest">{track.genre || 'Другое'}</div>
+                </div>
+              </CardContent>
 
-        <TabsContent value="deleting" className="mt-8">
-          {deletionRequests.length === 0 ? (
-            <div className="text-center py-20 border border-dashed border-white/5">
-              <Music className="mx-auto text-zinc-800 mb-4" size={48} />
-              <h3 className="text-xl font-black text-white uppercase tracking-widest">Запитів немає</h3>
-              <p className="text-zinc-600 mt-2 text-xs font-bold uppercase tracking-widest">Ніхто не намагається видалити музику</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {deletionRequests.map((track) => (
-                <Card key={track.id} className="bg-black/40 border-red-900/20 rounded-none overflow-hidden flex flex-col group hover:border-red-700/50 transition-all duration-300">
-                  <div className="aspect-square relative overflow-hidden grayscale opacity-60">
-                    <img 
-                      src={track.coverUrl || FALLBACK_IMAGE} 
-                      alt={track.title} 
-                      className="w-full h-full object-cover" 
-                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                    />
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-red-900/40 text-red-500 border-none text-[9px] font-black uppercase tracking-widest rounded-none">
-                        <Trash2 size={10} className="mr-1" /> Запит на видалення
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="p-6 flex-1 space-y-4">
-                    <div>
-                      <h3 className="text-lg font-black text-white uppercase tracking-wider truncate">{track.title}</h3>
-                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">{track.artist}</p>
-                    </div>
-                    <div className="p-3 bg-red-900/5 border border-red-900/10">
-                      <p className="text-[9px] font-black uppercase text-red-700 mb-1">Власник</p>
-                      <p className="text-xs text-zinc-400 font-bold">{getUserName(track.userId)}</p>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-6 pt-0 grid grid-cols-2 gap-3">
-                    <Button 
-                      variant="outline" 
-                      className="border-white/10 hover:bg-white/5 text-white rounded-none text-[10px] font-black uppercase tracking-widest"
-                      onClick={() => handleRestore(track.id)}
-                    >
-                      <Undo2 size={14} className="mr-2" /> Відхилити
-                    </Button>
-                    <Button 
-                      className="bg-red-700 hover:bg-red-800 text-white rounded-none text-[10px] font-black uppercase tracking-widest"
-                      onClick={() => handleFinalDelete(track.id)}
-                    >
-                      <Trash2 size={14} className="mr-2" /> Видалити
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+              <CardFooter className="p-6 pt-0 grid grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="border-white/10 hover:bg-white/5 text-white rounded-none text-[10px] font-black uppercase tracking-widest"
+                  onClick={() => setSelectedTrack({ ...track })}
+                >
+                  <Info size={14} className="mr-2" /> Деталі та Редагування
+                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-none"
+                    onClick={() => { setSelectedTrack({ ...track }); handleAction('approve'); }}
+                  >
+                    <Check size={16} />
+                  </Button>
+                  <Button 
+                    className="flex-1 bg-red-900 hover:bg-red-800 text-white rounded-none"
+                    onClick={() => { setSelectedTrack({ ...track }); setIsRejectModalOpen(true); }}
+                  >
+                    <X size={16} />
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Rejection Reason Modal */}
       <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
@@ -488,6 +287,7 @@ const Moderation = () => {
                     </div>
                   </div>
 
+                  {/* Admin Only: Distributor Field */}
                   <div className="p-4 bg-blue-900/5 border border-blue-900/10 space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2">
                       <Truck size={14} /> Дистриб'ютор (Тільки Адмін)
@@ -515,7 +315,7 @@ const Moderation = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Головний Артист</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Артист</Label>
                       <Input 
                         value={selectedTrack.artist} 
                         onChange={(e) => updateField('artist', e.target.value)}
@@ -523,7 +323,7 @@ const Moderation = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Головний Композитор (ПІБ)</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Композитор (ПІБ)</Label>
                       <Input 
                         value={selectedTrack.composer || ''} 
                         onChange={(e) => updateField('composer', e.target.value)}
@@ -534,12 +334,11 @@ const Moderation = () => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Лейбл</Label>
-                      <Select value={selectedTrack.label || 'ЖУРБА MUSIC'} onValueChange={(v) => updateField('label', v)}>
-                        <SelectTrigger className="bg-black/40 border-white/5 rounded-none h-10 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent className="bg-[#0a0a0a] border-white/5 text-white rounded-none">
-                          <SelectItem value="ЖУРБА MUSIC" className="text-xs font-bold uppercase">ЖУРБА MUSIC</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Input 
+                        value={selectedTrack.label || 'ЖУРБА MUSIC'} 
+                        onChange={(e) => updateField('label', e.target.value)}
+                        className="bg-black/40 border-white/5 rounded-none h-10 text-xs"
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Жанр</Label>
@@ -586,73 +385,21 @@ const Moderation = () => {
 
                 <div className="space-y-4 pt-6 border-t border-white/5">
                   <p className="text-[10px] font-black uppercase tracking-widest text-red-700 flex items-center gap-2">
-                    <Music size={14} /> Трекліст та Метадані
+                    <Music size={14} /> Треклист та Файли
                   </p>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {selectedTrack.tracks?.map((track: any, idx: number) => (
-                      <div key={idx} className="p-4 bg-white/5 border border-white/5 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-black text-zinc-600">{idx + 1}</span>
-                            <Input 
-                              value={track.title} 
-                              onChange={(e) => updateTrackField(idx, 'title', e.target.value)}
-                              className="bg-transparent border-none h-8 text-sm font-bold p-0 focus:ring-0"
-                            />
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Checkbox 
-                              id={`mod-explicit-${idx}`} 
-                              checked={track.explicit} 
-                              onCheckedChange={(val) => updateTrackField(idx, 'explicit', val)}
-                            />
-                            <Label htmlFor={`mod-explicit-${idx}`} className="text-[10px] uppercase font-bold text-zinc-500">Explicit</Label>
+                      <div key={idx} className="p-4 bg-white/5 border border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-black text-zinc-600">{idx + 1}</span>
+                          <div>
+                            <p className="text-xs font-bold text-white uppercase">{track.title}</p>
+                            <p className="text-[9px] text-zinc-500 flex items-center gap-1 mt-1">
+                              <FileAudio size={10} /> {track.fileName || 'no_filename'}
+                            </p>
                           </div>
                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <Label className="text-[8px] uppercase text-zinc-600">Файл</Label>
-                            <Input 
-                              value={track.fileName || ''} 
-                              onChange={(e) => updateTrackField(idx, 'fileName', e.target.value)}
-                              className="bg-black/40 border-white/5 h-8 text-[10px] font-mono"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[8px] uppercase text-zinc-600">Preview (сек)</Label>
-                            <Input 
-                              type="number"
-                              value={track.previewStart || '0'} 
-                              onChange={(e) => updateTrackField(idx, 'previewStart', e.target.value)}
-                              className="bg-black/40 border-white/5 h-8 text-[10px]"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[8px] uppercase text-zinc-600">Артист</Label>
-                            <Input 
-                              value={track.artist || ''} 
-                              onChange={(e) => updateTrackField(idx, 'artist', e.target.value)}
-                              className="bg-black/40 border-white/5 h-8 text-[10px]"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[8px] uppercase text-zinc-600">Композитор</Label>
-                            <Input 
-                              value={track.composer || ''} 
-                              onChange={(e) => updateTrackField(idx, 'composer', e.target.value)}
-                              className="bg-black/40 border-white/5 h-8 text-[10px]"
-                            />
-                          </div>
-                          <div className="space-y-1 col-span-full">
-                            <Label className="text-[8px] uppercase text-zinc-600">Автор тексту</Label>
-                            <Input 
-                              value={track.lyricist || ''} 
-                              onChange={(e) => updateTrackField(idx, 'lyricist', e.target.value)}
-                              className="bg-black/40 border-white/5 h-8 text-[10px]"
-                            />
-                          </div>
-                        </div>
+                        <span className="text-[10px] font-mono text-zinc-600">{track.duration}</span>
                       </div>
                     ))}
                   </div>

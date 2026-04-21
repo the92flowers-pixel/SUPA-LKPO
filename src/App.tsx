@@ -12,7 +12,6 @@ import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import Releases from '@/pages/Releases';
 import NewRelease from '@/pages/NewRelease';
-import EditRelease from '@/pages/EditRelease';
 import Finances from '@/pages/Finances';
 import Reports from '@/pages/Reports';
 import Profile from '@/pages/Profile';
@@ -166,7 +165,6 @@ const App = () => {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/releases" element={<ProtectedRoute><Releases /></ProtectedRoute>} />
         <Route path="/new-release" element={<ProtectedRoute><NewRelease /></ProtectedRoute>} />
-        <Route path="/edit-release/:id" element={<ProtectedRoute><EditRelease /></ProtectedRoute>} />
         <Route path="/finances" element={<ProtectedRoute><Finances /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
