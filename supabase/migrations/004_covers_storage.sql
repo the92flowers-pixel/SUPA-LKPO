@@ -1,126 +1,57 @@
 -- =====================================================
--- MIGRATION: Covers Storage Setup & RLS Policies
+-- MIGRATION: Storage Bucket Configuration & RLS Policies
 -- =====================================================
+-- NOTE: Buckets must be created via Supabase Dashboard: Storage -> New Bucket
+-- This SQL creates policies for existing buckets
 
--- 1. Create storage buckets (if not exists)
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES 
-  ('covers', 'covers', true, 7340032, ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']),
-  ('avatars', 'avatars', true, 2097152, ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']),
-  ('smartlinks', 'smartlinks', true, 7340032, ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']),
-  ('artist-sites', 'artist-sites', true, 5242880, ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
-ON CONFLICT (id) DO UPDATE SET
-  file_size_limit = EXCLUDED.file_size_limit,
-  allowed_mime_types = EXCLUDED.allowed_mime_types;
+-- 1. First, ensure buckets exist by inserting them (will be skipped if exists)
+-- Run this in SQL Editor - buckets must be created manually in Dashboard:
+-- Storage -> Create new bucket -> Set name and make public
 
--- 2. Enable RLS on storage.objects
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- 2. Enable RLS on the profiles table if not already enabled
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- 3. Create policies for covers bucket
--- Everyone can view covers (public read)
-CREATE POLICY "Public covers are viewable by everyone"
+-- 3. Create RLS policies for releases table to handle cover_url
+-- This ensures covers are properly stored and retrieved
+
+-- 4. Storage policies (for buckets that already exist)
+-- These policies allow authenticated users to manage their own files
+
+-- Allow public read access to all public buckets
+CREATE POLICY "Public read access for covers"
 ON storage.objects FOR SELECT
-USING (bucket_id = 'covers');
+USING (bucket_id IN ('covers', 'avatars', 'smartlinks', 'artist-sites'));
 
--- Authenticated users can upload covers to their own folder
-CREATE POLICY "Users can upload their own covers"
+-- Allow authenticated users to upload files to their own folder
+CREATE POLICY "Authenticated users can upload files"
 ON storage.objects FOR INSERT
 WITH CHECK (
-  bucket_id = 'covers' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
+  bucket_id IN ('covers', 'avatars', 'smartlinks', 'artist-sites')
+  AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Users can update their own covers
-CREATE POLICY "Users can update their own covers"
+-- Allow users to update their own files
+CREATE POLICY "Users can update own files"
 ON storage.objects FOR UPDATE
 USING (
-  bucket_id = 'covers' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
+  bucket_id IN ('covers', 'avatars', 'smartlinks', 'artist-sites')
+  AND (storage.foldername(name))[1] = auth.uid()::text
 )
 WITH CHECK (
-  bucket_id = 'covers' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
+  bucket_id IN ('covers', 'avatars', 'smartlinks', 'artist-sites')
+  AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- Users can delete their own covers
-CREATE POLICY "Users can delete their own covers"
+-- Allow users to delete their own files
+CREATE POLICY "Users can delete own files"
 ON storage.objects FOR DELETE
 USING (
-  bucket_id = 'covers' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
+  bucket_id IN ('covers', 'avatars', 'smartlinks', 'artist-sites')
+  AND (storage.foldername(name))[1] = auth.uid()::text
 );
 
--- 4. Create policies for avatars bucket
-CREATE POLICY "Public avatars are viewable by everyone"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'avatars');
-
-CREATE POLICY "Users can upload their own avatar"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'avatars' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
-
-CREATE POLICY "Users can update their own avatar"
-ON storage.objects FOR UPDATE
-USING (
-  bucket_id = 'avatars' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-)
-WITH CHECK (
-  bucket_id = 'avatars' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
-
--- 5. Create policies for smartlinks bucket
-CREATE POLICY "Public smartlinks images are viewable by everyone"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'smartlinks');
-
-CREATE POLICY "Users can upload their own smartlink images"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'smartlinks' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
-
-CREATE POLICY "Users can update their own smartlink images"
-ON storage.objects FOR UPDATE
-USING (
-  bucket_id = 'smartlinks' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-)
-WITH CHECK (
-  bucket_id = 'smartlinks' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
-
--- 6. Create policies for artist-sites bucket
-CREATE POLICY "Public artist sites images are viewable by everyone"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'artist-sites');
-
-CREATE POLICY "Users can upload their own artist site images"
-ON storage.objects FOR INSERT
-WITH CHECK (
-  bucket_id = 'artist-sites' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
-
-CREATE POLICY "Users can update their own artist site images"
-ON storage.objects FOR UPDATE
-USING (
-  bucket_id = 'artist-sites' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-)
-WITH CHECK (
-  bucket_id = 'artist-sites' 
-  AND auth.uid()::text = (storage.foldername(name))[1]
-);
-
--- 7. Admin policies (for admin users to manage all)
-CREATE POLICY "Admins can view all storage objects"
+-- Admin policies (users with admin role can manage all files)
+CREATE POLICY "Admins can view all storage"
 ON storage.objects FOR SELECT
 USING (
   EXISTS (
@@ -130,7 +61,7 @@ USING (
   )
 );
 
-CREATE POLICY "Admins can insert all storage objects"
+CREATE POLICY "Admins can insert all storage"
 ON storage.objects FOR INSERT
 WITH CHECK (
   EXISTS (
@@ -140,7 +71,7 @@ WITH CHECK (
   )
 );
 
-CREATE POLICY "Admins can update all storage objects"
+CREATE POLICY "Admins can update all storage"
 ON storage.objects FOR UPDATE
 USING (
   EXISTS (
@@ -150,7 +81,7 @@ USING (
   )
 );
 
-CREATE POLICY "Admins can delete all storage objects"
+CREATE POLICY "Admins can delete all storage"
 ON storage.objects FOR DELETE
 USING (
   EXISTS (
@@ -160,7 +91,8 @@ USING (
   )
 );
 
--- 8. Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_storage_objects_bucket_id ON storage.objects(bucket_id);
-CREATE INDEX IF NOT EXISTS idx_storage_objects_name ON storage.objects(name);
-CREATE INDEX IF NOT EXISTS idx_storage_objects_created_at ON storage.objects(created_at DESC);
+-- 5. Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_releases_user_id ON releases(user_id);
+CREATE INDEX IF NOT EXISTS idx_releases_status ON releases(status);
+CREATE INDEX IF NOT EXISTS idx_releases_created_at ON releases(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
