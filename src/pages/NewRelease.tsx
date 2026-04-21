@@ -116,8 +116,10 @@ const NewRelease = () => {
   };
 
   const handleCoverUpload = (url: string) => {
+    console.log('Cover uploaded:', url);
     updateFormData('coverImageLocal', url);
     updateFormData('coverUrl', url);
+    showSuccess('Обкладинку завантажено!');
   };
 
   const handleCoverRemove = () => {
@@ -126,6 +128,7 @@ const NewRelease = () => {
   };
 
   const handleExternalUrlChange = (url: string) => {
+    console.log('External URL set:', url);
     updateFormData('coverUrl', url);
     updateFormData('coverImageLocal', '');
   };
@@ -274,6 +277,29 @@ const NewRelease = () => {
               minDimensions={{ width: 1400, height: 1400 }}
               aspectRatio="1:1"
             />
+
+            {/* Preview when cover is uploaded */}
+            {hasCover && (
+              <div className="p-6 bg-white/5 border border-white/5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-green-500 mb-4 flex items-center gap-2">
+                  <CheckCircle2 size={14} /> Обкладинку завантажено
+                </p>
+                <div className="flex items-center gap-6">
+                  <div className="w-32 h-32 shrink-0 overflow-hidden border border-white/10">
+                    <img 
+                      src={displayCover} 
+                      alt="Cover preview" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-black text-white uppercase tracking-wider">{formData.title || 'Назва релізу'}</p>
+                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{formData.artist || 'Артист'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Requirements */}
             <div className="p-6 bg-red-900/5 border border-red-900/10 space-y-3 mt-8">
