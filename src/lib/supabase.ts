@@ -181,16 +181,49 @@ export interface Task {
   created_at: string;
 }
 
+/**
+ * Upload a file to Supabase Storage
+ * Uses unique filenames to prevent conflicts
+ */
 export const uploadFile = async (bucket: string, path: string, file: File): Promise<string> => {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase is not configured');
   }
 
-  const sanitizedPath = path.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, "-");
+  // Generate a unique filename to avoid conflicts
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 15);
+  const fileExtension = file.name.split('.').pop() || 'jpg';
+  const sanitizedFileName = `${timestamp}_${randomId}.${fileExtension}`;
+  
+  // Clean the path and append filename
+  const cleanPath = path.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, "-").replace(/\/+/g, "/");
+  const fullPath = cleanPath.endsWith('/') ? `${cleanPath}${sanitizedFileName}` : `${cleanPath}/${sanitizedFileName}`;
+
+  // Delete existing file if it exists (for single file uploads)
+  try {
+    const { data: existingFiles } = await supabase.storage
+      .from(bucket)
+      .list(cleanPath, { search: fileExtension });
+    
+    if (existingFiles && existingFiles.length > 0) {
+      // Delete old files in this path with same extension (single file mode)
+      for (const existingFile of existingFiles) {
+        if (existingFile.name.endsWith(`.${fileExtension}`)) {
+          await supabase.storage
+            .from(bucket)
+            .remove([`${cleanPath}/${existingFile.name}`]);
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore errors from listing/deleting existing files
+    console.log('No existing file to clean up');
+  }
 
   const { data, error } = await supabase.storage
     .from(bucket)
-    .upload(sanitizedPath, file, { 
+    .upload(fullPath, file, { 
       upsert: true,
       contentType: file.type 
     });
@@ -200,6 +233,47 @@ export const uploadFile = async (bucket: string, path: string, file: File): Prom
     throw error;
   }
 
+  // Get public URL
   const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
   return publicUrl;
+};
+
+/**
+ * Delete a file from Supabase Storage
+ */
+export const deleteFile = async (bucket: string, path: string): Promise<boolean> => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase is not configured');
+  }
+
+  const { error } = await supabase.storage
+    .from(bucket)
+    .remove([path]);
+
+  if (error) {
+    console.error('Supabase Storage Delete Error:', error);
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Get a list of files in a bucket folder
+ */
+export const listFiles = async (bucket: string, path: string): Promise<any[]> => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase is not configured');
+  }
+
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .list(path);
+
+  if (error) {
+    console.error('Supabase Storage List Error:', error);
+    return [];
+  }
+
+  return data || [];
 };
