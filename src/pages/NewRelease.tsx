@@ -293,16 +293,6 @@ const NewRelease = () => {
                 </li>
               </ul>
             </div>
-
-            {/* Нагадування */}
-            {!hasCover && (
-              <div className="p-4 bg-amber-900/10 border border-amber-900/20 flex items-start gap-3">
-                <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
-                <p className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">
-                  Обкладинка необов'язкова на цьому етапі. Ви зможете завантажити її пізніше через редагування релізу.
-                </p>
-              </div>
-            )}
           </div>
         );
       case 4:
