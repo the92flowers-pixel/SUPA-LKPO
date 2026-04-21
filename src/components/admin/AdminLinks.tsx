@@ -65,6 +65,8 @@ const AdminLinks = () => {
     if (!error) {
       setLinks(links.filter(l => l.id !== id));
       showSuccess('Посилання видалено');
+    } else {
+      showError('Помилка при видаленні');
     }
   };
 
@@ -74,15 +76,21 @@ const AdminLinks = () => {
       for (const link of links) {
         const { id, ...data } = link;
         if (id.startsWith('temp-')) {
-          await supabase.from('admin_links').insert(data);
+          // Створення нового
+          const { error } = await supabase.from('admin_links').insert(data);
+          if (error) throw error;
         } else {
-          await supabase.from('admin_links').update(data).eq('id', id);
+          // Оновлення існуючого
+          const { error } = await supabase.from('admin_links').update(data).eq('id', id);
+          if (error) throw error;
         }
       }
       showSuccess('Всі зміни збережено');
       fetchLinks();
-    } catch (error) {
-      showError('Помилка при збереженні');
+      // Оновлюємо сторінку для відображення змін у меню
+      window.location.reload();
+    } catch (error: any) {
+      showError(`Помилка при збереженні: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
