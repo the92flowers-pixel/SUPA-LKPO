@@ -17,7 +17,7 @@ const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 const NewRelease = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { addRelease, statuses, fetchReleases, fields } = useDataStore();
+  const { addRelease, statuses, fields } = useDataStore();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +52,6 @@ const NewRelease = () => {
   ]);
   
   const defaultStatus = statuses.find((s: any) => s.isDefault)?.name || 'На модерації';
-  const releaseFields = fields.filter(f => f.section === 'release' && f.visible);
 
   const updateFormData = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
@@ -96,14 +95,23 @@ const NewRelease = () => {
         status: defaultStatus
       };
 
-      await addRelease(finalData);
-      showSuccess('Реліз успішно відправлено на модерацію!');
-      navigate('/releases');
-    } catch (error) {
-      showError('Помилка при створенні релізу');
+      console.log('Submitting release:', finalData);
+
+      const result = await addRelease(finalData);
+      
+      if (result) {
+        showSuccess('Реліз успішно відправлено на модерацію!');
+        dismissToast(loadingId);
+        navigate('/releases');
+      } else {
+        throw new Error('Реліз не було створено');
+      }
+    } catch (error: any) {
+      console.error('Error creating release:', error);
+      showError(error.message || 'Помилка при створенні релізу');
+      dismissToast(loadingId);
     } finally {
       setIsSubmitting(false);
-      dismissToast(loadingId);
     }
   };
 
@@ -422,8 +430,17 @@ const NewRelease = () => {
               disabled={isSubmitting || !formData.releaseUrl || !formData.copyrightConfirmed}
               className="bg-green-600 hover:bg-green-700 text-[10px] font-black uppercase tracking-widest h-12 px-12 rounded-none shadow-[0_0_30px_rgba(22,163,74,0.2)] disabled:opacity-30"
             >
-              {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : <Check className="mr-2" size={16} />}
-              Відправити реліз
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" size={16} />
+                  Створення...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2" size={16} />
+                  Відправити реліз
+                </>
+              )}
             </Button>
           )}
         </div>

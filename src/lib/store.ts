@@ -158,26 +158,28 @@ export const useDataStore = create<DataState>((set, get) => ({
   addRelease: async (releaseData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Unauthorized');
+      if (!user) {
+        throw new Error('Користувач не авторизований');
+      }
       
       const dbData = {
         user_id: user.id,
-        title: releaseData.title,
-        artist: releaseData.artist,
-        genre: releaseData.genre,
-        release_date: releaseData.releaseDate,
-        cover_url: releaseData.coverUrl,
-        composer: releaseData.composer,
-        performer: releaseData.performer,
-        label: releaseData.label,
-        description: releaseData.description,
-        explicit: !!releaseData.explicit,
-        is_single: !!releaseData.isSingle,
+        title: releaseData.title || '',
+        artist: releaseData.artist || '',
+        genre: releaseData.genre || 'Другое',
+        release_date: releaseData.releaseDate || new Date().toISOString().split('T')[0],
+        cover_url: releaseData.coverUrl || null,
+        composer: releaseData.composer || null,
+        performer: releaseData.performer || null,
+        label: releaseData.label || 'ЖУРБА MUSIC',
+        description: releaseData.description || null,
+        explicit: releaseData.explicit || false,
+        is_single: releaseData.isSingle || releaseData.isSingle === undefined,
         isrc: releaseData.isrc || null,
         upc: releaseData.upc || null,
         release_url: releaseData.releaseUrl || null,
-        copyrights: releaseData.copyrights,
-        copyright_confirmed: !!releaseData.copyrightConfirmed,
+        copyrights: releaseData.copyrights || null,
+        copyright_confirmed: releaseData.copyrightConfirmed || false,
         tracks: releaseData.tracks || [],
         status: releaseData.status || 'На модерації',
         streams: 0,
@@ -185,9 +187,20 @@ export const useDataStore = create<DataState>((set, get) => ({
         distributor: releaseData.distributor || null
       };
 
-      const { data, error } = await supabase.from('releases').insert(dbData).select().single();
+      console.log('Creating release with data:', dbData);
+
+      const { data, error } = await supabase
+        .from('releases')
+        .insert(dbData)
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(error.message || 'Помилка при створенні релізу');
+      }
+
+      console.log('Release created successfully:', data);
 
       if (data) {
         const mapped: Release = {
@@ -679,7 +692,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   updateStatuses: async (statuses) => {
     try {
       for (const s of statuses) {
-        await supabase.from('statuses').update({ name: s.name, color: s.color, sort_order: s.order, is_default: s.is_default }).eq('id', s.id);
+        await supabase.from('statuses').update({ name: s.name, color: s.color, sort_order: s.order, is_default: s.isDefault }).eq('id', s.id);
       }
       set({ statuses });
     } catch (e) { console.error(e); }
