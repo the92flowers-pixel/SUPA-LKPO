@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo } from 'react';
 import { 
   Music, 
@@ -14,12 +16,11 @@ import {
   BarChart3,
   Loader2,
   Upload,
-  X,
   AlertCircle,
-  Image as ImageIcon
+  Play
 } from 'lucide-react';
 import { useDataStore, useAuthStore } from '@/lib/store';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -29,8 +30,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogFooter,
-  DialogDescription
+  DialogFooter
 } from '@/components/ui/dialog';
 import { 
   DropdownMenu, 
@@ -38,36 +38,46 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 import ImageUploader from '@/components/ui/ImageUploader';
 
 const FALLBACK_IMAGE = "https://jurbamusic.iceiy.com/releasepreview.png";
 
 const PLATFORMS_LIST = [
-  "Apple Music",
-  "Deezer",
-  "iTunes",
-  "SoundCloud",
-  "Spotify",
-  "YouTube",
-  "YouTube Music"
+  { name: "Spotify", icon: "spotify" },
+  { name: "Apple Music", icon: "apple" },
+  { name: "YouTube", icon: "youtube" },
+  { name: "YouTube Music", icon: "youtube" },
+  { name: "SoundCloud", icon: "soundcloud" },
+  { name: "Deezer", icon: "deezer" },
+  { name: "iTunes", icon: "apple" },
 ];
 
-const Releases = () => {
+const Releases: React.FC = () => {
   const { user } = useAuthStore();
   const { releases, smartLinks, addSmartLink, updateSmartLink, deleteSmartLink, deleteRelease, statuses } = useDataStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRelease, setSelectedRelease] = useState<any>(null);
   const [isSmartLinkModalOpen, setIsSmartLinkModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   
-  // Smart Link Form State
-  const [slug, setSlug] = useState('');
-  const [coverUrl, setCoverUrl] = useState('');
-  const [avatarLocal, setAvatarLocal] = useState('');
-  const [platforms, setPlatforms] = useState<any[]>([]);
+  // Smart Link Form State - Real-time preview
+  const [formData, setFormData] = useState<{
+    slug: string;
+    title: string;
+    artist: string;
+    coverUrl: string;
+    avatarLocal: string;
+    platforms: { id: string; name: string; url: string; icon: string }[];
+  }>({
+    slug: '',
+    title: '',
+    artist: '',
+    coverUrl: '',
+    avatarLocal: '',
+    platforms: [],
+  });
   const [isSaving, setIsSaving] = useState(false);
 
   const userReleases = useMemo(() => 
@@ -88,32 +98,55 @@ const Releases = () => {
     setSelectedRelease(release);
     
     if (existing) {
-      setSlug(existing.slug);
-      setCoverUrl(existing.coverUrl);
-      setAvatarLocal(existing.avatarLocal || '');
-      setPlatforms(existing.platforms || []);
+      setFormData({
+        slug: existing.slug || '',
+        title: existing.title || release.title,
+        artist: existing.artist || release.artist,
+        coverUrl: existing.coverUrl || release.coverUrl,
+        avatarLocal: existing.avatarLocal || '',
+        platforms: existing.platforms || getDefaultPlatforms(),
+      });
     } else {
-      setSlug(release.title.toLowerCase().replace(/\s+/g, '-'));
-      setCoverUrl(release.coverUrl);
-      setAvatarLocal(release.coverImageLocal || '');
-      setPlatforms(PLATFORMS_LIST.map(p => ({ id: Date.now() + Math.random(), name: p, url: '', icon: p.toLowerCase().replace(/\s+/g, '-') })));
+      setFormData({
+        slug: release.title.toLowerCase().replace(/\s+/g, '-').substring(0, 50),
+        title: release.title,
+        artist: release.artist,
+        coverUrl: release.coverUrl || '',
+        avatarLocal: release.coverImageLocal || '',
+        platforms: getDefaultPlatforms(),
+      });
     }
     setIsSmartLinkModalOpen(true);
   };
 
+  const getDefaultPlatforms = () => {
+    return PLATFORMS_LIST.map((p, i) => ({
+      id: `platform-${Date.now()}-${i}`,
+      name: p.name,
+      url: '',
+      icon: p.icon,
+    }));
+  };
+
   // Handle cover upload for smart link
   const handleCoverUpload = (url: string) => {
-    setAvatarLocal(url);
-    setCoverUrl(url);
+    setFormData(prev => ({ ...prev, avatarLocal: url, coverUrl: url }));
   };
 
   const handleCoverDelete = () => {
-    setAvatarLocal('');
-    setCoverUrl('');
+    setFormData(prev => ({ ...prev, avatarLocal: '', coverUrl: '' }));
+  };
+
+  const updatePlatformUrl = (index: number, url: string) => {
+    setFormData(prev => {
+      const newPlatforms = [...prev.platforms];
+      newPlatforms[index] = { ...newPlatforms[index], url };
+      return { ...prev, platforms: newPlatforms };
+    });
   };
 
   const saveSmartLink = async () => {
-    if (!slug) {
+    if (!formData.slug) {
       showError('Вкажіть адресу посилання');
       return;
     }
@@ -123,12 +156,12 @@ const Releases = () => {
       const existing = smartLinks.find(l => l.releaseId === selectedRelease.id);
       const linkData = {
         releaseId: selectedRelease.id,
-        slug,
-        title: selectedRelease.title,
-        artist: selectedRelease.artist,
-        coverUrl,
-        avatarLocal,
-        platforms: platforms.filter(p => p.url.trim() !== '')
+        slug: formData.slug.toLowerCase().replace(/\s+/g, '-'),
+        title: formData.title || selectedRelease.title,
+        artist: formData.artist || selectedRelease.artist,
+        coverUrl: formData.avatarLocal || formData.coverUrl,
+        avatarLocal: formData.avatarLocal,
+        platforms: formData.platforms.filter(p => p.url.trim() !== ''),
       };
 
       if (existing) {
@@ -140,6 +173,7 @@ const Releases = () => {
       }
       setIsSmartLinkModalOpen(false);
     } catch (error) {
+      console.error('Error saving smart link:', error);
       showError('Помилка при збереженні');
     } finally {
       setIsSaving(false);
@@ -171,6 +205,17 @@ const Releases = () => {
       case 'blue': return 'bg-blue-500/10 text-blue-500';
       default: return 'bg-zinc-500/10 text-zinc-500';
     }
+  };
+
+  // Get platform color
+  const getPlatformColor = (name: string): string => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('spotify')) return '#1DB954';
+    if (lowerName.includes('apple')) return '#FA243C';
+    if (lowerName.includes('youtube')) return '#FF0000';
+    if (lowerName.includes('soundcloud')) return '#FF3300';
+    if (lowerName.includes('deezer')) return '#EF5466';
+    return '#ef4444';
   };
 
   return (
@@ -290,75 +335,108 @@ const Releases = () => {
         )}
       </div>
 
-      {/* Smart Link Modal with ImageUploader */}
+      {/* Smart Link Builder Modal with Live Preview */}
       <Dialog open={isSmartLinkModalOpen} onOpenChange={setIsSmartLinkModalOpen}>
-        <DialogContent className="bg-[#050505] border-white/5 text-white w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto rounded-none p-6">
+        <DialogContent className="bg-[#050505] border-white/5 text-white w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto rounded-none p-6">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Налаштування Смартлінка</DialogTitle>
-            <DialogDescription className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Смартлінк</DialogTitle>
+            <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
               Створіть єдину сторінку для всіх стрімінгових платформ
-            </DialogDescription>
+            </p>
           </DialogHeader>
           
-          <div className="space-y-8 py-6">
-            {/* Using ImageUploader for Smart Link cover */}
-            <ImageUploader 
-              bucket="smartlinks"
-              userId={user?.id || ''}
-              entityType="smartlinks"
-              currentUrl={avatarLocal || coverUrl}
-              onUpload={handleCoverUpload}
-              onDelete={handleCoverDelete}
-              label="Обкладинка смартлінка"
-              className="max-w-sm mx-auto"
-              aspectRatio="square"
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6">
+            {/* Form Section */}
+            <div className="space-y-6">
+              {/* Cover Upload with Square Validation */}
+              <ImageUploader 
+                bucket="smartlinks"
+                userId={user?.id || ''}
+                entityType="smartlinks"
+                currentUrl={formData.avatarLocal || formData.coverUrl}
+                onUpload={handleCoverUpload}
+                onDelete={handleCoverDelete}
+                label="Обкладинка (квадратна, мін. 1400x1400px)"
+                className="max-w-sm mx-auto lg:mx-0"
+                aspectRatio="square"
+              />
 
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Персональна адреса (URL Slug)</Label>
-              <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
-                <span className="text-zinc-600 text-xs font-mono">/s/</span>
-                <input 
-                  value={slug} 
-                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                  className="bg-transparent border-none focus:ring-0 text-white text-xs font-mono flex-1"
-                  placeholder="назва-релізу"
-                />
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL Slug</Label>
+                <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
+                  <span className="text-zinc-600 text-xs font-mono">/s/</span>
+                  <input 
+                    value={formData.slug} 
+                    onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').substring(0, 50) }))}
+                    className="bg-transparent border-none focus:ring-0 text-white text-xs font-mono flex-1"
+                    placeholder="назва-релізу"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Посилання на платформи</Label>
-              <div className="grid grid-cols-1 gap-3">
-                {platforms.map((p, idx) => (
-                  <div key={p.id} className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 group">
-                    <div className="w-8 h-8 flex items-center justify-center text-zinc-500 group-hover:text-red-700 transition-colors">
-                      <Music size={18} />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">{p.name}</p>
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Платформи</Label>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {formData.platforms.map((p, idx) => (
+                    <div key={p.id} className="flex items-center gap-3 p-3 bg-white/5 border border-white/5">
+                      <div 
+                        className="w-8 h-8 flex items-center justify-center text-sm shrink-0"
+                        style={{ color: getPlatformColor(p.name) }}
+                      >
+                        <Music size={16} />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 w-24 shrink-0">{p.name}</span>
                       <Input 
                         value={p.url} 
-                        onChange={(e) => {
-                          const newPlatforms = [...platforms];
-                          newPlatforms[idx].url = e.target.value;
-                          setPlatforms(newPlatforms);
-                        }}
-                        className="bg-transparent border-none h-6 p-0 text-xs focus:ring-0 text-white placeholder:text-zinc-800"
+                        onChange={(e) => updatePlatformUrl(idx, e.target.value)}
+                        className="flex-1 bg-transparent border-white/5 h-8 text-xs"
                         placeholder="Вставте посилання..."
                       />
                     </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Live Preview Section */}
+            <div className="space-y-4">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                <Play size={14} /> Попередній перегляд
+              </Label>
+              <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-none overflow-hidden">
+                {/* Mini preview */}
+                <div className="aspect-square bg-gradient-to-b from-white/5 to-transparent relative">
+                  <img 
+                    src={formData.avatarLocal || formData.coverUrl || FALLBACK_IMAGE} 
+                    className="w-full h-full object-cover opacity-80" 
+                    alt="Cover Preview"
+                    onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent" />
+                </div>
+                <div className="p-4 space-y-3">
+                  <div>
+                    <p className="text-sm font-black uppercase truncate">{formData.title || 'Назва треку'}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase font-bold">{formData.artist || 'Артист'}</p>
                   </div>
-                ))}
+                  <div className="space-y-1">
+                    {formData.platforms.filter(p => p.url.trim()).slice(0, 4).map((p, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[9px] text-zinc-400">
+                        <Check size={10} className="text-green-500" />
+                        <span>{p.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="gap-3">
+          <DialogFooter className="gap-3 border-t border-white/5 pt-6">
             <Button variant="ghost" onClick={() => setIsSmartLinkModalOpen(false)} className="rounded-none text-[10px] font-black uppercase tracking-widest">Скасувати</Button>
             <Button 
               onClick={saveSmartLink}
-              disabled={isSaving}
+              disabled={isSaving || !formData.slug}
               className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest px-10 h-12 rounded-none"
             >
               {isSaving ? <Loader2 className="animate-spin mr-2" size={14} /> : null}

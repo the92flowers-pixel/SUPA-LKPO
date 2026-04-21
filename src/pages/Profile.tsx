@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { User, ShieldCheck, ShieldAlert, Save as SaveIcon, Loader2, Globe, Plus, Trash2, Edit2, ExternalLink, Music, Link as LinkIcon, Check } from 'lucide-react';
+import React, { { useState, useEffect } from 'react';
+import { User, ShieldCheck, ShieldAlert, Save as SaveIcon, Loader2, Globe, Plus, Trash2, Edit2, ExternalLink, Music, Link as LinkIcon, Check, AlertTriangle } from 'lucide-react';
 import { useAuthStore, useDataStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,20 +17,53 @@ import { cn } from '@/lib/utils';
 const FALLBACK_AVATAR = "https://jurbamusic.iceiy.com/profileavatar.png";
 
 const PLATFORMS_LIST = [
-  "Instagram", "Telegram", "YouTube", "TikTok", "Spotify", "Apple Music", "SoundCloud", "Website", "Twitter", "Facebook"
+  { name: "Spotify", icon: "spotify" },
+  { name: "Apple Music", icon: "apple" },
+  { name: "YouTube", icon: "youtube" },
+  { name: "Instagram", icon: "instagram" },
+  { name: "Telegram", icon: "telegram" },
+  { name: "TikTok", icon: "tiktok" },
+  { name: "SoundCloud", icon: "soundcloud" },
+  { name: "Bandcamp", icon: "bandcamp" },
+  { name: "Deezer", icon: "deezer" },
+  { name: "Twitter", icon: "twitter" },
 ];
 
-const Profile = () => {
+const Profile: React.FC = () => {
   const { user, setAuth } = useAuthStore();
   const { users, fetchUsers, artistWebsites, addArtistWebsite, updateArtistWebsite, deleteArtistWebsite } = useDataStore();
   
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [profileData, setProfileData] = useState<any>(null);
+  const [profileData, setProfileData] = useState<Partial<AppUser> | null>(null);
   
   // Artist Website State
   const [isWebsiteDialogOpen, setIsWebsiteDialogOpen] = useState(false);
-  const [editingWebsite, setEditingWebsite] = useState<any>(null);
+  const [editingWebsite, setEditingWebsite] = useState<ArtistWebsiteFormData | null>(null);
+
+  // Type for website form data
+  interface AppUser {
+    id: string;
+    email?: string;
+    login: string;
+    role: 'admin' | 'artist';
+    artistName: string | null;
+    balance: number;
+    isVerified: boolean;
+    bio?: string;
+    avatarUrl?: string;
+    avatarLocal?: string;
+  }
+
+  interface ArtistWebsiteFormData {
+    id?: string;
+    title: string;
+    slug: string;
+    bio: string;
+    photoUrl: string;
+    siteAvatarLocal: string;
+    links: { id: string; name: string; url: string }[];
+  }
 
   // Load profile data
   useEffect(() => {
@@ -42,7 +75,6 @@ const Profile = () => {
       
       setIsLoading(true);
       try {
-        // First try to get from local store
         const localUser = users.find(u => u.id === user.id);
         if (localUser) {
           setProfileData({
@@ -53,7 +85,6 @@ const Profile = () => {
             avatarLocal: localUser.avatarLocal || '',
           });
         } else {
-          // Fetch from database
           const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -69,11 +100,8 @@ const Profile = () => {
               avatarUrl: appProfile.avatarUrl || '',
               avatarLocal: appProfile.avatarLocal || '',
             });
-            // Update auth store with full profile
             setAuth(appProfile);
-          } else if (error) {
-            console.error('Error fetching profile:', error);
-            // Use current user data as fallback
+          } else {
             setProfileData({
               id: user.id,
               email: user.email || user.login,
@@ -90,7 +118,6 @@ const Profile = () => {
         }
       } catch (error) {
         console.error('Error loading profile:', error);
-        // Use current user data as fallback
         setProfileData({
           id: user.id,
           email: user.email || user.login,
@@ -129,20 +156,13 @@ const Profile = () => {
         .select()
         .single();
       
-      if (error) {
-        console.error('Supabase update error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (data) {
         const appProfile = toAppProfile(data);
         setAuth(appProfile);
         await fetchUsers();
-        // Update local profile data
-        setProfileData(prev => prev ? {
-          ...prev,
-          ...appProfile,
-        } : null);
+        setProfileData(prev => prev ? { ...prev, ...appProfile } : null);
         showSuccess('Профіль оновлено!');
       }
     } catch (error) {
@@ -153,37 +173,50 @@ const Profile = () => {
     }
   };
 
-  const updateField = (field: string, value: any) => {
-    setProfileData((prev: any) => prev ? { ...prev, [field]: value } : null);
+  const updateField = (field: string, value: string) => {
+    setProfileData((prev) => prev ? { ...prev, [field]: value } : null);
   };
 
-  // Handle avatar upload
   const handleAvatarUpload = (url: string) => {
     updateField('avatarLocal', url);
     updateField('avatarUrl', url);
   };
 
   const handleAvatarDelete = () => {
-    updateField('avatarLocal', null);
-    updateField('avatarUrl', null);
+    updateField('avatarLocal', '');
+    updateField('avatarUrl', '');
   };
 
-  // Artist Website Functions
-  const userWebsites = artistWebsites.filter(w => w.userId === user?.id);
+  // Artist Website Functions - ONE WEBSITE PER USER
+  const userWebsite = artistWebsites.find(w => w.userId === user?.id);
+  const hasWebsite = !!userWebsite;
   
-  const handleOpenWebsiteDialog = (website: any = null) => {
+  const handleOpenWebsiteDialog = (website?: typeof userWebsite) => {
     if (website) {
-      setEditingWebsite({ ...website });
+      setEditingWebsite({
+        id: website.id,
+        title: website.stageName || website.title || '',
+        slug: website.slug || '',
+        bio: website.bio || '',
+        photoUrl: website.photoUrl || '',
+        siteAvatarLocal: website.siteAvatarLocal || '',
+        links: website.links?.length > 0 ? website.links : [
+          { id: Date.now().toString(), name: 'Spotify', url: '' },
+          { id: (Date.now() + 1).toString(), name: 'Instagram', url: '' },
+        ],
+      });
     } else {
       setEditingWebsite({
         title: profileData?.artistName || '',
         slug: (profileData?.artistName || '').toLowerCase().replace(/\s+/g, '-'),
         bio: '',
-        photoUrl: profileData?.avatarLocal || profileData?.avatarUrl || '',
+        photoUrl: '',
+        siteAvatarLocal: '',
         links: [
-          { id: Date.now().toString(), name: 'Instagram', url: '' },
-          { id: (Date.now() + 1).toString(), name: 'Telegram', url: '' },
-        ]
+          { id: Date.now().toString(), name: 'Spotify', url: '' },
+          { id: (Date.now() + 1).toString(), name: 'Instagram', url: '' },
+          { id: (Date.now() + 2).toString(), name: 'YouTube', url: '' },
+        ],
       });
     }
     setIsWebsiteDialogOpen(true);
@@ -197,14 +230,25 @@ const Profile = () => {
       return;
     }
 
+    if (!editingWebsite.title) {
+      showError('Вкажіть назву артиста');
+      return;
+    }
+
     try {
+      const websiteData = {
+        stageName: editingWebsite.title,
+        slug: editingWebsite.slug.toLowerCase().replace(/\s+/g, '-'),
+        bio: editingWebsite.bio,
+        photoUrl: editingWebsite.siteAvatarLocal || editingWebsite.photoUrl,
+        links: editingWebsite.links.filter(l => l.url.trim() !== ''),
+      };
+
       if (editingWebsite.id) {
-        // Update existing
-        await updateArtistWebsite(editingWebsite.id, editingWebsite);
+        await updateArtistWebsite(editingWebsite.id, websiteData);
         showSuccess('Сайт оновлено!');
       } else {
-        // Create new
-        await addArtistWebsite(editingWebsite);
+        await addArtistWebsite(websiteData);
         showSuccess('Сайт створено!');
       }
       setIsWebsiteDialogOpen(false);
@@ -226,20 +270,23 @@ const Profile = () => {
   };
 
   const addWebsiteLink = () => {
+    if (!editingWebsite) return;
     setEditingWebsite({
       ...editingWebsite,
-      links: [...(editingWebsite.links || []), { id: Date.now().toString(), name: 'Instagram', url: '' }]
+      links: [...editingWebsite.links, { id: Date.now().toString(), name: 'Spotify', url: '' }],
     });
   };
 
   const removeWebsiteLink = (id: string) => {
+    if (!editingWebsite) return;
     setEditingWebsite({
       ...editingWebsite,
-      links: editingWebsite.links.filter((l: any) => l.id !== id)
+      links: editingWebsite.links.filter(l => l.id !== id),
     });
   };
 
-  const updateWebsiteLink = (index: number, field: string, value: string) => {
+  const updateWebsiteLink = (index: number, field: 'name' | 'url', value: string) => {
+    if (!editingWebsite) return;
     const newLinks = [...editingWebsite.links];
     newLinks[index] = { ...newLinks[index], [field]: value };
     setEditingWebsite({ ...editingWebsite, links: newLinks });
@@ -267,10 +314,10 @@ const Profile = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Left Column - Avatar & Quick Stats */}
         <div className="lg:col-span-1">
           <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
             <CardContent className="pt-12 flex flex-col items-center">
-              {/* Using ImageUploader for Avatar */}
               <div className="w-full max-w-[200px]">
                 <ImageUploader 
                   bucket="avatars"
@@ -315,6 +362,7 @@ const Profile = () => {
           </Card>
         </div>
 
+        {/* Right Column - Form Fields */}
         <div className="lg:col-span-2 space-y-8">
           <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
             <CardContent className="pt-8 space-y-6">
@@ -359,7 +407,7 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Artist Websites Section */}
+          {/* Artist Website Section */}
           <Card className="bg-black/40 border-white/5 rounded-none shadow-2xl">
             <CardContent className="pt-8">
               <div className="flex items-center justify-between mb-6">
@@ -367,59 +415,62 @@ const Profile = () => {
                   <Globe size={20} className="text-red-700" />
                   <div>
                     <h3 className="text-sm font-black uppercase tracking-widest">Персональний сайт артиста</h3>
-                    <p className="text-[10px] text-zinc-600 uppercase tracking-widest">Створіть свою сторінку-посилання</p>
+                    <p className="text-[10px] text-zinc-600 uppercase tracking-widest">Один сайт на артиста</p>
                   </div>
                 </div>
                 <Button 
-                  onClick={() => handleOpenWebsiteDialog()}
-                  className="bg-red-700 hover:bg-red-800 text-[10px] font-black uppercase tracking-widest h-10 px-6 rounded-none"
+                  onClick={() => handleOpenWebsiteDialog(userWebsite)}
+                  className={cn(
+                    "text-[10px] font-black uppercase tracking-widest h-10 px-6 rounded-none",
+                    hasWebsite 
+                      ? "bg-white/5 hover:bg-white/10 border border-white/10" 
+                      : "bg-red-700 hover:bg-red-800"
+                  )}
                 >
-                  <Plus size={14} className="mr-2" /> Створити сайт
+                  {hasWebsite ? (
+                    <>
+                      <Edit2 size={14} className="mr-2" /> Редагувати сайт
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={14} className="mr-2" /> Створити сайт
+                    </>
+                  )}
                 </Button>
               </div>
 
-              {userWebsites.length > 0 ? (
-                <div className="space-y-4">
-                  {userWebsites.map((website) => (
-                    <div key={website.id} className="p-4 bg-white/5 border border-white/5 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <img 
-                          src={website.siteAvatarLocal || website.photoUrl || FALLBACK_AVATAR} 
-                          className="w-12 h-12 object-cover border border-white/10" 
-                          alt=""
-                        />
-                        <div>
-                          <p className="text-xs font-black text-white uppercase tracking-wider">{website.stageName || website.title}</p>
-                          <a 
-                            href={`/a/${website.slug}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-[10px] text-red-700 font-mono hover:text-red-500"
-                          >
-                            /a/{website.slug} <ExternalLink size={10} className="inline ml-1" />
-                          </a>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleOpenWebsiteDialog(website)}
-                          className="text-zinc-500 hover:text-white rounded-none"
-                        >
-                          <Edit2 size={16} />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDeleteWebsite(website.id)}
-                          className="text-red-900 hover:text-red-500 hover:bg-red-900/10 rounded-none"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
+              {hasWebsite ? (
+                <div className="p-4 bg-white/5 border border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={userWebsite.siteAvatarLocal || userWebsite.photoUrl || FALLBACK_AVATAR} 
+                      className="w-12 h-12 object-cover border border-white/10" 
+                      alt=""
+                      onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_AVATAR; }}
+                    />
+                    <div>
+                      <p className="text-xs font-black text-white uppercase tracking-wider">{userWebsite.stageName || userWebsite.title}</p>
+                      <a 
+                        href={`/a/${userWebsite.slug}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-red-700 font-mono hover:text-red-500"
+                      >
+                        /a/{userWebsite.slug} <ExternalLink size={10} className="inline ml-1" />
+                      </a>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                    <span className="font-black uppercase">{userWebsite.links?.length || 0} посилань</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDeleteWebsite(userWebsite.id)}
+                      className="text-red-900 hover:text-red-500 hover:bg-red-900/10 rounded-none ml-4"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 border border-dashed border-white/5">
@@ -438,60 +489,65 @@ const Profile = () => {
         <DialogContent className="bg-[#050505] border-white/5 text-white max-w-2xl max-h-[90vh] overflow-y-auto rounded-none">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase tracking-tighter">
-              {editingWebsite?.id ? 'Редагувати сайт' : 'Створити сайт артиста'}
+              {editingWebsite?.id ? 'Редагувати сайт артиста' : 'Створити сайт артиста'}
             </DialogTitle>
           </DialogHeader>
           {editingWebsite && (
             <div className="space-y-6 py-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Персональне посилання (URL)</Label>
-                <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
-                  <span className="text-zinc-600 text-xs font-mono">/a/</span>
-                  <input 
-                    value={editingWebsite.slug} 
-                    onChange={(e) => setEditingWebsite({
-                      ...editingWebsite, 
-                      slug: e.target.value.toLowerCase().replace(/\s+/g, '-')
-                    })}
-                    className="bg-transparent border-none focus:ring-0 text-white text-xs font-mono flex-1"
-                    placeholder="your-stage-name"
-                  />
-                </div>
-              </div>
+              {/* Avatar Upload */}
+              <ImageUploader 
+                bucket="artist-sites"
+                userId={user?.id || ''}
+                entityType="profile"
+                currentUrl={editingWebsite.siteAvatarLocal || editingWebsite.photoUrl}
+                onUpload={(url) => setEditingWebsite({ ...editingWebsite, siteAvatarLocal: url, photoUrl: url })}
+                onDelete={() => setEditingWebsite({ ...editingWebsite, siteAvatarLocal: '', photoUrl: '' })}
+                label="Фото профілю (квадратне, мін. 1400x1400px)"
+                className="max-w-xs mx-auto"
+                aspectRatio="square"
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне ім'я</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Сценічне ім'я *</Label>
                   <Input 
                     value={editingWebsite.title} 
-                    onChange={(e) => setEditingWebsite({...editingWebsite, title: e.target.value})}
+                    onChange={(e) => setEditingWebsite({ ...editingWebsite, title: e.target.value })}
                     className="bg-black/40 border-white/5 rounded-none h-12"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Фото профілю</Label>
-                  <Input 
-                    value={editingWebsite.photoUrl} 
-                    onChange={(e) => setEditingWebsite({...editingWebsite, photoUrl: e.target.value})}
-                    className="bg-black/40 border-white/5 rounded-none h-12"
-                    placeholder="URL або використайте ImageUploader"
-                  />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL сайту (Slug)</Label>
+                  <div className="flex items-center gap-2 bg-black/40 border border-white/5 px-4 h-12">
+                    <span className="text-zinc-600 text-xs font-mono">/a/</span>
+                    <input 
+                      value={editingWebsite.slug} 
+                      onChange={(e) => setEditingWebsite({
+                        ...editingWebsite, 
+                        slug: e.target.value.toLowerCase().replace(/\s+/g, '-')
+                      })}
+                      className="bg-transparent border-none focus:ring-0 text-white text-xs font-mono flex-1"
+                      placeholder="your-stage-name"
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">БІО</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Біографія</Label>
                 <Textarea 
                   value={editingWebsite.bio} 
-                  onChange={(e) => setEditingWebsite({...editingWebsite, bio: e.target.value})}
+                  onChange={(e) => setEditingWebsite({ ...editingWebsite, bio: e.target.value })}
                   className="bg-black/40 border-white/5 rounded-none min-h-[80px] resize-none"
+                  placeholder="Розкажіть про вашу музику..."
                 />
               </div>
 
-              <div className="space-y-4">
+              {/* Links Section */}
+              <div className="space-y-4 pt-4 border-t border-white/5">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                    <LinkIcon size={14} /> Посилання на соцмережі
+                    <LinkIcon size={14} /> Посилання на платформи
                   </Label>
                   <Button 
                     variant="outline" 
@@ -503,8 +559,8 @@ const Profile = () => {
                   </Button>
                 </div>
                 
-                <div className="space-y-3">
-                  {editingWebsite.links?.map((link: any, index: number) => (
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                  {editingWebsite.links.map((link, index) => (
                     <div key={link.id} className="flex gap-3 items-end p-4 bg-white/5 border border-white/5">
                       <div className="flex-1 space-y-2">
                         <Label className="text-[9px] text-zinc-600 uppercase font-black">Платформа</Label>
@@ -514,7 +570,7 @@ const Profile = () => {
                           className="w-full bg-black/40 border border-white/5 h-10 px-3 text-xs text-white rounded-none"
                         >
                           {PLATFORMS_LIST.map(p => (
-                            <option key={p} value={p} className="bg-[#0a0a0a]">{p}</option>
+                            <option key={p.name} value={p.name} className="bg-[#0a0a0a]">{p.name}</option>
                           ))}
                         </select>
                       </div>
@@ -544,8 +600,8 @@ const Profile = () => {
 
               {editingWebsite.slug && (
                 <div className="p-4 bg-green-900/10 border border-green-900/20">
-                  <p className="text-[10px] text-green-500 font-black uppercase tracking-widest">
-                    <Check size={14} className="inline mr-2" />
+                  <p className="text-[10px] text-green-500 font-black uppercase tracking-widest flex items-center gap-2">
+                    <Check size={14} />
                     Ваш сайт буде доступний за адресою: /a/{editingWebsite.slug}
                   </p>
                 </div>
